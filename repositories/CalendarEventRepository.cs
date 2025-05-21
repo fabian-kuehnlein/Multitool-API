@@ -40,4 +40,21 @@ public class CalendarEventRepository
 
         return events;
     }
+
+    public async Task InsertEventAsync(CalendarEvent calendarEvent)
+    {
+        using (var connection = new MySqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+
+            var command = new MySqlCommand("INSERT INTO calendar_event (eventTitle, eventNote, startDateTime, endDateTime, categoryId) VALUES (@eventTitle, @eventNote, @startDateTime, @endDateTime, @categoryId)", connection);
+            command.Parameters.AddWithValue("@eventTitle", calendarEvent.EventTitle);
+            command.Parameters.AddWithValue("@eventNote", (object)calendarEvent.EventNote ?? DBNull.Value);
+            command.Parameters.AddWithValue("@startDateTime", calendarEvent.StartDateTime);
+            command.Parameters.AddWithValue("@endDateTime", calendarEvent.EndDateTime);
+            command.Parameters.AddWithValue("@categoryId", calendarEvent.CategoryId);
+
+            await command.ExecuteNonQueryAsync();
+        }
+    }
 }
