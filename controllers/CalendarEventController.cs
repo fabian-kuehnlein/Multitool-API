@@ -1,3 +1,4 @@
+using CalendarApp.Models;
 using Microsoft.AspNetCore.Mvc;
 
 [ApiController]
@@ -17,5 +18,18 @@ public class CalendarEventController : ControllerBase
     {
         var events = await _repository.GetAllEventsAsync();
         return Ok(events);
+    }
+
+    [HttpPost("InsertEvent")]
+    [Produces("application/json")]
+    public async Task<IActionResult> InsertEvent([FromBody] CalendarEvent calendarEvent)
+    {
+        if (calendarEvent == null)
+        {
+            return BadRequest("Invalid event data.");
+        }
+
+        await _repository.InsertEventAsync(calendarEvent);
+        return CreatedAtAction(nameof(GetAllEvents), new { id = calendarEvent.EventId }, calendarEvent);
     }
 }
