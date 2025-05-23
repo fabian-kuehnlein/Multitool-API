@@ -20,6 +20,14 @@ public class CalendarEventController : ControllerBase
         return Ok(events);
     }
 
+    [HttpGet("GetEventsByRange")]
+    [Produces("application/json")]
+    public async Task<IActionResult> GetEventsByRange([FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
+    {
+        var events = await _repository.GetEventsByRangeAsync(startDate, endDate);
+        return Ok(events);
+    }
+
     [HttpPost("InsertEvent")]
     [Produces("application/json")]
     public async Task<IActionResult> InsertEvent([FromBody] CalendarEvent calendarEvent)
