@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace CalendarApp.Models;
+namespace CalendarApi.Businesslogic.Models;
 
 public class CreateCalendarEvent
 {

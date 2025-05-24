@@ -1,44 +1,15 @@
 using MySqlConnector;
-using Microsoft.Extensions.Configuration;
-using CalendarApp.Models;
+using CalendarApi.DataAccessLayer.Models;
+using CalendarApi.Webapi.Models;
+using CalendarApi.Businesslogic.Models;
 
-public class CalendarEventRepository
+public class CalendarEventRepository : ICalendarEventRepository
 {
     private readonly string _connectionString;
 
     public CalendarEventRepository(IConfiguration configuration)
     {
         _connectionString = configuration.GetConnectionString("MariaDBConnection");
-    }
-
-    public async Task<List<CalendarEvent>> GetAllEventsAsync()
-    {
-        var events = new List<CalendarEvent>();
-
-        using (var connection = new MySqlConnection(_connectionString))
-        {
-            await connection.OpenAsync();
-
-            var command = new MySqlCommand("SELECT eventId, eventTitle, eventNote, startDateTime, endDateTime, categoryId FROM calendar_event", connection);
-
-            using (var reader = await command.ExecuteReaderAsync())
-            {
-                while (await reader.ReadAsync())
-                {
-                    events.Add(new CalendarEvent
-                    {
-                        EventId = reader.GetInt32("eventId"),
-                        EventTitle = reader.GetString("eventTitle"),
-                        EventNote = reader.IsDBNull(reader.GetOrdinal("eventNote")) ? null : reader.GetString("eventNote"),
-                        StartDateTime = reader.GetDateTime("startDateTime"),
-                        EndDateTime = reader.GetDateTime("endDateTime"),
-                        CategoryId = reader.GetInt32("categoryId")
-                    });
-                }
-            }
-        }
-
-        return events;
     }
 
     public async Task<List<CalendarEvent>> GetEventsByRangeAsync(DateTime start, DateTime end)
@@ -83,7 +54,7 @@ public class CalendarEventRepository
         return events;
     }
 
-    public async Task InsertEventAsync(CreateCalendarEvent calendarEvent)
+    public async Task InsertEventAsync(CreateCalendarEventDAO calendarEvent)
     {
         using (var connection = new MySqlConnection(_connectionString))
         {
