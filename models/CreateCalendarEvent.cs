@@ -1,12 +1,17 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace CalendarApp.Models;
 
-public class CalendarEvent
+public class CreateCalendarEvent
 {
-    public int EventId { get; set; }
-    public string EventTitle { get; set; }
+    [Required]
+    public string EventTitle { get; set; } 
     public string? EventNote { get; set; }
+    [Required]
     public DateTime StartDateTime { get; set; }
     public DateTime? EndDateTime { get; set; }
+    [Required]
     public bool IsAllDay { get; set; }
+    [Required]
     public int CategoryId { get; set; }
 }
