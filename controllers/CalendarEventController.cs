@@ -30,14 +30,17 @@ public class CalendarEventController : ControllerBase
 
     [HttpPost("InsertEvent")]
     [Produces("application/json")]
-    public async Task<IActionResult> InsertEvent([FromBody] CalendarEvent calendarEvent)
+    public async Task<IActionResult> InsertEvent([FromBody] CreateCalendarEvent calendarEvent)
     {
-        if (calendarEvent == null)
-        {
-            return BadRequest("Invalid event data.");
-        }
-
         await _repository.InsertEventAsync(calendarEvent);
-        return CreatedAtAction(nameof(GetAllEvents), new { id = calendarEvent.EventId }, calendarEvent);
+        return Ok();
+    }
+
+    [HttpGet("GetCategories")]
+    [Produces("application/json")]
+    public async Task<IActionResult> GetCategories()
+    {
+        var categories = await _repository.GetCategoriesAsync();
+        return Ok(categories);
     }
 }
