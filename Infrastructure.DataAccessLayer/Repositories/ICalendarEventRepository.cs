@@ -6,7 +6,8 @@ public interface ICalendarEventRepository
 {
     Task<List<CalendarEvent>> GetEventsByRangeAsync(DateTime start, DateTime end);
     Task InsertEventAsync(CreateCalendarEventDAO createEvent);
-    // Task<bool> UpdateEventAsync(int eventId, CreateCalendarEvent updateEvent);
-    // Task<bool> DeleteEventAsync(int eventId);
+    Task<CalendarEventDAO> UpdateEventAsync(CalendarEventDAO updateEvent);
+    Task DeleteEventAsync(int eventId);
     Task<List<Category>> GetCategoriesAsync();
+    Task<List<HolidayDAO>> GetHolidaysAsync(string year);
 }

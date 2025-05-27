@@ -37,15 +37,15 @@ public class CalendarEventController : ControllerBase
     [Produces("application/json")]
     public async Task<IActionResult> UpdateEvent([FromBody] CalendarEventDTO calendarEvent)
     {
-        // await _repository.UpdateEventAsync(calendarEvent);
-        return Ok();
+        await _service.UpdateEventAsync(_mapper.Map<CalendarEvent>(calendarEvent));
+        return Ok(calendarEvent);
     }
 
     [HttpDelete("DeleteEvent")]
     [Produces("application/json")]
     public async Task<IActionResult> DeleteEvent([FromQuery] int eventId)
     {
-        // await _repository.DeleteEventAsync(eventId);
+        await _service.DeleteEventAsync(eventId);
         return Ok();
     }
 
@@ -61,11 +61,7 @@ public class CalendarEventController : ControllerBase
     [Produces("application/json")]
     public async Task<IActionResult> GetHolidays([FromQuery] string year)
     {
-        var client = new HttpClient();
-        var url = $"https://get.api-feiertage.de?years={year}&states=by";
-        var response = await client.GetAsync(url);
-        var holidays = await response.Content.ReadAsStringAsync();
-        
-        return Ok(holidays);
+        var result = await _service.GetHolidaysAsync(year);
+        return Ok(result);
     }
 }
