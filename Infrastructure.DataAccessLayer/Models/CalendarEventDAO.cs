@@ -1,10 +1,9 @@
-using System.ComponentModel.DataAnnotations;
+namespace CalendarApi.DataAccessLayer.Models;
 
-namespace CalendarApi.Businesslogic.Models;
-
-public class CreateCalendarEvent
+public class CalendarEventDAO
 {
-    public required string EventTitle { get; set; } 
+    public int EventId { get; set; }
+    public required string EventTitle { get; set; }
     public string? EventNote { get; set; }
     public required DateTime StartDateTime { get; set; }
     public DateTime? EndDateTime { get; set; }

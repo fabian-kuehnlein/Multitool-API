@@ -20,6 +20,11 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 
+builder.Services.AddHttpClient<ICalendarEventRepository, CalendarEventRepository>(client =>
+{
+    client.BaseAddress = new Uri("https://get.api-feiertage.de");
+});
+
 var app = builder.Build();
 
 app.UseCors("AllowAll");
