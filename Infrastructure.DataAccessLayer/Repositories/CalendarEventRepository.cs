@@ -25,10 +25,13 @@ public class CalendarEventRepository : ICalendarEventRepository
             await connection.OpenAsync();
 
             var command = new MySqlCommand(@"
-                SELECT eventId, eventTitle, eventNote, startDateTime, endDateTime, allDay, categoryId
+                SELECT eventId, eventTitle, eventNote, startDateTime, endDateTime, allDay, categoryId, recurrenceRule, recurrenceEnd
                 FROM calendar_event
-                WHERE startDateTime < @endDate
-                AND (endDateTime IS NULL OR endDateTime > @startDate)", connection);
+                WHERE 
+                    (startDateTime < @endDate AND (endDateTime IS NULL OR endDateTime > @startDate))
+                    OR
+                    (recurrenceRule IS NOT NULL AND (recurrenceEnd IS NULL OR recurrenceEnd >= @startDate))                
+                ", connection);
 
             command.Parameters.AddWithValue("@startDate", start);
             command.Parameters.AddWithValue("@endDate", end);
@@ -49,7 +52,13 @@ public class CalendarEventRepository : ICalendarEventRepository
                             ? (DateTime?)null
                             : reader.GetDateTime("endDateTime"),
                         IsAllDay = reader.GetBoolean("allDay"),
-                        CategoryId = reader.GetInt32("categoryId")
+                        CategoryId = reader.GetInt32("categoryId"),
+                        RecurrenceRule = reader.IsDBNull(reader.GetOrdinal("recurrenceRule"))
+                            ? null
+                            : reader.GetString("recurrenceRule"),
+                        RecurrenceEnd = reader.IsDBNull(reader.GetOrdinal("recurrenceEnd"))
+                            ? (DateTime?)null
+                            : reader.GetDateTime("recurrenceEnd")
                     });
                 }
             }
