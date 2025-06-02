@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace CalendarApi.DataAccessLayer.Models;
+namespace MultitoolApi.DataAccessLayer.Models;
 
 public class CreateCalendarEventDAO
 {

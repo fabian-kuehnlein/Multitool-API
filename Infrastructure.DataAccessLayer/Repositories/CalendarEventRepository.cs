@@ -1,7 +1,7 @@
 using MySqlConnector;
-using CalendarApi.DataAccessLayer.Models;
-using CalendarApi.Webapi.Models;
-using CalendarApi.Businesslogic.Models;
+using MultitoolApi.DataAccessLayer.Models;
+using MultitoolApi.Webapi.Models;
+using MultitoolApi.Businesslogic.Models;
 using System.Text.Json;
 
 public class CalendarEventRepository : ICalendarEventRepository
