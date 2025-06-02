@@ -1,6 +1,6 @@
-using CalendarApi.Businesslogic.Models;
-using CalendarApi.DataAccessLayer.Models;
-using CalendarApi.Webapi.Models;
+using MultitoolApi.Businesslogic.Models;
+using MultitoolApi.DataAccessLayer.Models;
+using MultitoolApi.Webapi.Models;
 
 public interface ICalendarEventRepository
 {

@@ -1,5 +1,5 @@
-using CalendarApi.Businesslogic.Models;
-using CalendarApi.DataAccessLayer.Models;
+using MultitoolApi.Businesslogic.Models;
+using MultitoolApi.DataAccessLayer.Models;
 
 public interface ICalendarService
 {

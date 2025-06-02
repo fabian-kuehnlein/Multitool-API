@@ -1,4 +1,4 @@
-namespace CalendarApi.Webapi.Models;
+namespace MultitoolApi.Webapi.Models;
 
 public class CalendarEventDTO
 {
