@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace CalendarApi.WebApi.Models;
+namespace MultitoolApi.WebApi.Models;
 
 public class CreateCalendarEventDTO
 {

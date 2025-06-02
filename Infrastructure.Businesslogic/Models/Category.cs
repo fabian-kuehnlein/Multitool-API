@@ -1,4 +1,4 @@
-namespace CalendarApi.Businesslogic.Models;
+namespace MultitoolApi.Businesslogic.Models;
 
 public class Category
 {

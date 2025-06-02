@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace CalendarApi.DataAccessLayer.Models;
+namespace MultitoolApi.DataAccessLayer.Models;
 
 public class HolidayRaw
 {
