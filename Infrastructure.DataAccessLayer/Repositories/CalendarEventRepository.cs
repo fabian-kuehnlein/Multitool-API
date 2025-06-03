@@ -8,12 +8,14 @@ public class CalendarEventRepository : ICalendarEventRepository
 {
     private readonly string _connectionString;
     private readonly HttpClient _httpClient;
+    private readonly ILogger<CalendarEventRepository> _logger;
 
-    public CalendarEventRepository(IConfiguration configuration, HttpClient httpClient)
+    public CalendarEventRepository(IConfiguration configuration, HttpClient httpClient, ILogger<CalendarEventRepository> logger)
     {
-        _connectionString = configuration.GetConnectionString("MariaDBConnection") 
+        _connectionString = configuration.GetConnectionString("MariaDBConnection")
             ?? throw new InvalidOperationException("Connection string 'MariaDBConnection' not found.");
         _httpClient = httpClient;
+        _logger = logger;
     }
 
     public async Task<List<CalendarEvent>> GetEventsByRangeAsync(DateTime start, DateTime end)
@@ -75,9 +77,9 @@ public class CalendarEventRepository : ICalendarEventRepository
 
             var command = new MySqlCommand(
                 "INSERT INTO calendar_event " +
-                "(eventTitle, eventNote, startDateTime, endDateTime, allDay, categoryId) " +
+                "(eventTitle, eventNote, startDateTime, endDateTime, allDay, categoryId, recurrenceRule, recurrenceEnd) " +
                 "VALUES " +
-                "(@eventTitle, @eventNote, @startDateTime, @endDateTime, @IsAllDay, @categoryId)",
+                "(@eventTitle, @eventNote, @startDateTime, @endDateTime, @IsAllDay, @categoryId, @recurrenceRule, @recurrenceEnd)",
                 connection
             );
             command.Parameters.AddWithValue("@eventTitle", calendarEvent.EventTitle);
@@ -86,6 +88,8 @@ public class CalendarEventRepository : ICalendarEventRepository
             command.Parameters.AddWithValue("@endDateTime", calendarEvent.EndDateTime);
             command.Parameters.AddWithValue("@IsAllDay", calendarEvent.IsAllDay);
             command.Parameters.AddWithValue("@categoryId", calendarEvent.CategoryId);
+            command.Parameters.AddWithValue("@recurrenceRule", calendarEvent.RecurrenceRule == null ? DBNull.Value : (object)calendarEvent.RecurrenceRule);
+            command.Parameters.AddWithValue("@recurrenceEnd", calendarEvent.RecurrenceEnd == null ? DBNull.Value : (object)calendarEvent.RecurrenceEnd);
 
             await command.ExecuteNonQueryAsync();
         }
