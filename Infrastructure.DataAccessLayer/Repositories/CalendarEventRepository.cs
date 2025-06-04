@@ -12,7 +12,7 @@ public class CalendarEventRepository : ICalendarEventRepository
 
     public CalendarEventRepository(IConfiguration configuration, HttpClient httpClient, ILogger<CalendarEventRepository> logger)
     {
-        _connectionString = configuration.GetConnectionString("MariaDBConnection")
+        _connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? throw new InvalidOperationException("Connection string 'MariaDBConnection' not found.");
         _httpClient = httpClient;
         _logger = logger;
@@ -27,8 +27,8 @@ public class CalendarEventRepository : ICalendarEventRepository
             await connection.OpenAsync();
 
             var command = new MySqlCommand(@"
-                SELECT eventId, eventTitle, eventNote, startDateTime, endDateTime, allDay, categoryId, recurrenceRule, recurrenceEnd
-                FROM calendar_event
+                SELECT eventId, eventTitle, eventNote, startDateTime, endDateTime, isAllDay, categoryId, recurrenceRule, recurrenceEnd
+                FROM calendar_events
                 WHERE 
                     (startDateTime < @endDate AND (endDateTime IS NULL OR endDateTime > @startDate))
                     OR
@@ -53,7 +53,7 @@ public class CalendarEventRepository : ICalendarEventRepository
                         EndDateTime = reader.IsDBNull(reader.GetOrdinal("endDateTime"))
                             ? (DateTime?)null
                             : reader.GetDateTime("endDateTime"),
-                        IsAllDay = reader.GetBoolean("allDay"),
+                        IsAllDay = reader.GetBoolean("isAllDay"),
                         CategoryId = reader.GetInt32("categoryId"),
                         RecurrenceRule = reader.IsDBNull(reader.GetOrdinal("recurrenceRule"))
                             ? null
@@ -76,8 +76,8 @@ public class CalendarEventRepository : ICalendarEventRepository
             await connection.OpenAsync();
 
             var command = new MySqlCommand(
-                "INSERT INTO calendar_event " +
-                "(eventTitle, eventNote, startDateTime, endDateTime, allDay, categoryId, recurrenceRule, recurrenceEnd) " +
+                "INSERT INTO calendar_events " +
+                "(eventTitle, eventNote, startDateTime, endDateTime, isAllDay, categoryId, recurrenceRule, recurrenceEnd) " +
                 "VALUES " +
                 "(@eventTitle, @eventNote, @startDateTime, @endDateTime, @IsAllDay, @categoryId, @recurrenceRule, @recurrenceEnd)",
                 connection
@@ -102,9 +102,9 @@ public async Task<CalendarEventDAO> UpdateEventAsync(CalendarEventDAO updateEven
             await connection.OpenAsync();
 
             var command = new MySqlCommand(
-                "UPDATE calendar_event SET " +
+                "UPDATE calendar_events SET " +
                 "eventTitle = @eventTitle, eventNote = @eventNote, startDateTime = @startDateTime, " +
-                "endDateTime = @endDateTime, allDay = @IsAllDay, categoryId = @categoryId " +
+                "endDateTime = @endDateTime, isAllDay = @IsAllDay, categoryId = @categoryId " +
                 "WHERE eventId = @eventId",
                 connection
             );
@@ -128,7 +128,7 @@ public async Task<CalendarEventDAO> UpdateEventAsync(CalendarEventDAO updateEven
         {
             await connection.OpenAsync();
 
-            var command = new MySqlCommand("DELETE FROM calendar_event WHERE eventId = @eventId", connection);
+            var command = new MySqlCommand("DELETE FROM calendar_events WHERE eventId = @eventId", connection);
             command.Parameters.AddWithValue("@eventId", eventId);
 
             await command.ExecuteNonQueryAsync();
