@@ -10,4 +10,5 @@ public class CalendarEventDAO
     public required bool IsAllDay { get; set; }
     public required int CategoryId { get; set; }
     public string? RecurrenceRule { get; set; }
-    public DateTime? RecurrenceEnd { get; set; }}
+    public DateTime? RecurrenceEnd { get; set; }
+}
