@@ -1,3 +1,4 @@
+using System.Data.Common;
 using Microsoft.EntityFrameworkCore;
 using MultitoolApi.ConfigModels;
 
@@ -17,6 +18,20 @@ builder.Services.AddCors(options =>
         });
 });
 
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseMySql(
+        builder.Configuration.GetConnectionString("DefaultConnection"),
+        new MySqlServerVersion(new Version(11, 7, 2)),
+        mySqlOptions => mySqlOptions
+            .EnableRetryOnFailure(
+                maxRetryCount: 10,
+                maxRetryDelay: TimeSpan.FromSeconds(5),
+                errorNumbersToAdd: null
+        ))
+    );
+
+Console.WriteLine("Using connection string: " + builder.Configuration.GetConnectionString("DefaultConnection"));
+
 builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
@@ -30,10 +45,11 @@ builder.Services.AddHttpClient<ICalendarEventRepository, CalendarEventRepository
 
 var app = builder.Build();
 
-app.UseCors("AllowAll");
-
 app.UseSwagger();
 app.UseSwaggerUI();
+
+app.UseRouting();
+app.UseCors("AllowAll");
 
 app.MapControllers();
 
