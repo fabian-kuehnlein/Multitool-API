@@ -1,3 +1,6 @@
+using Microsoft.EntityFrameworkCore;
+using MultitoolApi.ConfigModels;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddScoped<ICalendarEventRepository, CalendarEventRepository>();
@@ -33,5 +36,11 @@ app.UseSwagger();
 app.UseSwaggerUI();
 
 app.MapControllers();
+
+using (var scope = app.Services.CreateScope())
+{
+    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    dbContext.Database.Migrate();
+}
 
 app.Run();
