@@ -10,11 +10,13 @@ public class CalendarEventController : ControllerBase
 {
     private readonly ICalendarService _service;
     private readonly IMapper _mapper;
+    private readonly ILogger<CalendarEventController> _logger;
 
-    public CalendarEventController(ICalendarService service, IMapper mapper)
+    public CalendarEventController(ICalendarService service, IMapper mapper, ILogger<CalendarEventController> logger)
     {
         _service = service;
         _mapper = mapper;
+        _logger = logger;
     }
 
     [HttpGet("GetEventsByRange")]
