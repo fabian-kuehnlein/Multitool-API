@@ -143,7 +143,7 @@ public async Task<CalendarEventDAO> UpdateEventAsync(CalendarEventDAO updateEven
         {
             await connection.OpenAsync();
 
-            var command = new MySqlCommand("SELECT categoryId, category_name FROM category ORDER BY categoryId ASC", connection);
+            var command = new MySqlCommand("SELECT categoryId, categoryName FROM categories ORDER BY categoryId ASC", connection);
 
             using (var reader = await command.ExecuteReaderAsync())
             {
@@ -152,7 +152,7 @@ public async Task<CalendarEventDAO> UpdateEventAsync(CalendarEventDAO updateEven
                     categories.Add(new Category
                     {
                         CategoryId = reader.GetInt32("categoryId"),
-                        CategoryName = reader.GetString("category_name")
+                        CategoryName = reader.GetString("categoryName")
                     });
                 }
             }
