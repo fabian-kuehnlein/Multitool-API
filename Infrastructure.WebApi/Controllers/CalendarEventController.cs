@@ -21,9 +21,9 @@ public class CalendarEventController : ControllerBase
 
     [HttpGet("GetEventsByRange")]
     [Produces("application/json")]
-    public async Task<IActionResult> GetEventsByRange([FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
+    public async Task<IActionResult> GetEventsByRange([FromQuery] DateTime startDate, [FromQuery] DateTime endDate, [FromQuery] string? categories)
     {
-        var events = await _service.GetEventsByRangeAsync(startDate, endDate);
+        var events = await _service.GetEventsByRangeAsync(startDate, endDate, categories ?? string.Empty);
         return Ok(events);
     }
 

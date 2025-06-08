@@ -4,7 +4,7 @@ using MultitoolApi.Webapi.Models;
 
 public interface ICalendarEventRepository
 {
-    Task<List<CalendarEvent>> GetEventsByRangeAsync(DateTime start, DateTime end);
+    Task<List<CalendarEvent>> GetEventsByRangeAsync(DateTime start, DateTime end, string categories);
     Task InsertEventAsync(CreateCalendarEventDAO createEvent);
     Task<CalendarEventDAO> UpdateEventAsync(CalendarEventDAO updateEvent);
     Task DeleteEventAsync(int eventId);
