@@ -13,9 +13,9 @@ public class CalendarService : ICalendarService
 		_mapper = mapper;
 	}
 
-	public async Task<List<CalendarEvent>> GetEventsByRangeAsync(DateTime start, DateTime end)
+	public async Task<List<CalendarEvent>> GetEventsByRangeAsync(DateTime start, DateTime end, string categories)
 	{
-		return await _repository.GetEventsByRangeAsync(start, end);
+		return await _repository.GetEventsByRangeAsync(start, end, categories);
 	}
 
 	public async Task InsertEventAsync(CreateCalendarEvent createEvent)
