@@ -18,7 +18,7 @@ public class CalendarEventRepository : ICalendarEventRepository
         _logger = logger;
     }
 
-    public async Task<List<CalendarEvent>> GetEventsByRangeAsync(DateTime start, DateTime end)
+    public async Task<List<CalendarEvent>> GetEventsByRangeAsync(DateTime start, DateTime end, string categories)
     {
         var events = new List<CalendarEvent>();
 
@@ -26,42 +26,65 @@ public class CalendarEventRepository : ICalendarEventRepository
         {
             await connection.OpenAsync();
 
-            var command = new MySqlCommand(@"
+            var sql = @"
                 SELECT eventId, eventTitle, eventNote, startDateTime, endDateTime, isAllDay, categoryId, recurrenceRule, recurrenceEnd
                 FROM calendar_events
-                WHERE 
-                    (startDateTime < @endDate AND (endDateTime IS NULL OR endDateTime > @startDate))
-                    OR
-                    (recurrenceRule IS NOT NULL AND (recurrenceEnd IS NULL OR recurrenceEnd >= @startDate))                
-                ", connection);
+                WHERE
+                    (
+                        (startDateTime < @endDate AND (endDateTime IS NULL OR endDateTime > @startDate))
+                        OR
+                        (recurrenceRule IS NOT NULL AND (recurrenceEnd IS NULL OR recurrenceEnd >= @startDate))
+                    )
+            ";
 
-            command.Parameters.AddWithValue("@startDate", start);
-            command.Parameters.AddWithValue("@endDate", end);
-
-            using (var reader = await command.ExecuteReaderAsync())
+            if (!string.IsNullOrEmpty(categories))
             {
-                while (await reader.ReadAsync())
+                var categoryIds = categories.Split(',').Select(int.Parse).ToList();
+                var paramNames = categoryIds.Select((_, i) => $"@cat{i}").ToList();
+                var inClause = string.Join(",", paramNames);
+                sql += $" AND categoryId IN ({inClause})";
+            }
+
+
+            using (var command = new MySqlCommand(sql, connection))
+            {
+                command.Parameters.AddWithValue("@startDate", start);
+                command.Parameters.AddWithValue("@endDate", end);
+
+                if (!string.IsNullOrEmpty(categories))
                 {
-                    events.Add(new CalendarEvent
+                    var categoryIds = categories.Split(',').Select(int.Parse).ToList();
+                    for (int i = 0; i < categoryIds.Count; i++)
                     {
-                        EventId = reader.GetInt32("eventId"),
-                        EventTitle = reader.GetString("eventTitle"),
-                        EventNote = reader.IsDBNull(reader.GetOrdinal("eventNote"))
-                            ? null
-                            : reader.GetString("eventNote"),
-                        StartDateTime = reader.GetDateTime("startDateTime"),
-                        EndDateTime = reader.IsDBNull(reader.GetOrdinal("endDateTime"))
-                            ? (DateTime?)null
-                            : reader.GetDateTime("endDateTime"),
-                        IsAllDay = reader.GetBoolean("isAllDay"),
-                        CategoryId = reader.GetInt32("categoryId"),
-                        RecurrenceRule = reader.IsDBNull(reader.GetOrdinal("recurrenceRule"))
-                            ? null
-                            : reader.GetString("recurrenceRule"),
-                        RecurrenceEnd = reader.IsDBNull(reader.GetOrdinal("recurrenceEnd"))
-                            ? (DateTime?)null
-                            : reader.GetDateTime("recurrenceEnd")
-                    });
+                        command.Parameters.AddWithValue($"@cat{i}", categoryIds[i]);
+                    }
+                }
+
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        events.Add(new CalendarEvent
+                        {
+                            EventId = reader.GetInt32("eventId"),
+                            EventTitle = reader.GetString("eventTitle"),
+                            EventNote = reader.IsDBNull(reader.GetOrdinal("eventNote"))
+                                ? null
+                                : reader.GetString("eventNote"),
+                            StartDateTime = reader.GetDateTime("startDateTime"),
+                            EndDateTime = reader.IsDBNull(reader.GetOrdinal("endDateTime"))
+                                ? (DateTime?)null
+                                : reader.GetDateTime("endDateTime"),
+                            IsAllDay = reader.GetBoolean("isAllDay"),
+                            CategoryId = reader.GetInt32("categoryId"),
+                            RecurrenceRule = reader.IsDBNull(reader.GetOrdinal("recurrenceRule"))
+                                ? null
+                                : reader.GetString("recurrenceRule"),
+                            RecurrenceEnd = reader.IsDBNull(reader.GetOrdinal("recurrenceEnd"))
+                                ? (DateTime?)null
+                                : reader.GetDateTime("recurrenceEnd")
+                        });
+                    }
                 }
             }
         }

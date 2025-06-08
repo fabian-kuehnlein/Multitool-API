@@ -3,7 +3,7 @@ using MultitoolApi.DataAccessLayer.Models;
 
 public interface ICalendarService
 {
-    Task<List<CalendarEvent>> GetEventsByRangeAsync(DateTime start, DateTime end);
+    Task<List<CalendarEvent>> GetEventsByRangeAsync(DateTime start, DateTime end, string categories);
     Task InsertEventAsync(CreateCalendarEvent createEvent);
     Task<CalendarEvent> UpdateEventAsync(CalendarEvent updateEvent);
     Task DeleteEventAsync(int eventId);
