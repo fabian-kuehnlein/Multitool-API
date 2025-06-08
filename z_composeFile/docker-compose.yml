@@ -10,7 +10,7 @@ services:
     ports:
       - "3307:3306"
     volumes:
-      - dbdata:/var/lib/mysql
+      - ../volumes/multitool:/var/lib/mysql
 
   multitoolapi:
     build: 
@@ -33,6 +33,3 @@ services:
       - "8000:80"
     depends_on:
       - multitoolapi
-
-volumes:
-  dbdata:
