@@ -13,20 +13,24 @@ public class CalendarService : ICalendarService
 		_mapper = mapper;
 	}
 
-	public async Task<List<CalendarEvent>> GetEventsByRangeAsync(DateTime start, DateTime end)
+	public async Task<List<CalendarEvent>> GetEventsByRangeAsync(DateTime start, DateTime end, string categories)
 	{
-		return await _repository.GetEventsByRangeAsync(start, end);
+		return await _repository.GetEventsByRangeAsync(start, end, categories);
+	}
+
+	public async Task<List<EventSearchResponse>> SearchCalendarEventsAsync(string searchString)
+	{
+		return await _repository.SearchCalendarEventsAsync(searchString);
 	}
 
 	public async Task InsertEventAsync(CreateCalendarEvent createEvent)
 	{
-		await _repository.InsertEventAsync(_mapper.Map<CreateCalendarEventDAO>(createEvent));
+		await _repository.InsertEventAsync(createEvent);
 	}
 
-	public async Task<CalendarEvent> UpdateEventAsync(CalendarEvent updateEvent)
+	public async Task UpdateEventAsync(CalendarEvent updateEvent)
 	{
-		var updatedEventDao = await _repository.UpdateEventAsync(_mapper.Map<CalendarEventDAO>(updateEvent));
-		return _mapper.Map<CalendarEvent>(updatedEventDao);
+		await _repository.UpdateEventAsync(updateEvent);
 	}
 
 	public async Task DeleteEventAsync(int id)

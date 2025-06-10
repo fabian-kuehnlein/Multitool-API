@@ -1,6 +1,5 @@
 using MySqlConnector;
 using MultitoolApi.DataAccessLayer.Models;
-using MultitoolApi.Webapi.Models;
 using MultitoolApi.Businesslogic.Models;
 using System.Text.Json;
 
@@ -18,7 +17,7 @@ public class CalendarEventRepository : ICalendarEventRepository
         _logger = logger;
     }
 
-    public async Task<List<CalendarEvent>> GetEventsByRangeAsync(DateTime start, DateTime end)
+    public async Task<List<CalendarEvent>> GetEventsByRangeAsync(DateTime start, DateTime end, string categories)
     {
         var events = new List<CalendarEvent>();
 
@@ -26,42 +25,65 @@ public class CalendarEventRepository : ICalendarEventRepository
         {
             await connection.OpenAsync();
 
-            var command = new MySqlCommand(@"
+            var sql = @"
                 SELECT eventId, eventTitle, eventNote, startDateTime, endDateTime, isAllDay, categoryId, recurrenceRule, recurrenceEnd
                 FROM calendar_events
-                WHERE 
-                    (startDateTime < @endDate AND (endDateTime IS NULL OR endDateTime > @startDate))
-                    OR
-                    (recurrenceRule IS NOT NULL AND (recurrenceEnd IS NULL OR recurrenceEnd >= @startDate))                
-                ", connection);
+                WHERE
+                    (
+                        (startDateTime < @endDate AND (endDateTime IS NULL OR endDateTime > @startDate))
+                        OR
+                        (recurrenceRule IS NOT NULL AND (recurrenceEnd IS NULL OR recurrenceEnd >= @startDate))
+                    )
+            ";
 
-            command.Parameters.AddWithValue("@startDate", start);
-            command.Parameters.AddWithValue("@endDate", end);
-
-            using (var reader = await command.ExecuteReaderAsync())
+            if (!string.IsNullOrEmpty(categories))
             {
-                while (await reader.ReadAsync())
+                var categoryIds = categories.Split(',').Select(int.Parse).ToList();
+                var paramNames = categoryIds.Select((_, i) => $"@cat{i}").ToList();
+                var inClause = string.Join(",", paramNames);
+                sql += $" AND categoryId IN ({inClause})";
+            }
+
+
+            using (var command = new MySqlCommand(sql, connection))
+            {
+                command.Parameters.AddWithValue("@startDate", start);
+                command.Parameters.AddWithValue("@endDate", end);
+
+                if (!string.IsNullOrEmpty(categories))
                 {
-                    events.Add(new CalendarEvent
+                    var categoryIds = categories.Split(',').Select(int.Parse).ToList();
+                    for (int i = 0; i < categoryIds.Count; i++)
                     {
-                        EventId = reader.GetInt32("eventId"),
-                        EventTitle = reader.GetString("eventTitle"),
-                        EventNote = reader.IsDBNull(reader.GetOrdinal("eventNote"))
-                            ? null
-                            : reader.GetString("eventNote"),
-                        StartDateTime = reader.GetDateTime("startDateTime"),
-                        EndDateTime = reader.IsDBNull(reader.GetOrdinal("endDateTime"))
-                            ? (DateTime?)null
-                            : reader.GetDateTime("endDateTime"),
-                        IsAllDay = reader.GetBoolean("isAllDay"),
-                        CategoryId = reader.GetInt32("categoryId"),
-                        RecurrenceRule = reader.IsDBNull(reader.GetOrdinal("recurrenceRule"))
-                            ? null
-                            : reader.GetString("recurrenceRule"),
-                        RecurrenceEnd = reader.IsDBNull(reader.GetOrdinal("recurrenceEnd"))
-                            ? (DateTime?)null
-                            : reader.GetDateTime("recurrenceEnd")
-                    });
+                        command.Parameters.AddWithValue($"@cat{i}", categoryIds[i]);
+                    }
+                }
+
+                using (var reader = await command.ExecuteReaderAsync())
+                {
+                    while (await reader.ReadAsync())
+                    {
+                        events.Add(new CalendarEvent
+                        {
+                            EventId = reader.GetInt32("eventId"),
+                            EventTitle = reader.GetString("eventTitle"),
+                            EventNote = reader.IsDBNull(reader.GetOrdinal("eventNote"))
+                                ? null
+                                : reader.GetString("eventNote"),
+                            StartDateTime = reader.GetDateTime("startDateTime"),
+                            EndDateTime = reader.IsDBNull(reader.GetOrdinal("endDateTime"))
+                                ? (DateTime?)null
+                                : reader.GetDateTime("endDateTime"),
+                            IsAllDay = reader.GetBoolean("isAllDay"),
+                            CategoryId = reader.GetInt32("categoryId"),
+                            RecurrenceRule = reader.IsDBNull(reader.GetOrdinal("recurrenceRule"))
+                                ? null
+                                : reader.GetString("recurrenceRule"),
+                            RecurrenceEnd = reader.IsDBNull(reader.GetOrdinal("recurrenceEnd"))
+                                ? (DateTime?)null
+                                : reader.GetDateTime("recurrenceEnd")
+                        });
+                    }
                 }
             }
         }
@@ -69,7 +91,44 @@ public class CalendarEventRepository : ICalendarEventRepository
         return events;
     }
 
-    public async Task InsertEventAsync(CreateCalendarEventDAO calendarEvent)
+    public async Task<List<EventSearchResponse>> SearchCalendarEventsAsync(string searchString)
+    {
+        var events = new List<EventSearchResponse>();
+
+        using (var connection = new MySqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+
+            var command = new MySqlCommand(@"
+                SELECT eventId, eventTitle, eventNote, startDateTime
+                FROM calendar_events
+                WHERE 
+                    LOWER(eventTitle) LIKE LOWER(@searchPattern) OR
+                    LOWER(eventNote) LIKE LOWER(@searchPattern)
+            ", connection);
+
+            command.Parameters.AddWithValue("@searchPattern", $"%{searchString}%");
+
+            using (var reader = await command.ExecuteReaderAsync())
+            {
+                while (await reader.ReadAsync())
+                {
+                    events.Add(new EventSearchResponse
+                    {
+                        EventId = reader.GetInt32("eventId"),
+                        EventTitle = reader.GetString("eventTitle"),
+                        EventNote = reader.IsDBNull(reader.GetOrdinal("eventNote"))
+                            ? null
+                            : reader.GetString("eventNote"),
+                        StartDateTime = reader.GetDateTime("startDateTime")
+                    });
+                }
+            }
+        }
+        return events;
+    }
+
+    public async Task InsertEventAsync(CreateCalendarEvent calendarEvent)
     {
         using (var connection = new MySqlConnection(_connectionString))
         {
@@ -95,7 +154,7 @@ public class CalendarEventRepository : ICalendarEventRepository
         }
     }
 
-public async Task<CalendarEventDAO> UpdateEventAsync(CalendarEventDAO updateEvent)
+public async Task UpdateEventAsync(CalendarEvent updateEvent)
     {
         using (var connection = new MySqlConnection(_connectionString))
         {
@@ -117,8 +176,6 @@ public async Task<CalendarEventDAO> UpdateEventAsync(CalendarEventDAO updateEven
             command.Parameters.AddWithValue("@categoryId", updateEvent.CategoryId);
             
             await command.ExecuteNonQueryAsync();
-
-            return updateEvent;
         }
     }
 
@@ -161,7 +218,7 @@ public async Task<CalendarEventDAO> UpdateEventAsync(CalendarEventDAO updateEven
         return categories;
     }
 
-    public async Task<List<HolidayDAO>> GetHolidaysAsync(string year)
+    public async Task<List<Holiday>> GetHolidaysAsync(string year)
     {
         var url = $"?years={year}&states=by";
         var response = await _httpClient.GetAsync(url);
@@ -173,10 +230,10 @@ public async Task<CalendarEventDAO> UpdateEventAsync(CalendarEventDAO updateEven
             PropertyNameCaseInsensitive = true
         });
 
-        return data?.Feiertage?.Select(item => new HolidayDAO
+        return data?.Feiertage?.Select(item => new Holiday
         {
             HolidayName = item.Fname,
             HolidayDate = DateTime.Parse(item.Date)
-        }).ToList() ?? new List<HolidayDAO>();
+        }).ToList() ?? new List<Holiday>();
     }
 }

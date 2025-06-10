@@ -36,6 +36,8 @@ builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 
 builder.Services.AddHttpClient<ICalendarEventRepository, CalendarEventRepository>(client =>
