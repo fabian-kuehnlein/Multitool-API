@@ -4,7 +4,7 @@ using MultitoolApi.DataAccessLayer.Models;
 public interface ICalendarService
 {
     Task<List<CalendarEvent>> GetEventsByRangeAsync(DateTime start, DateTime end, string categories);
-    Task<List<EventSearchResponse>> SearchCalendarEventsAsync(string searchWord); 
+    Task<List<EventSearchResponse>> SearchCalendarEventsAsync(string searchString); 
     Task InsertEventAsync(CreateCalendarEvent createEvent);
     Task UpdateEventAsync(CalendarEvent updateEvent);
     Task DeleteEventAsync(int eventId);

@@ -28,10 +28,10 @@ public class CalendarEventController : ControllerBase
 
     [HttpGet("SearchEvents")]
     [Produces("application/json")]
-    public async Task<IActionResult> SearchEvents([FromQuery] string searchWord)
+    public async Task<IActionResult> SearchEvents([FromQuery] string searchString)
     {
-        var events = await _service.SearchCalendarEventsAsync(searchWord);
-        return Ok(_mapper.Map<EventSearchResponseDTO>(events));
+        var events = await _service.SearchCalendarEventsAsync(searchString);
+        return Ok(_mapper.Map<List<EventSearchResponseDTO>>(events));
     }
 
     [HttpPost("InsertEvent")]
