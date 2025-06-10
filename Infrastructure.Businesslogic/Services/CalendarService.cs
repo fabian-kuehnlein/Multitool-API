@@ -18,15 +18,19 @@ public class CalendarService : ICalendarService
 		return await _repository.GetEventsByRangeAsync(start, end, categories);
 	}
 
-	public async Task InsertEventAsync(CreateCalendarEvent createEvent)
+	public async Task<List<EventSearchResponse>> SearchCalendarEventsAsync(string searchWord)
 	{
-		await _repository.InsertEventAsync(_mapper.Map<CreateCalendarEventDAO>(createEvent));
+		return await _repository.SearchCalendarEventsAsync(searchWord);
 	}
 
-	public async Task<CalendarEvent> UpdateEventAsync(CalendarEvent updateEvent)
+	public async Task InsertEventAsync(CreateCalendarEvent createEvent)
 	{
-		var updatedEventDao = await _repository.UpdateEventAsync(_mapper.Map<CalendarEventDAO>(updateEvent));
-		return _mapper.Map<CalendarEvent>(updatedEventDao);
+		await _repository.InsertEventAsync(createEvent);
+	}
+
+	public async Task UpdateEventAsync(CalendarEvent updateEvent)
+	{
+		await _repository.UpdateEventAsync(updateEvent);
 	}
 
 	public async Task DeleteEventAsync(int id)
