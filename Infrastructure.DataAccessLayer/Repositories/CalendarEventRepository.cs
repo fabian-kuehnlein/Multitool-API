@@ -91,7 +91,7 @@ public class CalendarEventRepository : ICalendarEventRepository
         return events;
     }
 
-    public async Task<List<EventSearchResponse>> SearchCalendarEventsAsync(string searchWord)
+    public async Task<List<EventSearchResponse>> SearchCalendarEventsAsync(string searchString)
     {
         var events = new List<EventSearchResponse>();
 
@@ -107,7 +107,7 @@ public class CalendarEventRepository : ICalendarEventRepository
                     LOWER(eventNote) LIKE LOWER(@searchPattern)
             ", connection);
 
-            command.Parameters.AddWithValue("@searchPattern", $"%{searchWord}%");
+            command.Parameters.AddWithValue("@searchPattern", $"%{searchString}%");
 
             using (var reader = await command.ExecuteReaderAsync())
             {

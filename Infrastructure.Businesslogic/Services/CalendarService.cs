@@ -18,9 +18,9 @@ public class CalendarService : ICalendarService
 		return await _repository.GetEventsByRangeAsync(start, end, categories);
 	}
 
-	public async Task<List<EventSearchResponse>> SearchCalendarEventsAsync(string searchWord)
+	public async Task<List<EventSearchResponse>> SearchCalendarEventsAsync(string searchString)
 	{
-		return await _repository.SearchCalendarEventsAsync(searchWord);
+		return await _repository.SearchCalendarEventsAsync(searchString);
 	}
 
 	public async Task InsertEventAsync(CreateCalendarEvent createEvent)
