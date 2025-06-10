@@ -1,6 +1,5 @@
 using AutoMapper;
 using MultitoolApi.Businesslogic.Models;
-using MultitoolApi.Webapi.Models;
 using MultitoolApi.WebApi.Models;
 using Microsoft.AspNetCore.Mvc;
 
@@ -21,10 +20,18 @@ public class CalendarEventController : ControllerBase
 
     [HttpGet("GetEventsByRange")]
     [Produces("application/json")]
-    public async Task<IActionResult> GetEventsByRange([FromQuery] DateTime startDate, [FromQuery] DateTime endDate)
+    public async Task<IActionResult> GetEventsByRange([FromQuery] DateTime startDate, [FromQuery] DateTime endDate, [FromQuery] string? categories)
     {
-        var events = await _service.GetEventsByRangeAsync(startDate, endDate);
+        var events = await _service.GetEventsByRangeAsync(startDate, endDate, categories ?? string.Empty);
         return Ok(events);
+    }
+
+    [HttpGet("SearchEvents")]
+    [Produces("application/json")]
+    public async Task<IActionResult> SearchEvents([FromQuery] string searchString)
+    {
+        var events = await _service.SearchCalendarEventsAsync(searchString);
+        return Ok(_mapper.Map<List<EventSearchResponseDTO>>(events));
     }
 
     [HttpPost("InsertEvent")]
@@ -40,7 +47,7 @@ public class CalendarEventController : ControllerBase
     public async Task<IActionResult> UpdateEvent([FromBody] CalendarEventDTO calendarEvent)
     {
         await _service.UpdateEventAsync(_mapper.Map<CalendarEvent>(calendarEvent));
-        return Ok(calendarEvent);
+        return Ok();
     }
 
     [HttpDelete("DeleteEvent")]
