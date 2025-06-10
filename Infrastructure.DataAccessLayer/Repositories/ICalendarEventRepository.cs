@@ -1,13 +1,13 @@
 using MultitoolApi.Businesslogic.Models;
 using MultitoolApi.DataAccessLayer.Models;
-using MultitoolApi.Webapi.Models;
 
 public interface ICalendarEventRepository
 {
-    Task<List<CalendarEvent>> GetEventsByRangeAsync(DateTime start, DateTime end);
-    Task InsertEventAsync(CreateCalendarEventDAO createEvent);
-    Task<CalendarEventDAO> UpdateEventAsync(CalendarEventDAO updateEvent);
+    Task<List<CalendarEvent>> GetEventsByRangeAsync(DateTime start, DateTime end, string categories);
+    Task<List<EventSearchResponse>> SearchCalendarEventsAsync(string searchString);
+    Task InsertEventAsync(CreateCalendarEvent createEvent);
+    Task UpdateEventAsync(CalendarEvent updateEvent);
     Task DeleteEventAsync(int eventId);
     Task<List<Category>> GetCategoriesAsync();
-    Task<List<HolidayDAO>> GetHolidaysAsync(string year);
+    Task<List<Holiday>> GetHolidaysAsync(string year);
 }
