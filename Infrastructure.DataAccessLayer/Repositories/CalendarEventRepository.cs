@@ -1,6 +1,5 @@
 using MySqlConnector;
 using MultitoolApi.DataAccessLayer.Models;
-using MultitoolApi.Webapi.Models;
 using MultitoolApi.Businesslogic.Models;
 using System.Text.Json;
 
@@ -92,7 +91,44 @@ public class CalendarEventRepository : ICalendarEventRepository
         return events;
     }
 
-    public async Task InsertEventAsync(CreateCalendarEventDAO calendarEvent)
+    public async Task<List<EventSearchResponse>> SearchCalendarEventsAsync(string searchWord)
+    {
+        var events = new List<EventSearchResponse>();
+
+        using (var connection = new MySqlConnection(_connectionString))
+        {
+            await connection.OpenAsync();
+
+            var command = new MySqlCommand(@"
+                SELECT eventId, eventTitle, eventNote, startDateTime
+                FROM calendar_events
+                WHERE 
+                    LOWER(eventTitle) LIKE LOWER(@searchPattern) OR
+                    LOWER(eventNote) LIKE LOWER(@searchPattern)
+            ", connection);
+
+            command.Parameters.AddWithValue("@searchPattern", $"%{searchWord}%");
+
+            using (var reader = await command.ExecuteReaderAsync())
+            {
+                while (await reader.ReadAsync())
+                {
+                    events.Add(new EventSearchResponse
+                    {
+                        EventId = reader.GetInt32("eventId"),
+                        EventTitle = reader.GetString("eventTitle"),
+                        EventNote = reader.IsDBNull(reader.GetOrdinal("eventNote"))
+                            ? null
+                            : reader.GetString("eventNote"),
+                        StartDateTime = reader.GetDateTime("startDateTime")
+                    });
+                }
+            }
+        }
+        return events;
+    }
+
+    public async Task InsertEventAsync(CreateCalendarEvent calendarEvent)
     {
         using (var connection = new MySqlConnection(_connectionString))
         {
@@ -118,7 +154,7 @@ public class CalendarEventRepository : ICalendarEventRepository
         }
     }
 
-public async Task<CalendarEventDAO> UpdateEventAsync(CalendarEventDAO updateEvent)
+public async Task UpdateEventAsync(CalendarEvent updateEvent)
     {
         using (var connection = new MySqlConnection(_connectionString))
         {
@@ -140,8 +176,6 @@ public async Task<CalendarEventDAO> UpdateEventAsync(CalendarEventDAO updateEven
             command.Parameters.AddWithValue("@categoryId", updateEvent.CategoryId);
             
             await command.ExecuteNonQueryAsync();
-
-            return updateEvent;
         }
     }
 
@@ -184,7 +218,7 @@ public async Task<CalendarEventDAO> UpdateEventAsync(CalendarEventDAO updateEven
         return categories;
     }
 
-    public async Task<List<HolidayDAO>> GetHolidaysAsync(string year)
+    public async Task<List<Holiday>> GetHolidaysAsync(string year)
     {
         var url = $"?years={year}&states=by";
         var response = await _httpClient.GetAsync(url);
@@ -196,10 +230,10 @@ public async Task<CalendarEventDAO> UpdateEventAsync(CalendarEventDAO updateEven
             PropertyNameCaseInsensitive = true
         });
 
-        return data?.Feiertage?.Select(item => new HolidayDAO
+        return data?.Feiertage?.Select(item => new Holiday
         {
             HolidayName = item.Fname,
             HolidayDate = DateTime.Parse(item.Date)
-        }).ToList() ?? new List<HolidayDAO>();
+        }).ToList() ?? new List<Holiday>();
     }
 }
