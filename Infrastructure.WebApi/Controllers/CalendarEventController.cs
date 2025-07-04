@@ -2,6 +2,7 @@ using AutoMapper;
 using MultitoolApi.Businesslogic.Models;
 using MultitoolApi.WebApi.Models;
 using Microsoft.AspNetCore.Mvc;
+using MultitoolApi.Infrastructure.Businesslogic.Services;
 
 [ApiController]
 [Route("api/[controller]")]
