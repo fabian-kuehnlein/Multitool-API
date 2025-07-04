@@ -2,6 +2,8 @@ using AutoMapper;
 using MultitoolApi.Businesslogic.Models;
 using MultitoolApi.DataAccessLayer.Models;
 
+namespace MultitoolApi.Infrastructure.Businesslogic.Services;
+
 public class CalendarService : ICalendarService
 {
 	private readonly ICalendarEventRepository _repository;
