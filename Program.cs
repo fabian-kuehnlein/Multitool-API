@@ -1,11 +1,17 @@
 using System.Data.Common;
 using Microsoft.EntityFrameworkCore;
 using MultitoolApi.ConfigModels;
+using MultitoolApi.Infrastructure.Businesslogic.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddScoped<ICalendarEventRepository, CalendarEventRepository>();
+// Calendar Infrastructure
 builder.Services.AddScoped<ICalendarService, CalendarService>();
+builder.Services.AddScoped<ICalendarEventRepository, CalendarEventRepository>();
+
+// Custom-Table Infrastructure
+builder.Services.AddScoped<ICustomTableRepository, CustomTableRepository>();
+builder.Services.AddScoped<ICustomTableService, CustomTableService>();
 
 builder.Services.AddCors(options =>
 {
@@ -58,10 +64,7 @@ app.MapControllers().RequireCors("AllowAll");
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    if (app.Environment.IsProduction())
-    {
-        dbContext.Database.Migrate();
-    };
+    dbContext.Database.Migrate();
 };
 
 app.Run();
