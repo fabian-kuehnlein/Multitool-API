@@ -10,6 +10,7 @@ public record CreateColumnDto(
 
 public record UpdateColumnDto(
     string Name,
+    CustomDataType DataType,
     int ColOrder
 );
 
@@ -19,3 +20,5 @@ public record CustomColumnResponseDto(
     CustomDataType DataType,
     int ColOrder
 );
+
+public record ColumnInfo (long ColumnId, string ColumnName, CustomDataType DataType, int ColOrder);
