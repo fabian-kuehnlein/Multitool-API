@@ -1,4 +1,6 @@
 using System.Data.Common;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using MultitoolApi.ConfigModels;
 using MultitoolApi.Infrastructure.Businesslogic.Services;
@@ -38,7 +40,10 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 Console.WriteLine("Using connection string: " + builder.Configuration.GetConnectionString("DefaultConnection"));
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(opts =>
+    opts.JsonSerializerOptions.Converters.Add(
+        new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

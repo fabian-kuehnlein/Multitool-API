@@ -84,31 +84,36 @@ public class CustomTableRepository : ICustomTableRepository
 
     public async Task<long> CreateTableAsync(CreateTableDto dto)
     {
-        await using var tx = await _db.Database.BeginTransactionAsync();
+        var stradegy = _db.Database.CreateExecutionStrategy();
 
-        var table = new CustomTable
+        return await stradegy.ExecuteAsync(async () =>
         {
-            Name = dto.Name,
-            CreatedAt = DateTime.UtcNow
-        };
+            await using var tx = await _db.Database.BeginTransactionAsync();
 
-        _db.CustomTables.Add(table);
-        await _db.SaveChangesAsync();
+            var table = new CustomTable
+            {
+                Name = dto.Name,
+                CreatedAt = DateTime.UtcNow
+            };
 
-        var column = new CustomColumn
-        {
-            TableId = table.TableId,
-            Name = dto.Column.Name,
-            DataType = dto.Column.DataType,
-            ColOrder = 0
-        };
+            _db.CustomTables.Add(table);
+            await _db.SaveChangesAsync();
 
-        _db.CustomColumns.Add(column);
-        await _db.SaveChangesAsync();
+            var column = new CustomColumn
+            {
+                TableId = table.TableId,
+                Name = dto.Column.Name,
+                DataType = dto.Column.DataType,
+                ColOrder = 0
+            };
 
-        await tx.CommitAsync();
+            _db.CustomColumns.Add(column);
+            await _db.SaveChangesAsync();
 
-        return table.TableId;
+            await tx.CommitAsync();
+
+            return table.TableId;
+        });
     }
 
     public async Task UpdateTableAsync(long tableId, string newName)
