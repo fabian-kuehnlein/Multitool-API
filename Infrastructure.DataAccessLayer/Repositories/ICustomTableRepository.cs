@@ -4,7 +4,7 @@ public interface ICustomTableRepository
 {
     Task<List<TableOverview>> GetTableListAsync();
     Task<TableDetail?> GetTableAsync(long tableId);
-    Task CreateTableAsync(string name);
+    Task<long> CreateTableAsync(CreateTableDto dto);
     Task UpdateTableAsync(long tableId, string newName);
     Task DeleteTableAsync(long tableId);
     Task<List<ColumnInfo>> GetColumnsAsync(long tableId);
