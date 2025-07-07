@@ -50,8 +50,8 @@ public class CustomTableController : ControllerBase
     [Produces("application/json")]
     public async Task<IActionResult> CreateTable([FromBody] CreateTableDto dto)
     {
-        await _service.CreateTableAsync(dto);
-        return Ok();
+        var id = await _service.CreateTableAsync(dto);
+        return Ok(id);
     }
 
     [HttpPut("UpdateTable")]
