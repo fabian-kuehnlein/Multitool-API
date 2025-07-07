@@ -9,7 +9,7 @@ public interface ICustomTableService
 
     /* Tabelle CRUD */
     Task<TableDetail?> GetTableAsync(long tableId);
-    Task CreateTableAsync(string name);
+    Task<long> CreateTableAsync(CreateTableDto dto);
     Task UpdateTableAsync(long tableId, string name);
     Task DeleteTableAsync(long tableId);
 

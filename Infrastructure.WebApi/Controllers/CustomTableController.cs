@@ -48,9 +48,9 @@ public class CustomTableController : ControllerBase
 
     [HttpPost("CreateTable")]
     [Produces("application/json")]
-    public async Task<IActionResult> CreateTable([FromQuery] string name)
+    public async Task<IActionResult> CreateTable([FromBody] CreateTableDto dto)
     {
-        await _service.CreateTableAsync(name);
+        await _service.CreateTableAsync(dto);
         return Ok();
     }
 
@@ -166,24 +166,18 @@ public class CustomTableController : ControllerBase
         };
 
         var rows = new List<RowInfo>
-        {
-            new RowInfo(1, new Dictionary<long, object?>
-            {
-                { 1, "Max" },
-                { 2, "Mustermann" },
-                { 3, 25 },
-                { 4, "Musterstraße 3" },
-                { 5, true },
-            }),
-            new RowInfo(2, new Dictionary<long, object?>
-            {
-                { 1, "Anna" },
-                { 2, "Schmidt" },
-                { 3, 20 },
-                { 4, "Berliner Straße 2" },
-                { 5, false },
-            })
-        };
+    {
+        new RowInfo(1,  new() { {1,"Max"},   {2,"Mustermann"}, {3,25}, {4,"Musterstr. 3"},   {5,true}  }),
+        new RowInfo(2,  new() { {1,"Anna"},  {2,"Schmidt"},    {3,20}, {4,"Berliner Str. 2"}, {5,false} }),
+        new RowInfo(3,  new() { {1,"Tina"},  {2,"Meyer"},      {3,31}, {4,"Hauptweg 12"},    {5,true}  }),
+        new RowInfo(4,  new() { {1,"Lars"},  {2,"König"},      {3,28}, {4,"Ring 7"},         {5,false} }),
+        new RowInfo(5,  new() { {1,"Paul"},  {2,"Fischer"},    {3,22}, {4,"Am See 5"},       {5,true}  }),
+        new RowInfo(6,  new() { {1,"Eva"},   {2,"Schulz"},     {3,34}, {4,"Gartenweg 9"},    {5,true}  }),
+        new RowInfo(7,  new() { {1,"Omar"},  {2,"Ali"},        {3,27}, {4,"Markt 1"},        {5,false} }),
+        new RowInfo(8,  new() { {1,"Sara"},  {2,"Bauer"},      {3,23}, {4,"Wiesenstr. 4"},   {5,true}  }),
+        new RowInfo(9,  new() { {1,"Jonas"}, {2,"Krüger"},     {3,30}, {4,"Dorfplatz 8"},    {5,false} }),
+        new RowInfo(10, new() { {1,"Mia"},   {2,"Hoffmann"},   {3,26}, {4,"Allee 6"},        {5,true}  })
+    };
 
         var table = new TableDetail(
             TableId: 999,

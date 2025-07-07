@@ -10,7 +10,7 @@ public record TableDetail(
     List<RowInfo> Rows
 );
 
-public record CreateTableDto(string Name);
+public record CreateTableDto(string Name, CreateColumnDto Column);
 public record UpdateTableDto(string Name);
 
 public record CustomTableResponseDto(
