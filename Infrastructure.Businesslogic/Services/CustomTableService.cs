@@ -1,6 +1,4 @@
 using AutoMapper;
-using MultitoolApi.Businesslogic.Models;
-using MultitoolApi.DataAccessLayer.Models;
 using MultitoolApi.WebApi.Models.CustomTable;
 
 namespace MultitoolApi.Infrastructure.Businesslogic.Services;
@@ -26,9 +24,9 @@ public class CustomTableService : ICustomTableService
         return await _repository.GetTableAsync(tableId);
     }
 
-    public async Task CreateTableAsync(string name)
+    public async Task<long> CreateTableAsync(CreateTableDto dto)
     {
-        await _repository.CreateTableAsync(name);
+        return await _repository.CreateTableAsync(dto);
     }
 
     public async Task UpdateTableAsync(long tableId, string name)

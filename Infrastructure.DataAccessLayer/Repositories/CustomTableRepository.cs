@@ -82,18 +82,33 @@ public class CustomTableRepository : ICustomTableRepository
             : new TableDetail(t.TableId, t.Name, t.CreatedAt, columns, rows);
     }
 
-    public async Task CreateTableAsync(string name)
+    public async Task<long> CreateTableAsync(CreateTableDto dto)
     {
-        var newTable = new CustomTable
+        await using var tx = await _db.Database.BeginTransactionAsync();
+
+        var table = new CustomTable
         {
-            Name = name,
+            Name = dto.Name,
             CreatedAt = DateTime.UtcNow
         };
 
-        await _db.CustomTables.AddAsync(newTable);
+        _db.CustomTables.Add(table);
         await _db.SaveChangesAsync();
 
-        // return newTable.TableId;
+        var column = new CustomColumn
+        {
+            TableId = table.TableId,
+            Name = dto.Column.Name,
+            DataType = dto.Column.DataType,
+            ColOrder = 0
+        };
+
+        _db.CustomColumns.Add(column);
+        await _db.SaveChangesAsync();
+
+        await tx.CommitAsync();
+
+        return table.TableId;
     }
 
     public async Task UpdateTableAsync(long tableId, string newName)
