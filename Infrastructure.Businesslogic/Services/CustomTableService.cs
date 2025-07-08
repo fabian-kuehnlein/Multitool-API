@@ -46,9 +46,9 @@ public class CustomTableService : ICustomTableService
         return await _repository.GetColumnsAsync(tableId);
     }
 
-    public async Task CreateColumnAsync(long tableId, CreateColumnDto dto)
+    public async Task CreateColumnAsync(long tableId)
     {
-        await _repository.CreateColumnAsync(tableId, dto);
+        await _repository.CreateColumnAsync(tableId);
     }
 
     public async Task UpdateColumnAsync(long tableId, long columnId, UpdateColumnDto dto)
@@ -68,9 +68,9 @@ public class CustomTableService : ICustomTableService
         return await _repository.GetRowsAsync(tableId, pageNr, pageSize);
     }
 
-    public async Task CreateRowAsync(long tableId, Dictionary<long, object?> cells)
+    public async Task CreateRowAsync(long tableId)
     {
-        await _repository.CreateRowAsync(tableId, cells);
+        await _repository.CreateRowAsync(tableId);
     }
 
     public async Task UpdateRowAsync(long tableId, long rowId, Dictionary<long, object?> cells)
@@ -83,8 +83,8 @@ public class CustomTableService : ICustomTableService
         await _repository.DeleteRowAsync(tableId, rowId);
     }
 
-    public async Task UpdateCellAsync(long rowId, long columnId, object? newValue)
+    public async Task UpsertCellAsync(long rowId, long columnId, object? newValue)
     {
-        await _repository.UpdateCellAsync(rowId, columnId, newValue);
+        await _repository.UpsertCellAsync(rowId, columnId, newValue);
     }
 }

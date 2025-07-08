@@ -70,7 +70,7 @@ public class CustomTableRepository : ICustomTableRepository
                         c.ValString
                         ?? (object?)c.ValInt
                         ?? c.ValDec
-                        ?? (object?) c.ValDate
+                        ?? (object?)c.ValDate
                         ?? c.ValBool)))
             ).ToList();
 
@@ -147,20 +147,23 @@ public class CustomTableRepository : ICustomTableRepository
             .ToListAsync();
     }
 
-    public async Task CreateColumnAsync(long tableId, CreateColumnDto dto)
+    public async Task CreateColumnAsync(long tableId)
     {
+        var maxOrder = await _db.CustomColumns
+            .Where(c => c.TableId == tableId)
+            .Select(c => (int?)c.ColOrder)
+            .MaxAsync() ?? -1;
+
         var column = new CustomColumn
         {
             TableId = tableId,
-            Name = dto.Name,
-            DataType = dto.DataType,
-            ColOrder = dto.ColOrder
+            Name = "Neue Spalte",
+            DataType = CustomDataType.String,
+            ColOrder = maxOrder + 1
         };
 
         await _db.CustomColumns.AddAsync(column);
         await _db.SaveChangesAsync();
-
-        // return column.ColumnId;
     }
 
     public async Task UpdateColumnAsync(long tableId, long columnId, UpdateColumnDto dto)
@@ -198,18 +201,18 @@ public class CustomTableRepository : ICustomTableRepository
             .Skip(skip)
             .Take(pageSize)
             .Select(r => new
+            {
+                r.RowId,
+                Cells = r.Cells.Select(c => new
                 {
-                    r.RowId,
-                    Cells = r.Cells.Select(c => new
-                    {
-                        c.ColumnId,
-                        c.ValString,
-                        c.ValInt,
-                        c.ValDec,
-                        c.ValDate,
-                        c.ValBool
-                    }).ToList()
-                }).ToListAsync();
+                    c.ColumnId,
+                    c.ValString,
+                    c.ValInt,
+                    c.ValDec,
+                    c.ValDate,
+                    c.ValBool
+                }).ToList()
+            }).ToListAsync();
         return rows.Select(r => new RowInfo(
             r.RowId,
             r.Cells.ToDictionary(
@@ -218,12 +221,12 @@ public class CustomTableRepository : ICustomTableRepository
                     c.ValString
                     ?? (object?)c.ValInt
                     ?? c.ValDec
-                    ?? (object?) c.ValDate
+                    ?? (object?)c.ValDate
                     ?? c.ValBool)))
             ).ToList();
     }
 
-    public async Task CreateRowAsync(long tableId, Dictionary<long, object?> cells)
+    public async Task CreateRowAsync(long tableId)
     {
         var row = new CustomRow
         {
@@ -232,24 +235,6 @@ public class CustomTableRepository : ICustomTableRepository
         };
 
         await _db.CustomRows.AddAsync(row);
-        await _db.SaveChangesAsync();
-
-        // Jetzt die Zellen hinzufügen
-        foreach (var (columnId, value) in cells)
-        {
-            var cell = new CustomCell
-            {
-                RowId = row.RowId,
-                ColumnId = columnId,
-                ValString = value as string,
-                ValInt = value is int i ? i : null,
-                ValDec = value is decimal d ? d : null,
-                ValDate = value is DateTime dt ? dt : null,
-                ValBool = value is bool b ? b : null
-            };
-            await _db.CustomCells.AddAsync(cell);
-        }
-
         await _db.SaveChangesAsync();
     }
 
@@ -297,35 +282,58 @@ public class CustomTableRepository : ICustomTableRepository
         await _db.SaveChangesAsync();
     }
 
-    public async Task UpdateCellAsync(long rowId, long columnId, object? newValue)
+    public async Task UpsertCellAsync(long rowId, long columnId, object? value)
     {
-        var cell = await _db.CustomCells
-                .FirstOrDefaultAsync(c => c.RowId == rowId && c.ColumnId == columnId);
+        var column = await _db.CustomColumns
+            .Where(c => c.ColumnId == columnId)
+            .Select(c => new { c.TableId, c.DataType })
+            .FirstOrDefaultAsync();
 
+        if (column == null)
+        {
+            throw new ArgumentException($"Column {columnId} not found");
+        }
+
+        var cell = await _db.CustomCells
+            .FindAsync(new object?[] { rowId, columnId });
+
+        // create cell if it does not exist
         if (cell == null)
         {
-            // Cell existiert nicht, also neu anlegen
-            var newCell = new CustomCell
-            {
-                RowId = rowId,
-                ColumnId = columnId,
-                // Wert je nach Typ zuweisen - Beispiel für string, int, decimal, bool, DateTime?:
-                ValString = newValue as string,
-                ValInt = newValue is int i ? i : null,
-                ValDec = newValue is decimal d ? d : null,
-                ValBool = newValue is bool b ? b : null,
-                ValDate = newValue is DateTime dt ? dt : null
-            };
-            await _db.CustomCells.AddAsync(newCell);
+            cell = new CustomCell { RowId = rowId, ColumnId = columnId };
+            _db.CustomCells.Add(cell);
         }
-        else
+
+        cell.ValString = null;
+        cell.ValInt = null;
+        cell.ValDec = null;
+        cell.ValDate = null;
+        cell.ValBool = null;
+
+        switch (column.DataType)
         {
-            // Cell existiert, Wert updaten
-            cell.ValString = newValue as string;
-            cell.ValInt = newValue is int i ? i : null;
-            cell.ValDec = newValue is decimal d ? d : null;
-            cell.ValBool = newValue is bool b ? b : null;
-            cell.ValDate = newValue is DateTime dt ? dt : null;
+            case CustomDataType.String:
+                cell.ValString = value!.ToString();
+                break;
+
+            case CustomDataType.Int when int.TryParse(value?.ToString(), out var i):
+                cell.ValInt = i;
+                break;
+
+            case CustomDataType.Decimal when decimal.TryParse(value?.ToString(), out var d):
+                cell.ValDec = d;
+                break;
+
+            case CustomDataType.Date when DateTime.TryParse(value?.ToString(), out var dt):
+                cell.ValDate = dt;
+                break;
+
+            case CustomDataType.Bool when bool.TryParse(value?.ToString(), out var b):
+                cell.ValBool = b;
+                break;
+
+            default:
+                throw new ArgumentException($"Unsupported data type: {column.DataType}");
         }
 
         await _db.SaveChangesAsync();
