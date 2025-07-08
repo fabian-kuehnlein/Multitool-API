@@ -15,16 +15,16 @@ public interface ICustomTableService
 
     /* Spalten CRUD */
     Task<List<ColumnInfo>> GetColumnsAsync(long tableId);
-    Task CreateColumnAsync(long tableId, CreateColumnDto dto);
+    Task CreateColumnAsync(long tableId);
     Task UpdateColumnAsync(long tableId, long columnId, UpdateColumnDto dto);
     Task DeleteColumnAsync(long tableId, long columnId);
 
     /* Rows CRUD + Paging */
     Task<List<RowInfo>> GetRowsAsync(long tableId, int pageNr, int pageSize);
-    Task CreateRowAsync(long tableId, Dictionary<long, object?> cells);
+    Task CreateRowAsync(long tableId);
     Task UpdateRowAsync(long tableId, long rowId, Dictionary<long, object?> cells);
     Task DeleteRowAsync(long tableId, long rowId);
 
     /* Cell Updating */
-    Task UpdateCellAsync(long rowId, long columnId, object? newValue);
+    Task UpsertCellAsync(long rowId, long columnId, object? newValue);
 }
