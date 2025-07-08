@@ -83,9 +83,9 @@ public class CustomTableController : ControllerBase
 
     [HttpPost("CreateColumn")]
     [Produces("application/json")]
-    public async Task<IActionResult> CreateColumn([FromQuery] long tableId, [FromBody] CreateColumnDto dto)
+    public async Task<IActionResult> CreateColumn([FromQuery] long tableId)
     {
-        await _service.CreateColumnAsync(tableId, dto);
+        await _service.CreateColumnAsync(tableId);
         return Ok();
     }
 
@@ -119,9 +119,9 @@ public class CustomTableController : ControllerBase
 
     [HttpPost("CreateRow")]
     [Produces("application/json")]
-    public async Task<IActionResult> CreateRow([FromQuery] long tableId, [FromBody] CreateRowDto dto)
+    public async Task<IActionResult> CreateRow([FromQuery] long tableId)
     {
-        await _service.CreateRowAsync(tableId, dto.Cells);
+        await _service.CreateRowAsync(tableId);
         return Ok();
     }
 
@@ -144,11 +144,11 @@ public class CustomTableController : ControllerBase
     /// <summary>
     /// Updates singular cell, to not send the whole row when editing single cells
     /// </summary>
-    [HttpPut("UpdateCell")]
+    [HttpPut("SetCell")]
     [Produces("application/json")]
-    public async Task<IActionResult> UpdateCell([FromQuery] long rowId, [FromQuery] long columnId, [FromBody] object? newValue)
+    public async Task<IActionResult> SetCell([FromQuery] long rowId, [FromQuery] long columnId, [FromBody] object? newValue)
     {
-        await _service.UpdateCellAsync(rowId, columnId, newValue);
+        await _service.UpsertCellAsync(rowId, columnId, newValue);
         return Ok();
     }
 
