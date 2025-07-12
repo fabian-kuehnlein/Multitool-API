@@ -11,7 +11,6 @@ public record TableDetail(
 );
 
 public record CreateTableDto(string Name, CreateColumnDto Column);
-public record UpdateTableDto(string Name);
 
 public record CustomTableResponseDto(
     long TableId,
