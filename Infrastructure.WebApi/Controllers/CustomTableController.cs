@@ -56,9 +56,9 @@ public class CustomTableController : ControllerBase
 
     [HttpPut("UpdateTable")]
     [Produces("application/json")]
-    public async Task<IActionResult> UpdateTable([FromQuery] long tableId, [FromQuery] string name)
+    public async Task<IActionResult> UpdateTable([FromQuery] long tableId, [FromQuery] string newName)
     {
-        await _service.UpdateTableAsync(tableId, name);
+        await _service.UpdateTableAsync(tableId, newName);
         return Ok();
     }
 

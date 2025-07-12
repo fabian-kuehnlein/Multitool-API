@@ -171,11 +171,21 @@ public class CustomTableRepository : ICustomTableRepository
         var column = await _db.CustomColumns
             .FirstOrDefaultAsync(c => c.ColumnId == columnId && c.TableId == tableId);
 
-        if (column is null) return;
+        if (column is null) throw new KeyNotFoundException("Column not found");
+
+        var typeChanged = column.DataType != dto.DataType;
 
         column.Name = dto.Name;
-        column.DataType = dto.DataType;
         column.ColOrder = dto.ColOrder;
+
+        if (typeChanged)
+        {
+            column.DataType = dto.DataType;
+
+            await _db.CustomCells
+                .Where(c => c.ColumnId == columnId)
+                .ExecuteDeleteAsync();
+        }
 
         await _db.SaveChangesAsync();
     }
