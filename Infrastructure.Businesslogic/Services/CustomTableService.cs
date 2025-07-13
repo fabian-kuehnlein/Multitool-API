@@ -41,11 +41,6 @@ public class CustomTableService : ICustomTableService
 
     /* ---------- Spalten ---------- */
 
-    public async Task<List<ColumnInfo>> GetColumnsAsync(long tableId)
-    {
-        return await _repository.GetColumnsAsync(tableId);
-    }
-
     public async Task CreateColumnAsync(long tableId)
     {
         await _repository.CreateColumnAsync(tableId);
@@ -63,24 +58,14 @@ public class CustomTableService : ICustomTableService
 
     /* ---------- Rows ---------- */
 
-    public async Task<List<RowInfo>> GetRowsAsync(long tableId, int pageNr, int pageSize)
-    {
-        return await _repository.GetRowsAsync(tableId, pageNr, pageSize);
-    }
-
     public async Task CreateRowAsync(long tableId)
     {
         await _repository.CreateRowAsync(tableId);
     }
 
-    public async Task UpdateRowAsync(long tableId, long rowId, Dictionary<long, object?> cells)
+    public async Task DeleteRowsAsync(long tableId, List<long> rows)
     {
-        await _repository.UpdateRowAsync(tableId, rowId, cells);
-    }
-
-    public async Task DeleteRowAsync(long tableId, long rowId)
-    {
-        await _repository.DeleteRowAsync(tableId, rowId);
+        await _repository.DeleteRowsAsync(tableId, rows);
     }
 
     public async Task UpsertCellAsync(long rowId, long columnId, object? newValue)

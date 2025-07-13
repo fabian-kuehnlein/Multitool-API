@@ -14,16 +14,14 @@ public interface ICustomTableService
     Task DeleteTableAsync(long tableId);
 
     /* Spalten CRUD */
-    Task<List<ColumnInfo>> GetColumnsAsync(long tableId);
     Task CreateColumnAsync(long tableId);
     Task UpdateColumnAsync(long tableId, long columnId, UpdateColumnDto dto);
     Task DeleteColumnAsync(long tableId, long columnId);
 
     /* Rows CRUD + Paging */
-    Task<List<RowInfo>> GetRowsAsync(long tableId, int pageNr, int pageSize);
     Task CreateRowAsync(long tableId);
-    Task UpdateRowAsync(long tableId, long rowId, Dictionary<long, object?> cells);
-    Task DeleteRowAsync(long tableId, long rowId);
+
+    Task DeleteRowsAsync(long tableId, List<long> rows);
 
     /* Cell Updating */
     Task UpsertCellAsync(long rowId, long columnId, object? newValue);
