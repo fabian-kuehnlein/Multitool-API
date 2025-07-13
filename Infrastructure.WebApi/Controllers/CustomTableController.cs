@@ -71,15 +71,8 @@ public class CustomTableController : ControllerBase
     }
 
     /// <summary>
-    /// following Methodes are for handeling reading and creating columns
+    /// following Methodes are for handeling creating, updating and deleting columns
     /// </summary>
-    [HttpGet("GetColumns")]
-    [Produces("application/json")]
-    public async Task<IActionResult> GetColumns([FromQuery] long tableId)
-    {
-        var columns = await _service.GetColumnsAsync(tableId);
-        return Ok(columns);
-    }
 
     [HttpPost("CreateColumn")]
     [Produces("application/json")]
@@ -106,16 +99,8 @@ public class CustomTableController : ControllerBase
     }
 
     /// <summary>
-    /// Following Methodes are for handeling reading, creating, updating and deleting rows
+    /// Following Methodes are for handeling creating and deleting rows
     /// </summary>
-    [HttpGet("GetRows")]
-    [Produces("application/json")]
-    public async Task<IActionResult> GetRows([FromQuery] long tableId, [FromQuery] int pageNr = 1, int pageSize = 10)
-    {
-        pageNr = pageNr < 1 ? 1 : pageNr;
-        var rows = await _service.GetRowsAsync(tableId, pageNr, pageSize);
-        return Ok(rows);
-    }
 
     [HttpPost("CreateRow")]
     [Produces("application/json")]
@@ -125,19 +110,11 @@ public class CustomTableController : ControllerBase
         return Ok();
     }
 
-    [HttpPut("UpdateRow")]
+    [HttpDelete("DeleteRows")]
     [Produces("application/json")]
-    public async Task<IActionResult> UpdateRow([FromQuery] long tableId, [FromQuery] long rowId, [FromBody] UpdateRowDto dto)
+    public async Task<IActionResult> DeleteRows([FromQuery] long tableId, [FromBody] List<long> rows)
     {
-        await _service.UpdateRowAsync(tableId, rowId, dto.Cells);
-        return Ok();
-    }
-
-    [HttpDelete("DeleteRow")]
-    [Produces("application/json")]
-    public async Task<IActionResult> DeleteRow([FromQuery] long tableId, [FromQuery] long rowId)
-    {
-        await _service.DeleteRowAsync(tableId, rowId);
+        await _service.DeleteRowsAsync(tableId, rows);
         return Ok();
     }
 

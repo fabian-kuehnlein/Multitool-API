@@ -7,13 +7,10 @@ public interface ICustomTableRepository
     Task<long> CreateTableAsync(CreateTableDto dto);
     Task UpdateTableAsync(long tableId, string newName);
     Task DeleteTableAsync(long tableId);
-    Task<List<ColumnInfo>> GetColumnsAsync(long tableId);
     Task CreateColumnAsync(long tableId);
     Task UpdateColumnAsync(long tableId, long columnId, UpdateColumnDto dto);
     Task DeleteColumnAsync(long tableId, long columnId);
-    Task<List<RowInfo>> GetRowsAsync(long tableId, int pageNr, int pageSize);
     Task CreateRowAsync(long tableId);
-    Task UpdateRowAsync(long tableId, long rowId, Dictionary<long, object?> cells);
-    Task DeleteRowAsync(long tableId, long rowId);
+    Task DeleteRowsAsync(long tableId, List<long> rows);
     Task UpsertCellAsync(long rowId, long columnId, object? value);
 }
