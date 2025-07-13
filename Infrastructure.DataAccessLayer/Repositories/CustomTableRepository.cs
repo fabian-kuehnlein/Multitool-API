@@ -138,15 +138,6 @@ public class CustomTableRepository : ICustomTableRepository
         }
     }
 
-    public async Task<List<ColumnInfo>> GetColumnsAsync(long tableId)
-    {
-        return await _db.CustomColumns
-            .Where(c => c.TableId == tableId)
-            .OrderBy(c => c.ColOrder)
-            .Select(c => new ColumnInfo(c.ColumnId, c.Name, c.DataType, c.ColOrder))
-            .ToListAsync();
-    }
-
     public async Task CreateColumnAsync(long tableId)
     {
         var maxOrder = await _db.CustomColumns
@@ -201,41 +192,6 @@ public class CustomTableRepository : ICustomTableRepository
         await _db.SaveChangesAsync();
     }
 
-    public async Task<List<RowInfo>> GetRowsAsync(long tableId, int pageNr, int pageSize)
-    {
-        var skip = (pageNr - 1) * pageSize;
-
-        var rows = await _db.CustomRows
-            .Where(r => r.TableId == tableId)
-            .OrderBy(r => r.RowId)
-            .Skip(skip)
-            .Take(pageSize)
-            .Select(r => new
-            {
-                r.RowId,
-                Cells = r.Cells.Select(c => new
-                {
-                    c.ColumnId,
-                    c.ValString,
-                    c.ValInt,
-                    c.ValDec,
-                    c.ValDate,
-                    c.ValBool
-                }).ToList()
-            }).ToListAsync();
-        return rows.Select(r => new RowInfo(
-            r.RowId,
-            r.Cells.ToDictionary(
-                c => c.ColumnId,
-                c => (object?)(
-                    c.ValString
-                    ?? (object?)c.ValInt
-                    ?? c.ValDec
-                    ?? (object?)c.ValDate
-                    ?? c.ValBool)))
-            ).ToList();
-    }
-
     public async Task CreateRowAsync(long tableId)
     {
         var row = new CustomRow
@@ -248,48 +204,11 @@ public class CustomTableRepository : ICustomTableRepository
         await _db.SaveChangesAsync();
     }
 
-    public async Task UpdateRowAsync(long tableId, long rowId, Dictionary<long, object?> cells)
+    public async Task DeleteRowsAsync(long tableId, List<long> rows)
     {
-        var row = await _db.CustomRows
-            .Include(r => r.Cells)
-            .FirstOrDefaultAsync(r => r.RowId == rowId && r.TableId == tableId);
-
-        if (row == null) return;
-
-        // Update Cells
-        foreach (var (columnId, newValue) in cells)
-        {
-            var cell = row.Cells.FirstOrDefault(c => c.ColumnId == columnId);
-            if (cell == null)
-            {
-                // Neue Zelle anlegen, falls nicht vorhanden
-                cell = new CustomCell
-                {
-                    RowId = row.RowId,
-                    ColumnId = columnId
-                };
-                row.Cells.Add(cell);
-            }
-
-            cell.ValString = newValue as string;
-            cell.ValInt = newValue is int i ? i : null;
-            cell.ValDec = newValue is decimal d ? d : null;
-            cell.ValDate = newValue is DateTime dt ? dt : null;
-            cell.ValBool = newValue is bool b ? b : null;
-        }
-
-        await _db.SaveChangesAsync();
-    }
-
-    public async Task DeleteRowAsync(long tableId, long rowId)
-    {
-        var row = await _db.CustomRows
-            .FirstOrDefaultAsync(r => r.RowId == rowId && r.TableId == tableId);
-
-        if (row == null) return;
-
-        _db.CustomRows.Remove(row);
-        await _db.SaveChangesAsync();
+        await _db.CustomRows
+            .Where(r => r.TableId == tableId && rows.Contains(r.RowId))
+            .ExecuteDeleteAsync();
     }
 
     public async Task UpsertCellAsync(long rowId, long columnId, object? value)
