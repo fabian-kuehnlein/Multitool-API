@@ -63,6 +63,11 @@ public class CustomTableService : ICustomTableService
         await _repository.CreateRowAsync(tableId);
     }
 
+    public async Task UpdateRowOrderAsync(List<RowOrderUpdateDto> list)
+    {
+        await _repository.UpdateRowOrderAsync(list);
+    }
+
     public async Task DeleteRowsAsync(long tableId, List<long> rows)
     {
         await _repository.DeleteRowsAsync(tableId, rows);
