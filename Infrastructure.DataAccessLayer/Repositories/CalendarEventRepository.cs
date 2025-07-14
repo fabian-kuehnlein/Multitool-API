@@ -1,221 +1,127 @@
-using MySqlConnector;
 using MultitoolApi.DataAccessLayer.Models;
 using MultitoolApi.Businesslogic.Models;
 using System.Text.Json;
+using MultitoolApi.ConfigModels;
+using Microsoft.EntityFrameworkCore;
 
 public class CalendarEventRepository : ICalendarEventRepository
 {
-    private readonly string _connectionString;
+    private readonly AppDbContext _db;
     private readonly HttpClient _httpClient;
     private readonly ILogger<CalendarEventRepository> _logger;
 
-    public CalendarEventRepository(IConfiguration configuration, HttpClient httpClient, ILogger<CalendarEventRepository> logger)
+    public CalendarEventRepository(AppDbContext db, HttpClient httpClient, ILogger<CalendarEventRepository> logger)
     {
-        _connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? throw new InvalidOperationException("Connection string 'MariaDBConnection' not found.");
+        _db = db;
         _httpClient = httpClient;
         _logger = logger;
     }
 
-    public async Task<List<CalendarEvent>> GetEventsByRangeAsync(DateTime start, DateTime end, string categories)
+    public async Task<List<CalendarEvent>> GetEventsByRangeAsync(DateTime start, DateTime end, string? categories)
     {
-        var events = new List<CalendarEvent>();
-
-        using (var connection = new MySqlConnection(_connectionString))
+        List<int>? categoryIds = null;
+        if (!string.IsNullOrWhiteSpace(categories))
         {
-            await connection.OpenAsync();
-
-            var sql = @"
-                SELECT eventId, eventTitle, eventNote, startDateTime, endDateTime, isAllDay, categoryId, recurrenceRule, recurrenceEnd
-                FROM calendar_events
-                WHERE
-                    (
-                        (startDateTime < @endDate AND (endDateTime IS NULL OR endDateTime > @startDate))
-                        OR
-                        (recurrenceRule IS NOT NULL AND (recurrenceEnd IS NULL OR recurrenceEnd >= @startDate))
-                    )
-            ";
-
-            if (!string.IsNullOrEmpty(categories))
-            {
-                var categoryIds = categories.Split(',').Select(int.Parse).ToList();
-                var paramNames = categoryIds.Select((_, i) => $"@cat{i}").ToList();
-                var inClause = string.Join(",", paramNames);
-                sql += $" AND categoryId IN ({inClause})";
-            }
-
-
-            using (var command = new MySqlCommand(sql, connection))
-            {
-                command.Parameters.AddWithValue("@startDate", start);
-                command.Parameters.AddWithValue("@endDate", end);
-
-                if (!string.IsNullOrEmpty(categories))
-                {
-                    var categoryIds = categories.Split(',').Select(int.Parse).ToList();
-                    for (int i = 0; i < categoryIds.Count; i++)
-                    {
-                        command.Parameters.AddWithValue($"@cat{i}", categoryIds[i]);
-                    }
-                }
-
-                using (var reader = await command.ExecuteReaderAsync())
-                {
-                    while (await reader.ReadAsync())
-                    {
-                        events.Add(new CalendarEvent
-                        {
-                            EventId = reader.GetInt32("eventId"),
-                            EventTitle = reader.GetString("eventTitle"),
-                            EventNote = reader.IsDBNull(reader.GetOrdinal("eventNote"))
-                                ? null
-                                : reader.GetString("eventNote"),
-                            StartDateTime = reader.GetDateTime("startDateTime"),
-                            EndDateTime = reader.IsDBNull(reader.GetOrdinal("endDateTime"))
-                                ? (DateTime?)null
-                                : reader.GetDateTime("endDateTime"),
-                            IsAllDay = reader.GetBoolean("isAllDay"),
-                            CategoryId = reader.GetInt32("categoryId"),
-                            RecurrenceRule = reader.IsDBNull(reader.GetOrdinal("recurrenceRule"))
-                                ? null
-                                : reader.GetString("recurrenceRule"),
-                            RecurrenceEnd = reader.IsDBNull(reader.GetOrdinal("recurrenceEnd"))
-                                ? (DateTime?)null
-                                : reader.GetDateTime("recurrenceEnd")
-                        });
-                    }
-                }
-            }
+            categoryIds = categories
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(int.Parse)
+                .ToList();
         }
 
-        return events;
+        var query = _db.CalendarEvents
+            .Where(e =>
+                (e.StartDateTime < end && (e.EndDateTime == null || e.EndDateTime > start))
+                ||
+                (e.RecurrenceRule != null && (e.RecurrenceEnd == null || e.RecurrenceEnd >= start))
+            );
+
+        if (categoryIds is { Count: > 0 })
+        {
+            query = query.Where(e => categoryIds.Contains(e.CategoryId));
+        }
+
+        return await query.ToListAsync();
     }
 
     public async Task<List<EventSearchResponse>> SearchCalendarEventsAsync(string searchString)
     {
-        var events = new List<EventSearchResponse>();
+        if (string.IsNullOrWhiteSpace(searchString))
+            return [];
 
-        using (var connection = new MySqlConnection(_connectionString))
-        {
-            await connection.OpenAsync();
+        var pattern = $"%{searchString.Trim()}%";
 
-            var command = new MySqlCommand(@"
-                SELECT eventId, eventTitle, eventNote, startDateTime
-                FROM calendar_events
-                WHERE 
-                    LOWER(eventTitle) LIKE LOWER(@searchPattern) OR
-                    LOWER(eventNote) LIKE LOWER(@searchPattern)
-            ", connection);
-
-            command.Parameters.AddWithValue("@searchPattern", $"%{searchString}%");
-
-            using (var reader = await command.ExecuteReaderAsync())
+        var results = await _db.CalendarEvents
+            .AsNoTracking()
+            .Where(e =>
+                EF.Functions.Like(e.EventTitle.ToLower(), pattern.ToLower()) ||
+                (e.EventNote != null && EF.Functions.Like(e.EventNote.ToLower(), pattern.ToLower())))
+            .Select(e => new EventSearchResponse
             {
-                while (await reader.ReadAsync())
-                {
-                    events.Add(new EventSearchResponse
-                    {
-                        EventId = reader.GetInt32("eventId"),
-                        EventTitle = reader.GetString("eventTitle"),
-                        EventNote = reader.IsDBNull(reader.GetOrdinal("eventNote"))
-                            ? null
-                            : reader.GetString("eventNote"),
-                        StartDateTime = reader.GetDateTime("startDateTime")
-                    });
-                }
-            }
-        }
-        return events;
+                EventId       = e.EventId,
+                EventTitle    = e.EventTitle,
+                EventNote     = e.EventNote,
+                StartDateTime = e.StartDateTime
+            })
+            .OrderBy(e => e.StartDateTime)
+            .ToListAsync();
+
+        return results;
     }
 
-    public async Task InsertEventAsync(CreateCalendarEvent calendarEvent)
+    public async Task InsertEventAsync(CreateCalendarEvent dto)
     {
-        using (var connection = new MySqlConnection(_connectionString))
+        var entity = new CalendarEvent
         {
-            await connection.OpenAsync();
+            EventTitle     = dto.EventTitle,
+            EventNote      = dto.EventNote,
+            StartDateTime  = dto.StartDateTime,
+            EndDateTime    = dto.EndDateTime,
+            IsAllDay       = dto.IsAllDay,
+            CategoryId     = dto.CategoryId,
+            RecurrenceRule = dto.RecurrenceRule,
+            RecurrenceEnd  = dto.RecurrenceEnd
+        };
 
-            var command = new MySqlCommand(
-                "INSERT INTO calendar_events " +
-                "(eventTitle, eventNote, startDateTime, endDateTime, isAllDay, categoryId, recurrenceRule, recurrenceEnd) " +
-                "VALUES " +
-                "(@eventTitle, @eventNote, @startDateTime, @endDateTime, @IsAllDay, @categoryId, @recurrenceRule, @recurrenceEnd)",
-                connection
-            );
-            command.Parameters.AddWithValue("@eventTitle", calendarEvent.EventTitle);
-            command.Parameters.AddWithValue("@eventNote", calendarEvent.EventNote == null ? DBNull.Value : (object)calendarEvent.EventNote);
-            command.Parameters.AddWithValue("@startDateTime", calendarEvent.StartDateTime);
-            command.Parameters.AddWithValue("@endDateTime", calendarEvent.EndDateTime);
-            command.Parameters.AddWithValue("@IsAllDay", calendarEvent.IsAllDay);
-            command.Parameters.AddWithValue("@categoryId", calendarEvent.CategoryId);
-            command.Parameters.AddWithValue("@recurrenceRule", calendarEvent.RecurrenceRule == null ? DBNull.Value : (object)calendarEvent.RecurrenceRule);
-            command.Parameters.AddWithValue("@recurrenceEnd", calendarEvent.RecurrenceEnd == null ? DBNull.Value : (object)calendarEvent.RecurrenceEnd);
-
-            await command.ExecuteNonQueryAsync();
-        }
+        _db.CalendarEvents.Add(entity);
+        await _db.SaveChangesAsync();
     }
 
-public async Task UpdateEventAsync(CalendarEvent updateEvent)
+    public async Task UpdateEventAsync(CalendarEvent dto)
     {
-        using (var connection = new MySqlConnection(_connectionString))
-        {
-            await connection.OpenAsync();
+        var entity = await _db.CalendarEvents
+                            .FirstOrDefaultAsync(e => e.EventId == dto.EventId);
 
-            var command = new MySqlCommand(
-                "UPDATE calendar_events SET " +
-                "eventTitle = @eventTitle, eventNote = @eventNote, startDateTime = @startDateTime, " +
-                "endDateTime = @endDateTime, isAllDay = @IsAllDay, categoryId = @categoryId " +
-                "WHERE eventId = @eventId",
-                connection
-            );
-            command.Parameters.AddWithValue("@eventId", updateEvent.EventId);
-            command.Parameters.AddWithValue("@eventTitle", updateEvent.EventTitle);
-            command.Parameters.AddWithValue("@eventNote", updateEvent.EventNote == null ? DBNull.Value : (object)updateEvent.EventNote);
-            command.Parameters.AddWithValue("@startDateTime", updateEvent.StartDateTime);
-            command.Parameters.AddWithValue("@endDateTime", updateEvent.EndDateTime);
-            command.Parameters.AddWithValue("@IsAllDay", updateEvent.IsAllDay);
-            command.Parameters.AddWithValue("@categoryId", updateEvent.CategoryId);
-            
-            await command.ExecuteNonQueryAsync();
-        }
+        if (entity is null)
+            throw new KeyNotFoundException("Event not found");
+
+        entity.EventTitle     = dto.EventTitle;
+        entity.EventNote      = dto.EventNote;
+        entity.StartDateTime  = dto.StartDateTime;
+        entity.EndDateTime    = dto.EndDateTime;
+        entity.IsAllDay       = dto.IsAllDay;
+        entity.CategoryId     = dto.CategoryId;
+        entity.RecurrenceRule = dto.RecurrenceRule;
+        entity.RecurrenceEnd  = dto.RecurrenceEnd;
+
+        await _db.SaveChangesAsync();
     }
 
     public async Task DeleteEventAsync(int eventId)
     {
-        using (var connection = new MySqlConnection(_connectionString))
-        {
-            await connection.OpenAsync();
+        var deleted = await _db.CalendarEvents
+            .Where(e => e.EventId == eventId)
+            .ExecuteDeleteAsync();
 
-            var command = new MySqlCommand("DELETE FROM calendar_events WHERE eventId = @eventId", connection);
-            command.Parameters.AddWithValue("@eventId", eventId);
-
-            await command.ExecuteNonQueryAsync();
-        }
+        if (deleted == 0)
+            throw new KeyNotFoundException("Event not found");
     }
 
     public async Task<List<Category>> GetCategoriesAsync()
     {
-        var categories = new List<Category>();
-
-        using (var connection = new MySqlConnection(_connectionString))
-        {
-            await connection.OpenAsync();
-
-            var command = new MySqlCommand("SELECT categoryId, categoryName FROM categories ORDER BY categoryId ASC", connection);
-
-            using (var reader = await command.ExecuteReaderAsync())
-            {
-                while (await reader.ReadAsync())
-                {
-                    categories.Add(new Category
-                    {
-                        CategoryId = reader.GetInt32("categoryId"),
-                        CategoryName = reader.GetString("categoryName")
-                    });
-                }
-            }
-        }
-
-        return categories;
+        return await _db.Categories
+            .AsNoTracking()
+            .OrderBy(c => c.CategoryId)
+            .ToListAsync();
     }
 
     public async Task<List<Holiday>> GetHolidaysAsync(string year)

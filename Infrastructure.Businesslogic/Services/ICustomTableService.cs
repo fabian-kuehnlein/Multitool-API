@@ -20,7 +20,7 @@ public interface ICustomTableService
 
     /* Rows CRUD + Paging */
     Task CreateRowAsync(long tableId);
-
+    Task UpdateRowOrderAsync(List<RowOrderUpdateDto> list);
     Task DeleteRowsAsync(long tableId, List<long> rows);
 
     /* Cell Updating */

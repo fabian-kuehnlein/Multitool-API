@@ -10,10 +10,17 @@ public record UpdateRowDto(
 
 public record CustomRowResponseDto(
     long RowId,
-    Dictionary<long, object?> Cells
+    Dictionary<long, object?> Cells,
+    int RowOrder
 );
 
 public record RowInfo(
     long RowId,
-    Dictionary<long, object?> Cells
+    Dictionary<long, object?> Cells,
+    int RowOrder
+);
+
+public record RowOrderUpdateDto(
+    int RowId,
+    int RowOrder
 );

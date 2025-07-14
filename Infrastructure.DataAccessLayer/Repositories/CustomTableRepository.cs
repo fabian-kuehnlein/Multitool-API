@@ -1,25 +1,17 @@
-using MySqlConnector;
-using MultitoolApi.DataAccessLayer.Models;
-using MultitoolApi.Businesslogic.Models;
-using System.Text.Json;
 using MultitoolApi.WebApi.Models.CustomTable;
 using System.Data;
 using MultitoolApi.ConfigModels;
 using Microsoft.EntityFrameworkCore;
 using MultitoolApi.Infrastructure.DataAccessLayer.Models.CustomTable;
-using Microsoft.AspNetCore.Http.Connections;
 
 public class CustomTableRepository : ICustomTableRepository
 {
     private readonly AppDbContext _db;
-    private readonly string _connectionString;
     private readonly ILogger<CalendarEventRepository> _logger;
 
-    public CustomTableRepository(AppDbContext db, IConfiguration configuration, ILogger<CalendarEventRepository> logger)
+    public CustomTableRepository(AppDbContext db, ILogger<CalendarEventRepository> logger)
     {
         _db = db;
-        _connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? throw new InvalidOperationException("Connection string 'MariaDBConnection' not found.");
         _logger = logger;
     }
 
@@ -50,6 +42,7 @@ public class CustomTableRepository : ICustomTableRepository
             .Select(r => new
             {
                 r.RowId,
+                r.RowOrder,
                 Cells = r.Cells.Select(c => new
                 {
                     c.ColumnId,
@@ -71,8 +64,9 @@ public class CustomTableRepository : ICustomTableRepository
                         ?? (object?)c.ValInt
                         ?? c.ValDec
                         ?? (object?)c.ValDate
-                        ?? c.ValBool)))
-            ).ToList();
+                        ?? c.ValBool)),
+                r.RowOrder
+            )).ToList();
 
         var t = await _db.CustomTables
             .FirstOrDefaultAsync(tt => tt.TableId == tableId);
@@ -194,13 +188,34 @@ public class CustomTableRepository : ICustomTableRepository
 
     public async Task CreateRowAsync(long tableId)
     {
+        var maxOrder = await _db.CustomRows
+            .Where(r => r.TableId == tableId)
+            .Select(r => (int?)r.RowOrder)
+            .MaxAsync() ?? -1;
+
         var row = new CustomRow
         {
             TableId = tableId,
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            RowOrder = maxOrder + 1
         };
 
         await _db.CustomRows.AddAsync(row);
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task UpdateRowOrderAsync(List<RowOrderUpdateDto> list)
+    {
+        foreach (var item in list)
+        {
+            var row = await _db.CustomRows.FirstOrDefaultAsync(r => r.RowId == item.RowId);
+
+            if (row != null)
+            {
+                row.RowOrder = item.RowOrder;
+            }
+        }
+
         await _db.SaveChangesAsync();
     }
 

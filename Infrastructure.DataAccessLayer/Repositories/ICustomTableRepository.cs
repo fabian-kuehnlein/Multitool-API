@@ -11,6 +11,7 @@ public interface ICustomTableRepository
     Task UpdateColumnAsync(long tableId, long columnId, UpdateColumnDto dto);
     Task DeleteColumnAsync(long tableId, long columnId);
     Task CreateRowAsync(long tableId);
+    Task UpdateRowOrderAsync(List<RowOrderUpdateDto> list);
     Task DeleteRowsAsync(long tableId, List<long> rows);
     Task UpsertCellAsync(long rowId, long columnId, object? value);
 }
