@@ -151,10 +151,10 @@ public class CustomTableRepository : ICustomTableRepository
         await _db.SaveChangesAsync();
     }
 
-    public async Task UpdateColumnAsync(long tableId, long columnId, UpdateColumnDto dto)
+    public async Task UpdateColumnAsync(long columnId, UpdateColumnDto dto)
     {
         var column = await _db.CustomColumns
-            .FirstOrDefaultAsync(c => c.ColumnId == columnId && c.TableId == tableId);
+            .FirstOrDefaultAsync(c => c.ColumnId == columnId);
 
         if (column is null) throw new KeyNotFoundException("Column not found");
 
@@ -170,6 +170,26 @@ public class CustomTableRepository : ICustomTableRepository
             await _db.CustomCells
                 .Where(c => c.ColumnId == columnId)
                 .ExecuteDeleteAsync();
+        }
+
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task UpdateColumnOrderAsync(List<UpdateColumnOrderDto> cols)
+    {
+        var ids = cols.Select(c => c.ColumnId).ToList();
+
+        var columns = await _db.CustomColumns
+            .Where(c => ids.Contains(c.ColumnId))
+            .ToListAsync();
+
+        foreach (var col in columns)
+        {
+            var update = cols.FirstOrDefault(c => c.ColumnId == col.ColumnId);
+            if (update != null)
+            {
+                col.ColOrder = update.ColOrder;
+            }
         }
 
         await _db.SaveChangesAsync();

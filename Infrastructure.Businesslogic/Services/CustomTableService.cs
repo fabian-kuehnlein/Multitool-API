@@ -46,9 +46,14 @@ public class CustomTableService : ICustomTableService
         await _repository.CreateColumnAsync(tableId);
     }
 
-    public async Task UpdateColumnAsync(long tableId, long columnId, UpdateColumnDto dto)
+    public async Task UpdateColumnAsync(long columnId, UpdateColumnDto dto)
     {
-        await _repository.UpdateColumnAsync(tableId, columnId, dto);
+        await _repository.UpdateColumnAsync(columnId, dto);
+    }
+
+    public async Task UpdateColumnOrderAsync(List<UpdateColumnOrderDto> columns)
+    {
+        await _repository.UpdateColumnOrderAsync(columns);
     }
 
     public async Task DeleteColumnAsync(long tableId, long columnId)

@@ -8,7 +8,8 @@ public interface ICustomTableRepository
     Task UpdateTableAsync(long tableId, string newName);
     Task DeleteTableAsync(long tableId);
     Task CreateColumnAsync(long tableId);
-    Task UpdateColumnAsync(long tableId, long columnId, UpdateColumnDto dto);
+    Task UpdateColumnAsync(long columnId, UpdateColumnDto dto);
+    Task UpdateColumnOrderAsync(List<UpdateColumnOrderDto> columns);
     Task DeleteColumnAsync(long tableId, long columnId);
     Task CreateRowAsync(long tableId);
     Task UpdateRowOrderAsync(List<RowOrderUpdateDto> list);

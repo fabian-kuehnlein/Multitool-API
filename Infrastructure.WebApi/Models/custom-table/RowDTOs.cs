@@ -8,12 +8,6 @@ public record UpdateRowDto(
     Dictionary<long, object?> Cells
 );
 
-public record CustomRowResponseDto(
-    long RowId,
-    Dictionary<long, object?> Cells,
-    int RowOrder
-);
-
 public record RowInfo(
     long RowId,
     Dictionary<long, object?> Cells,
