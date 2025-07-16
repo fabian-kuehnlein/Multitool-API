@@ -81,9 +81,17 @@ public class CustomTableController : ControllerBase
 
     [HttpPut("UpdateColumn")]
     [Produces("application/json")]
-    public async Task<IActionResult> UpdateColumn([FromQuery] long tableId, [FromQuery] long columnId, [FromBody] UpdateColumnDto dto)
+    public async Task<IActionResult> UpdateColumn([FromQuery] long columnId, [FromBody] UpdateColumnDto dto)
     {
-        await _service.UpdateColumnAsync(tableId, columnId, dto);
+        await _service.UpdateColumnAsync(columnId, dto);
+        return Ok();
+    }
+
+    [HttpPut("UpdateColumnOrder")]
+    [Produces("application/json")]
+    public async Task<IActionResult> UpdateColumnOrder([FromBody] List<UpdateColumnOrderDto> columns)
+    {
+        await _service.UpdateColumnOrderAsync(columns);
         return Ok();
     }
 
