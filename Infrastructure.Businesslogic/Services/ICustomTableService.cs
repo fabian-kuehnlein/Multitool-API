@@ -15,7 +15,8 @@ public interface ICustomTableService
 
     /* Spalten CRUD */
     Task CreateColumnAsync(long tableId);
-    Task UpdateColumnAsync(long tableId, long columnId, UpdateColumnDto dto);
+    Task UpdateColumnAsync(long columnId, UpdateColumnDto dto);
+    Task UpdateColumnOrderAsync(List<UpdateColumnOrderDto> columns);
     Task DeleteColumnAsync(long tableId, long columnId);
 
     /* Rows CRUD + Paging */

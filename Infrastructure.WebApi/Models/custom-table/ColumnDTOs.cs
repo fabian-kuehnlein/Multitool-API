@@ -14,10 +14,8 @@ public record UpdateColumnDto(
     int ColOrder
 );
 
-public record CustomColumnResponseDto(
+public record UpdateColumnOrderDto(
     long ColumnId,
-    string Name,
-    CustomDataType DataType,
     int ColOrder
 );
 

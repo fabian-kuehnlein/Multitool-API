@@ -10,12 +10,7 @@ public record TableDetail(
     List<RowInfo> Rows
 );
 
-public record CreateTableDto(string Name, CreateColumnDto Column);
-
-public record CustomTableResponseDto(
-    long TableId,
+public record CreateTableDto(
     string Name,
-    DateTime CreatedAt,
-    List<CustomColumnResponseDto>? Columns = null,
-    List<CustomRowResponseDto>? Rows = null
+    CreateColumnDto Column
 );
