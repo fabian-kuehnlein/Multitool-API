@@ -3,6 +3,7 @@ using MultitoolApi.Businesslogic.Models;
 using System.Text.Json;
 using MultitoolApi.ConfigModels;
 using Microsoft.EntityFrameworkCore;
+using MultitoolApi.WebApi.Models;
 
 public class CalendarEventRepository : ICalendarEventRepository
 {
@@ -43,7 +44,7 @@ public class CalendarEventRepository : ICalendarEventRepository
         return await query.ToListAsync();
     }
 
-    public async Task<List<EventSearchResponse>> SearchCalendarEventsAsync(string searchString)
+    public async Task<List<EventSearchResponseDTO>> SearchCalendarEventsAsync(string searchString)
     {
         if (string.IsNullOrWhiteSpace(searchString))
             return [];
@@ -55,7 +56,7 @@ public class CalendarEventRepository : ICalendarEventRepository
             .Where(e =>
                 EF.Functions.Like(e.EventTitle.ToLower(), pattern.ToLower()) ||
                 (e.EventNote != null && EF.Functions.Like(e.EventNote.ToLower(), pattern.ToLower())))
-            .Select(e => new EventSearchResponse
+            .Select(e => new EventSearchResponseDTO
             {
                 EventId       = e.EventId,
                 EventTitle    = e.EventTitle,
@@ -68,7 +69,7 @@ public class CalendarEventRepository : ICalendarEventRepository
         return results;
     }
 
-    public async Task InsertEventAsync(CreateCalendarEvent dto)
+    public async Task InsertEventAsync(CreateCalendarEventDTO dto)
     {
         var entity = new CalendarEvent
         {
@@ -86,7 +87,7 @@ public class CalendarEventRepository : ICalendarEventRepository
         await _db.SaveChangesAsync();
     }
 
-    public async Task UpdateEventAsync(CalendarEvent dto)
+    public async Task UpdateEventAsync(UpdateCalendarEventDTO dto)
     {
         var entity = await _db.CalendarEvents
                             .FirstOrDefaultAsync(e => e.EventId == dto.EventId);
