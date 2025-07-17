@@ -1,6 +1,7 @@
 using AutoMapper;
 using MultitoolApi.Businesslogic.Models;
 using MultitoolApi.DataAccessLayer.Models;
+using MultitoolApi.WebApi.Models;
 
 namespace MultitoolApi.Infrastructure.Businesslogic.Services;
 
@@ -20,17 +21,17 @@ public class CalendarService : ICalendarService
 		return await _repository.GetEventsByRangeAsync(start, end, categories);
 	}
 
-	public async Task<List<EventSearchResponse>> SearchCalendarEventsAsync(string searchString)
+	public async Task<List<EventSearchResponseDTO>> SearchCalendarEventsAsync(string searchString)
 	{
 		return await _repository.SearchCalendarEventsAsync(searchString);
 	}
 
-	public async Task InsertEventAsync(CreateCalendarEvent createEvent)
+	public async Task InsertEventAsync(CreateCalendarEventDTO createEvent)
 	{
 		await _repository.InsertEventAsync(createEvent);
 	}
 
-	public async Task UpdateEventAsync(CalendarEvent updateEvent)
+	public async Task UpdateEventAsync(UpdateCalendarEventDTO updateEvent)
 	{
 		await _repository.UpdateEventAsync(updateEvent);
 	}
@@ -48,6 +49,6 @@ public class CalendarService : ICalendarService
 	public async Task<List<Holiday>> GetHolidaysAsync(string year)
 	{
 		var holidays = await _repository.GetHolidaysAsync(year);
-		return _mapper.Map<List<Holiday>>(holidays);
+		return holidays;
 	}
 }
