@@ -1,11 +1,19 @@
 using System.Data.Common;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using MultitoolApi.ConfigModels;
+using MultitoolApi.Infrastructure.Businesslogic.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddScoped<ICalendarEventRepository, CalendarEventRepository>();
+// Calendar Infrastructure
 builder.Services.AddScoped<ICalendarService, CalendarService>();
+builder.Services.AddScoped<ICalendarEventRepository, CalendarEventRepository>();
+
+// Custom-Table Infrastructure
+builder.Services.AddScoped<ICustomTableRepository, CustomTableRepository>();
+builder.Services.AddScoped<ICustomTableService, CustomTableService>();
 
 builder.Services.AddCors(options =>
 {
@@ -32,7 +40,10 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 Console.WriteLine("Using connection string: " + builder.Configuration.GetConnectionString("DefaultConnection"));
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(opts =>
+    opts.JsonSerializerOptions.Converters.Add(
+        new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -58,10 +69,11 @@ app.MapControllers().RequireCors("AllowAll");
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    if (app.Environment.IsProduction())
+    
+    if (builder.Environment.IsProduction())
     {
         dbContext.Database.Migrate();
-    };
+    }
 };
 
 app.Run();
