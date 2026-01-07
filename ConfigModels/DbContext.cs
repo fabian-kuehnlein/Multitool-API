@@ -74,6 +74,11 @@ public class AppDbContext : DbContext
             e.Property(c => c.CategoryName)
                 .HasColumnName("categoryName")
                 .IsRequired();
+
+            e.Property(c => c.Color)
+                .HasColumnName("color")
+                .HasMaxLength(9)
+                .IsRequired();
         });
 
         modelBuilder.Entity<CustomTable>(e =>
