@@ -1,9 +1,12 @@
 using System.Data.Common;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
 using MultitoolApi.ConfigModels;
 using MultitoolApi.Infrastructure.Businesslogic.Services;
+
+Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,20 +29,6 @@ builder.Services.AddCors(options =>
         });
 });
 
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseMySql(
-        builder.Configuration.GetConnectionString("DefaultConnection"),
-        new MySqlServerVersion(new Version(11, 7, 2)),
-        mySqlOptions => mySqlOptions
-            .EnableRetryOnFailure(
-                maxRetryCount: 10,
-                maxRetryDelay: TimeSpan.FromSeconds(5),
-                errorNumbersToAdd: null
-        ))
-    );
-
-Console.WriteLine("Using connection string: " + builder.Configuration.GetConnectionString("DefaultConnection"));
-
 builder.Services.AddControllers()
     .AddJsonOptions(opts =>
     opts.JsonSerializerOptions.Converters.Add(
@@ -55,6 +44,28 @@ builder.Services.AddHttpClient<ICalendarEventRepository, CalendarEventRepository
 {
     client.BaseAddress = new Uri("https://get.api-feiertage.de");
 });
+
+var dbHost = Environment.GetEnvironmentVariable("DB_HOST") ?? "localhost";
+var dbPort = Environment.GetEnvironmentVariable("DB_PORT") ?? "3306";
+var dbName = Environment.GetEnvironmentVariable("DB_NAME");
+var dbUser = Environment.GetEnvironmentVariable("DB_USER");
+var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD");
+
+Console.WriteLine($"DB Connection: {dbUser}@{dbHost}:{dbPort}/{dbName}");
+
+var connectionString = $"server={dbHost};port={dbPort};database={dbName};user={dbUser};password={dbPassword}";
+
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseMySql(
+        connectionString,
+        new MySqlServerVersion(new Version(11, 7, 2)),
+        mySqlOptions => mySqlOptions
+            .EnableRetryOnFailure(
+                maxRetryCount: 10,
+                maxRetryDelay: TimeSpan.FromSeconds(5),
+                errorNumbersToAdd: null
+        ))
+    );
 
 var app = builder.Build();
 
