@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using DotNetEnv;
+using Mapster;
 using Microsoft.EntityFrameworkCore;
 using Multitool.Application.Interfaces;
 using Multitool.Application.Mappings;
@@ -26,7 +27,7 @@ public class Program
 
         // Calendar Infrastructure
         builder.Services.AddScoped<ICalendarService, CalendarService>();
-        builder.Services.AddScoped<ICalendarEventRepository, CalendarEventRepository>();
+        builder.Services.AddScoped<ICalendarRepository, CalendarRepository>();
 
         // Custom-Table Infrastructure
         builder.Services.AddScoped<ICustomTableRepository, CustomTableRepository>();
@@ -52,9 +53,9 @@ public class Program
         builder.Services.AddSwaggerGen();
         builder.Logging.ClearProviders();
         builder.Logging.AddConsole();
-        builder.Services.AddAutoMapper(typeof(MappingProfile));
+        builder.Services.AddMapster();
 
-        builder.Services.AddHttpClient<ICalendarEventRepository, CalendarEventRepository>(client =>
+        builder.Services.AddHttpClient<ICalendarRepository, CalendarRepository>(client =>
         {
             client.BaseAddress = new Uri("https://get.api-feiertage.de");
         });

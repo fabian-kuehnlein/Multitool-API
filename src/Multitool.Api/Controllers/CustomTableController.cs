@@ -1,4 +1,3 @@
-using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using MultitoolApi.WebApi.Models.CustomTable;
 using Multitool.Application.Interfaces;
@@ -8,19 +7,8 @@ namespace Multitool.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class CustomTableController : ControllerBase
+public class CustomTableController(ICustomTableService service, ILogger<CustomTableController> logger) : ControllerBase
 {
-    private readonly ICustomTableService _service;
-    private readonly IMapper _mapper;
-    private readonly ILogger<CustomTableController> _logger;
-
-    public CustomTableController(ICustomTableService service, IMapper mapper, ILogger<CustomTableController> logger)
-    {
-        _service = service;
-        _mapper = mapper;
-        _logger = logger;
-    }
-
     /// <summary>
     /// Handles the Tables that are shown in Frontend to select and open them
     /// </summary>
@@ -29,7 +17,7 @@ public class CustomTableController : ControllerBase
     [Produces("application/json")]
     public async Task<IActionResult> GetTableList()
     {
-        var tables = await _service.GetTableListAsync();
+        var tables = await service.GetTableListAsync();
         return Ok(tables);
     }
 
@@ -41,7 +29,7 @@ public class CustomTableController : ControllerBase
     [Produces("application/json")]
     public async Task<IActionResult> GetTableAsync([FromQuery] long tableId)
     {
-        var table = await _service.GetTableAsync(tableId);
+        var table = await service.GetTableAsync(tableId);
         return table is null ? NotFound() : Ok(table);
     }
 
@@ -49,7 +37,7 @@ public class CustomTableController : ControllerBase
     [Produces("application/json")]
     public async Task<IActionResult> CreateTable([FromBody] CreateTableDto dto)
     {
-        var id = await _service.CreateTableAsync(dto);
+        var id = await service.CreateTableAsync(dto);
         return Ok(id);
     }
 
@@ -57,7 +45,7 @@ public class CustomTableController : ControllerBase
     [Produces("application/json")]
     public async Task<IActionResult> UpdateTable([FromQuery] long tableId, [FromQuery] string newName)
     {
-        await _service.UpdateTableAsync(tableId, newName);
+        await service.UpdateTableAsync(tableId, newName);
         return Ok();
     }
 
@@ -65,7 +53,7 @@ public class CustomTableController : ControllerBase
     [Produces("application/json")]
     public async Task<IActionResult> DeleteTable([FromQuery] long tableId)
     {
-        await _service.DeleteTableAsync(tableId);
+        await service.DeleteTableAsync(tableId);
         return Ok();
     }
 
@@ -77,7 +65,7 @@ public class CustomTableController : ControllerBase
     [Produces("application/json")]
     public async Task<IActionResult> CreateColumn([FromQuery] long tableId)
     {
-        await _service.CreateColumnAsync(tableId);
+        await service.CreateColumnAsync(tableId);
         return Ok();
     }
 
@@ -85,7 +73,7 @@ public class CustomTableController : ControllerBase
     [Produces("application/json")]
     public async Task<IActionResult> UpdateColumn([FromQuery] long columnId, [FromBody] UpdateColumnDto dto)
     {
-        await _service.UpdateColumnAsync(columnId, dto);
+        await service.UpdateColumnAsync(columnId, dto);
         return Ok();
     }
 
@@ -93,7 +81,7 @@ public class CustomTableController : ControllerBase
     [Produces("application/json")]
     public async Task<IActionResult> UpdateColumnOrder([FromBody] List<UpdateColumnOrderDto> columns)
     {
-        await _service.UpdateColumnOrderAsync(columns);
+        await service.UpdateColumnOrderAsync(columns);
         return Ok();
     }
 
@@ -101,7 +89,7 @@ public class CustomTableController : ControllerBase
     [Produces("application/json")]
     public async Task<IActionResult> DeleteColumn([FromQuery] long tableId, [FromQuery] long columnId)
     {
-        await _service.DeleteColumnAsync(tableId, columnId);
+        await service.DeleteColumnAsync(tableId, columnId);
         return Ok();
     }
 
@@ -113,7 +101,7 @@ public class CustomTableController : ControllerBase
     [Produces("application/json")]
     public async Task<IActionResult> CreateRow([FromQuery] long tableId)
     {
-        await _service.CreateRowAsync(tableId);
+        await service.CreateRowAsync(tableId);
         return Ok();
     }
 
@@ -121,7 +109,7 @@ public class CustomTableController : ControllerBase
     [Produces("application/json")]
     public async Task<IActionResult> UpdateRowOrder([FromBody] List<RowOrderUpdateDto> list)
     {
-        await _service.UpdateRowOrderAsync(list);
+        await service.UpdateRowOrderAsync(list);
         return Ok();
     }
 
@@ -129,7 +117,7 @@ public class CustomTableController : ControllerBase
     [Produces("application/json")]
     public async Task<IActionResult> DeleteRows([FromQuery] long tableId, [FromBody] List<long> rows)
     {
-        await _service.DeleteRowsAsync(tableId, rows);
+        await service.DeleteRowsAsync(tableId, rows);
         return Ok();
     }
 
@@ -140,7 +128,7 @@ public class CustomTableController : ControllerBase
     [Produces("application/json")]
     public async Task<IActionResult> SetCell([FromQuery] long rowId, [FromQuery] long columnId, [FromBody] object? newValue)
     {
-        await _service.UpsertCellAsync(rowId, columnId, newValue);
+        await service.UpsertCellAsync(rowId, columnId, newValue);
         return Ok();
     }
 

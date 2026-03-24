@@ -3,25 +3,11 @@ using Microsoft.EntityFrameworkCore;
 using Multitool.Domain.Interfaces;
 using Multitool.Infrastructure.Data;
 using Multitool.Domain.Entities.Calendar;
-using MultitoolApi.Businesslogic.Models;
-using MultitoolApi.WebApi.Models;
-using Microsoft.Extensions.Logging;
 
 namespace Multitool.Infrastructure.Repositories;
 
-public class CalendarEventRepository : ICalendarEventRepository
+public class CalendarRepository(AppDbContext db, HttpClient httpClient) : ICalendarRepository
 {
-    private readonly AppDbContext _db;
-    private readonly HttpClient _httpClient;
-    private readonly ILogger<CalendarEventRepository> _logger;
-
-    public CalendarEventRepository(AppDbContext db, HttpClient httpClient, ILogger<CalendarEventRepository> logger)
-    {
-        _db = db;
-        _httpClient = httpClient;
-        _logger = logger;
-    }
-
     public async Task<List<CalendarEvent>> GetEventsByRangeAsync(DateTime start, DateTime end, string? categories)
     {
         List<int>? categoryIds = null;
@@ -33,7 +19,7 @@ public class CalendarEventRepository : ICalendarEventRepository
                 .ToList();
         }
 
-        var query = _db.CalendarEvents
+        var query = db.CalendarEvents
             .Where(e =>
                 (e.StartDateTime < end && (e.EndDateTime == null || e.EndDateTime > start))
                 ||
@@ -48,19 +34,19 @@ public class CalendarEventRepository : ICalendarEventRepository
         return await query.ToListAsync();
     }
 
-    public async Task<List<EventSearchResponseDTO>> SearchCalendarEventsAsync(string searchString)
+    public async Task<List<EventSearchResponse>> SearchCalendarEventsAsync(string searchString)
     {
         if (string.IsNullOrWhiteSpace(searchString))
             return [];
 
         var pattern = $"%{searchString.Trim()}%";
 
-        var results = await _db.CalendarEvents
+        var results = await db.CalendarEvents
             .AsNoTracking()
             .Where(e =>
                 EF.Functions.Like(e.Title.ToLower(), pattern.ToLower()) ||
                 (e.Note != null && EF.Functions.Like(e.Note.ToLower(), pattern.ToLower())))
-            .Select(e => new EventSearchResponseDTO
+            .Select(e => new EventSearchResponse
             {
                 EventId       = e.Id,
                 EventTitle    = e.Title,
@@ -73,48 +59,34 @@ public class CalendarEventRepository : ICalendarEventRepository
         return results;
     }
 
-    public async Task InsertEventAsync(CreateCalendarEventDTO dto)
+    public async Task InsertEventAsync(CalendarEvent entity)
     {
-        var entity = new CalendarEvent
-        {
-            Title     = dto.EventTitle,
-            Note      = dto.EventNote,
-            StartDateTime  = dto.StartDateTime,
-            EndDateTime    = dto.EndDateTime,
-            IsAllDay       = dto.IsAllDay,
-            CategoryId     = dto.CategoryId,
-            RecurrenceRule = dto.RecurrenceRule,
-            RecurrenceEnd  = dto.RecurrenceEnd
-        };
-
-        _db.CalendarEvents.Add(entity);
-        await _db.SaveChangesAsync();
+        db.CalendarEvents.Add(entity);
+        await db.SaveChangesAsync();
     }
 
-    public async Task UpdateEventAsync(UpdateCalendarEventDTO dto)
+    public async Task UpdateEventAsync(CalendarEvent entity)
     {
-        var entity = await _db.CalendarEvents
-                            .FirstOrDefaultAsync(e => e.Id == dto.EventId);
+        var existing = await db.CalendarEvents
+                            .FirstOrDefaultAsync(e => e.Id == entity.Id)
+                            ?? throw new KeyNotFoundException("Event not found");
 
-        if (entity is null)
-            throw new KeyNotFoundException("Event not found");
+        existing.Title          = entity.Title;
+        existing.Note           = entity.Note;
+        existing.StartDateTime  = entity.StartDateTime;
+        existing.EndDateTime    = entity.EndDateTime;
+        existing.IsAllDay       = entity.IsAllDay;
+        existing.CategoryId     = entity.CategoryId;
+        existing.RecurrenceRule = entity.RecurrenceRule;
+        existing.RecurrenceEnd  = entity.RecurrenceEnd;
 
-        entity.Title     = dto.EventTitle;
-        entity.Note      = dto.EventNote;
-        entity.StartDateTime  = dto.StartDateTime;
-        entity.EndDateTime    = dto.EndDateTime;
-        entity.IsAllDay       = dto.IsAllDay;
-        entity.CategoryId     = dto.CategoryId;
-        entity.RecurrenceRule = dto.RecurrenceRule;
-        entity.RecurrenceEnd  = dto.RecurrenceEnd;
-
-        await _db.SaveChangesAsync();
+        await db.SaveChangesAsync();
     }
 
-    public async Task DeleteEventAsync(int eventId)
+    public async Task DeleteEventAsync(int Id)
     {
-        var deleted = await _db.CalendarEvents
-            .Where(e => e.Id == eventId)
+        var deleted = await db.CalendarEvents
+            .Where(e => e.Id == Id)
             .ExecuteDeleteAsync();
 
         if (deleted == 0)
@@ -123,7 +95,7 @@ public class CalendarEventRepository : ICalendarEventRepository
 
     public async Task<List<Category>> GetCategoriesAsync()
     {
-        return await _db.Categories
+        return await db.Categories
             .AsNoTracking()
             .OrderBy(c => c.Id)
             .ToListAsync();
@@ -132,7 +104,7 @@ public class CalendarEventRepository : ICalendarEventRepository
     public async Task<List<Holiday>> GetHolidaysAsync(string year)
     {
         var url = $"?years={year}&states=by";
-        var response = await _httpClient.GetAsync(url);
+        var response = await httpClient.GetAsync(url);
         response.EnsureSuccessStatusCode();
 
         var jsonString = await response.Content.ReadAsStringAsync();

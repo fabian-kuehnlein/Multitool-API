@@ -1,56 +1,45 @@
-using AutoMapper;
+using Mapster;
 using Multitool.Application.Interfaces;
 using Multitool.Domain.Entities.Calendar;
 using Multitool.Domain.Interfaces;
-using MultitoolApi.Businesslogic.Models;
 using MultitoolApi.WebApi.Models;
 
 namespace Multitool.Application.Services;
 
-public class CalendarService : ICalendarService
+public class CalendarService(ICalendarRepository repository) : ICalendarService
 {
-	private readonly ICalendarEventRepository _repository;
-	private readonly IMapper _mapper;
+    public async Task<List<CalendarEvent>> GetEventsByRangeAsync(DateTime start, DateTime end, string categories)
+    {
+        return await repository.GetEventsByRangeAsync(start, end, categories);
+    }
 
-	public CalendarService(ICalendarEventRepository repository, IMapper mapper)
-	{
-		_repository = repository;
-		_mapper = mapper;
-	}
+    public async Task<List<EventSearchResponse>> SearchCalendarEventsAsync(string searchString)
+    {
+        return await repository.SearchCalendarEventsAsync(searchString);
+    }
 
-	public async Task<List<CalendarEvent>> GetEventsByRangeAsync(DateTime start, DateTime end, string categories)
-	{
-		return await _repository.GetEventsByRangeAsync(start, end, categories);
-	}
+    public async Task InsertEventAsync(CreateCalendarEvent newEvent)
+    {
+        await repository.InsertEventAsync(newEvent.Adapt<CalendarEvent>());
+    }
 
-	public async Task<List<EventSearchResponseDTO>> SearchCalendarEventsAsync(string searchString)
-	{
-		return await _repository.SearchCalendarEventsAsync(searchString);
-	}
+    public async Task UpdateEventAsync(CalendarEvent calendarEvent)
+    {
+        await repository.UpdateEventAsync(calendarEvent);
+    }
 
-	public async Task InsertEventAsync(CreateCalendarEventDTO createEvent)
-	{
-		await _repository.InsertEventAsync(createEvent);
-	}
+    public async Task DeleteEventAsync(int id)
+    {
+        await repository.DeleteEventAsync(id);
+    }
 
-	public async Task UpdateEventAsync(UpdateCalendarEventDTO updateEvent)
-	{
-		await _repository.UpdateEventAsync(updateEvent);
-	}
+    public async Task<List<Category>> GetCategoriesAsync()
+    {
+        return await repository.GetCategoriesAsync();
+    }
 
-	public async Task DeleteEventAsync(int id)
-	{
-		await _repository.DeleteEventAsync(id);
-	}
-
-	public async Task<List<Category>> GetCategoriesAsync()
-	{
-		return await _repository.GetCategoriesAsync();
-	}
-
-	public async Task<List<Holiday>> GetHolidaysAsync(string year)
-	{
-		var holidays = await _repository.GetHolidaysAsync(year);
-		return holidays;
-	}
+    public async Task<List<Holiday>> GetHolidaysAsync(string year)
+    {
+        return await repository.GetHolidaysAsync(year);
+    }
 }
