@@ -1,0 +1,6 @@
+@Multitool.Api_HostAddress = http://localhost:5249
+
+GET {{Multitool.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
