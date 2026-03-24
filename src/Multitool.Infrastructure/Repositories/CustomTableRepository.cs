@@ -9,20 +9,11 @@ using Microsoft.Extensions.Logging;
 
 namespace Multitool.Infrastructure.Repositories;
 
-public class CustomTableRepository : ICustomTableRepository
+public class CustomTableRepository(AppDbContext db, ILogger<CalendarRepository> logger) : ICustomTableRepository
 {
-    private readonly AppDbContext _db;
-    private readonly ILogger<CalendarEventRepository> _logger;
-
-    public CustomTableRepository(AppDbContext db, ILogger<CalendarEventRepository> logger)
-    {
-        _db = db;
-        _logger = logger;
-    }
-
     public async Task<List<TableOverview>> GetTableListAsync()
     {
-        return await _db.CustomTables
+        return await db.CustomTables
             .OrderBy(t => t.Name)
             .Select(t => new TableOverview(t.TableId, t.Name))
             .ToListAsync();
@@ -33,14 +24,14 @@ public class CustomTableRepository : ICustomTableRepository
         const int take = 100;
 
         // Spalten: unverändert (kein client‑only Code)
-        var columns = await _db.CustomColumns
+        var columns = await db.CustomColumns
             .Where(c => c.TableId == tableId)
             .OrderBy(c => c.ColOrder)
             .Select(c => new ColumnInfo(c.ColumnId, c.Name, c.DataType, c.ColOrder))
             .ToListAsync();
 
         // Zeilen: 2‑Phasen‑Ansatz
-        var flatRows = await _db.CustomRows
+        var flatRows = await db.CustomRows
             .Where(r => r.TableId == tableId)
             .OrderBy(r => r.RowId)
             .Take(take)
@@ -73,7 +64,7 @@ public class CustomTableRepository : ICustomTableRepository
                 r.RowOrder
             )).ToList();
 
-        var t = await _db.CustomTables
+        var t = await db.CustomTables
             .FirstOrDefaultAsync(tt => tt.TableId == tableId);
 
         return t is null
@@ -83,11 +74,11 @@ public class CustomTableRepository : ICustomTableRepository
 
     public async Task<long> CreateTableAsync(CreateTableDto dto)
     {
-        var stradegy = _db.Database.CreateExecutionStrategy();
+        var stradegy = db.Database.CreateExecutionStrategy();
 
         return await stradegy.ExecuteAsync(async () =>
         {
-            await using var tx = await _db.Database.BeginTransactionAsync();
+            await using var tx = await db.Database.BeginTransactionAsync();
 
             var table = new CustomTable
             {
@@ -95,8 +86,8 @@ public class CustomTableRepository : ICustomTableRepository
                 CreatedAt = DateTime.UtcNow
             };
 
-            _db.CustomTables.Add(table);
-            await _db.SaveChangesAsync();
+            db.CustomTables.Add(table);
+            await db.SaveChangesAsync();
 
             var column = new CustomColumn
             {
@@ -106,8 +97,8 @@ public class CustomTableRepository : ICustomTableRepository
                 ColOrder = 0
             };
 
-            _db.CustomColumns.Add(column);
-            await _db.SaveChangesAsync();
+            db.CustomColumns.Add(column);
+            await db.SaveChangesAsync();
 
             await tx.CommitAsync();
 
@@ -117,29 +108,29 @@ public class CustomTableRepository : ICustomTableRepository
 
     public async Task UpdateTableAsync(long tableId, string newName)
     {
-        var table = await _db.CustomTables.FindAsync(new object?[] { tableId });
+        var table = await db.CustomTables.FindAsync(new object?[] { tableId });
 
         if (table is not null)
         {
             table.Name = newName;
-            await _db.SaveChangesAsync();
+            await db.SaveChangesAsync();
         }
     }
 
     public async Task DeleteTableAsync(long tableId)
     {
-        var table = await _db.CustomTables.FindAsync(new object?[] { tableId });
+        var table = await db.CustomTables.FindAsync(new object?[] { tableId });
 
         if (table is not null)
         {
-            _db.CustomTables.Remove(table);
-            await _db.SaveChangesAsync();
+            db.CustomTables.Remove(table);
+            await db.SaveChangesAsync();
         }
     }
 
     public async Task CreateColumnAsync(long tableId)
     {
-        var maxOrder = await _db.CustomColumns
+        var maxOrder = await db.CustomColumns
             .Where(c => c.TableId == tableId)
             .Select(c => (int?)c.ColOrder)
             .MaxAsync() ?? -1;
@@ -152,13 +143,13 @@ public class CustomTableRepository : ICustomTableRepository
             ColOrder = maxOrder + 1
         };
 
-        await _db.CustomColumns.AddAsync(column);
-        await _db.SaveChangesAsync();
+        await db.CustomColumns.AddAsync(column);
+        await db.SaveChangesAsync();
     }
 
     public async Task UpdateColumnAsync(long columnId, UpdateColumnDto dto)
     {
-        var column = await _db.CustomColumns
+        var column = await db.CustomColumns
             .FirstOrDefaultAsync(c => c.ColumnId == columnId);
 
         if (column is null) throw new KeyNotFoundException("Column not found");
@@ -172,19 +163,19 @@ public class CustomTableRepository : ICustomTableRepository
         {
             column.DataType = dto.DataType;
 
-            await _db.CustomCells
+            await db.CustomCells
                 .Where(c => c.ColumnId == columnId)
                 .ExecuteDeleteAsync();
         }
 
-        await _db.SaveChangesAsync();
+        await db.SaveChangesAsync();
     }
 
     public async Task UpdateColumnOrderAsync(List<UpdateColumnOrderDto> cols)
     {
         var ids = cols.Select(c => c.ColumnId).ToList();
 
-        var columns = await _db.CustomColumns
+        var columns = await db.CustomColumns
             .Where(c => ids.Contains(c.ColumnId))
             .ToListAsync();
 
@@ -197,23 +188,23 @@ public class CustomTableRepository : ICustomTableRepository
             }
         }
 
-        await _db.SaveChangesAsync();
+        await db.SaveChangesAsync();
     }
 
     public async Task DeleteColumnAsync(long tableId, long columnId)
     {
-        var column = await _db.CustomColumns
+        var column = await db.CustomColumns
             .FirstOrDefaultAsync(c => c.ColumnId == columnId && c.TableId == tableId);
 
         if (column is null) return;
 
-        _db.CustomColumns.Remove(column);
-        await _db.SaveChangesAsync();
+        db.CustomColumns.Remove(column);
+        await db.SaveChangesAsync();
     }
 
     public async Task CreateRowAsync(long tableId)
     {
-        var maxOrder = await _db.CustomRows
+        var maxOrder = await db.CustomRows
             .Where(r => r.TableId == tableId)
             .Select(r => (int?)r.RowOrder)
             .MaxAsync() ?? -1;
@@ -225,15 +216,15 @@ public class CustomTableRepository : ICustomTableRepository
             RowOrder = maxOrder + 1
         };
 
-        await _db.CustomRows.AddAsync(row);
-        await _db.SaveChangesAsync();
+        await db.CustomRows.AddAsync(row);
+        await db.SaveChangesAsync();
     }
 
     public async Task UpdateRowOrderAsync(List<RowOrderUpdateDto> list)
     {
         foreach (var item in list)
         {
-            var row = await _db.CustomRows.FirstOrDefaultAsync(r => r.RowId == item.RowId);
+            var row = await db.CustomRows.FirstOrDefaultAsync(r => r.RowId == item.RowId);
 
             if (row != null)
             {
@@ -241,19 +232,19 @@ public class CustomTableRepository : ICustomTableRepository
             }
         }
 
-        await _db.SaveChangesAsync();
+        await db.SaveChangesAsync();
     }
 
     public async Task DeleteRowsAsync(long tableId, List<long> rows)
     {
-        await _db.CustomRows
+        await db.CustomRows
             .Where(r => r.TableId == tableId && rows.Contains(r.RowId))
             .ExecuteDeleteAsync();
     }
 
     public async Task UpsertCellAsync(long rowId, long columnId, object? value)
     {
-        var column = await _db.CustomColumns
+        var column = await db.CustomColumns
             .Where(c => c.ColumnId == columnId)
             .Select(c => new { c.TableId, c.DataType })
             .FirstOrDefaultAsync();
@@ -263,14 +254,14 @@ public class CustomTableRepository : ICustomTableRepository
             throw new ArgumentException($"Column {columnId} not found");
         }
 
-        var cell = await _db.CustomCells
+        var cell = await db.CustomCells
             .FindAsync(new object?[] { rowId, columnId });
 
         // create cell if it does not exist
         if (cell == null)
         {
             cell = new CustomCell { RowId = rowId, ColumnId = columnId };
-            _db.CustomCells.Add(cell);
+            db.CustomCells.Add(cell);
         }
 
         cell.ValString = null;
@@ -305,6 +296,6 @@ public class CustomTableRepository : ICustomTableRepository
                 throw new ArgumentException($"Unsupported data type: {column.DataType}");
         }
 
-        await _db.SaveChangesAsync();
+        await db.SaveChangesAsync();
     }
 }

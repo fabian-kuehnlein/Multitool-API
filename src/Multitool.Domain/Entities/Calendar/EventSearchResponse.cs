@@ -1,6 +1,6 @@
-namespace MultitoolApi.Businesslogic.Models;
+namespace Multitool.Domain.Entities.Calendar;
 
-public class EventSearchResponseDTO
+public class EventSearchResponse
 {
     public int EventId { get; set; }
     public required string EventTitle { get; set; }
