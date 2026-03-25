@@ -5,7 +5,7 @@ using Multitool.Domain.Interfaces;
 using Multitool.Infrastructure.Data;
 using Multitool.Domain.Entities.CustomTable;
 using Multitool.Domain.Enums;
-using Microsoft.Extensions.Logging;
+using Multitool.Domain.Exceptions;
 
 namespace Multitool.Infrastructure.Repositories;
 
@@ -23,14 +23,12 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
     {
         const int take = 100;
 
-        // Spalten: unverändert (kein client‑only Code)
         var columns = await db.CustomColumns
             .Where(c => c.TableId == tableId)
             .OrderBy(c => c.ColOrder)
             .Select(c => new ColumnInfo(c.ColumnId, c.Name, c.DataType, c.ColOrder))
             .ToListAsync();
 
-        // Zeilen: 2‑Phasen‑Ansatz
         var flatRows = await db.CustomRows
             .Where(r => r.TableId == tableId)
             .OrderBy(r => r.RowId)
@@ -94,11 +92,11 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
     {
         var table = await db.CustomTables.FindAsync(new object?[] { tableId });
 
-        if (table is not null)
-        {
-            table.Name = newName;
-            await db.SaveChangesAsync();
-        }
+        if (table is null)
+            throw new NotFoundException($"Table with Id {tableId} not found");
+
+        table.Name = newName;
+        await db.SaveChangesAsync();
     }
 
     public async Task DeleteTableAsync(long tableId)

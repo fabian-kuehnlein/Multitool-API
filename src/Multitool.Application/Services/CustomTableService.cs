@@ -12,7 +12,14 @@ public class CustomTableService(ICustomTableRepository repository) : ICustomTabl
         => await repository.GetTableListAsync();
 
     public async Task<TableDetail?> GetTableAsync(long tableId)
-        => await repository.GetTableAsync(tableId);
+    {
+        var table = await repository.GetTableAsync(tableId);
+
+        if (table is null)
+            throw new KeyNotFoundException($"Table with id {tableId} not found.");
+
+        return table;
+    }
 
     public async Task<long> CreateTableAsync(CreateTableDto dto)
     {

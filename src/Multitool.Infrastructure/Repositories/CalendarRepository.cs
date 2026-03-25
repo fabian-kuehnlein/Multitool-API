@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Multitool.Domain.Interfaces;
 using Multitool.Infrastructure.Data;
 using Multitool.Domain.Entities.Calendar;
+using Multitool.Domain.Exceptions;
 
 namespace Multitool.Infrastructure.Repositories;
 
@@ -34,11 +35,8 @@ public class CalendarRepository(AppDbContext db, HttpClient httpClient) : ICalen
         return await query.ToListAsync();
     }
 
-    public async Task<List<EventSearchResponse>> SearchCalendarEventsAsync(string searchString)
+    public async Task<List<CalendarEvent>> SearchCalendarEventsAsync(string searchString)
     {
-        if (string.IsNullOrWhiteSpace(searchString))
-            return [];
-
         var pattern = $"%{searchString.Trim()}%";
 
         var results = await db.CalendarEvents
@@ -46,30 +44,27 @@ public class CalendarRepository(AppDbContext db, HttpClient httpClient) : ICalen
             .Where(e =>
                 EF.Functions.Like(e.Title.ToLower(), pattern.ToLower()) ||
                 (e.Note != null && EF.Functions.Like(e.Note.ToLower(), pattern.ToLower())))
-            .Select(e => new EventSearchResponse
-            {
-                EventId       = e.Id,
-                EventTitle    = e.Title,
-                EventNote     = e.Note,
-                StartDateTime = e.StartDateTime
-            })
             .OrderBy(e => e.StartDateTime)
             .ToListAsync();
 
         return results;
     }
 
-    public async Task InsertEventAsync(CalendarEvent entity)
+    public async Task<long> InsertEventAsync(CalendarEvent entity)
     {
         db.CalendarEvents.Add(entity);
         await db.SaveChangesAsync();
+
+        return entity.Id;
     }
 
     public async Task UpdateEventAsync(CalendarEvent entity)
     {
         var existing = await db.CalendarEvents
-                            .FirstOrDefaultAsync(e => e.Id == entity.Id)
-                            ?? throw new KeyNotFoundException("Event not found");
+                            .FirstOrDefaultAsync(e => e.Id == entity.Id);
+
+        if (existing is null)
+            throw new NotFoundException($"Event with Id {entity.Id} not found");
 
         existing.Title          = entity.Title;
         existing.Note           = entity.Note;
@@ -90,15 +85,20 @@ public class CalendarRepository(AppDbContext db, HttpClient httpClient) : ICalen
             .ExecuteDeleteAsync();
 
         if (deleted == 0)
-            throw new KeyNotFoundException("Event not found");
+            throw new NotFoundException($"Event with Id {Id} not found");
     }
 
     public async Task<List<Category>> GetCategoriesAsync()
     {
-        return await db.Categories
+        var categories = await db.Categories
             .AsNoTracking()
             .OrderBy(c => c.Id)
             .ToListAsync();
+
+        if (categories is null || categories.Count <= 0)
+            throw new NotFoundException("No categories found");
+
+        return categories;
     }
 
     public async Task<List<Holiday>> GetHolidaysAsync(string year)
@@ -112,6 +112,9 @@ public class CalendarRepository(AppDbContext db, HttpClient httpClient) : ICalen
         {
             PropertyNameCaseInsensitive = true
         });
+
+        if (data is null || data.Feiertage is null || data.Feiertage.Count <= 0)
+            throw new NotFoundException($"No holidays found for year {year}");
 
         return data?.Feiertage?.Select(item => new Holiday
         {

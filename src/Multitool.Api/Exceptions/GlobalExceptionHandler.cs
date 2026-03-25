@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Multitool.Domain.Exceptions;
 
 namespace Multitool.Api.Exceptions;
 
@@ -9,23 +10,40 @@ public sealed class GlobalExceptionHandler(IProblemDetailsService problemDetails
     {
         logger.LogError(exception, "An unhandled exception occurred.");
 
-        httpContext.Response.StatusCode = exception switch
+        var problemDetails = exception switch
         {
-            ArgumentException or InvalidOperationException => StatusCodes.Status400BadRequest,
-            KeyNotFoundException => StatusCodes.Status404NotFound,
-            _ => StatusCodes.Status500InternalServerError
+            ArgumentException or InvalidOperationException => new ProblemDetails
+            {
+                Type = "https://httpstatuses.com/400",
+                Title = "Bad request",
+                Status = StatusCodes.Status400BadRequest,
+                Detail = exception.Message
+            },
+
+            KeyNotFoundException or NotFoundException => new ProblemDetails
+            {
+                Type = "https://httpstatuses.com/404",
+                Title = "Resource not found",
+                Status = StatusCodes.Status404NotFound,
+                Detail = exception.Message
+            },
+
+            _ => new ProblemDetails
+            {
+                Type = "https://httpstatuses.com/500",
+                Title = "Internal server error",
+                Status = StatusCodes.Status500InternalServerError,
+                Detail = "An unexpected error occurred."
+            }
         };
+
+        httpContext.Response.StatusCode = problemDetails.Status!.Value;
 
         return await problemDetailsService.TryWriteAsync(new ProblemDetailsContext
         {
             HttpContext = httpContext,
             Exception = exception,
-            ProblemDetails = new ProblemDetails
-            {
-                Type = exception.GetType().Name,
-                Title = "An unexpected error occurred.",
-                Detail = exception.Message
-            }
+            ProblemDetails = problemDetails
         });
     }
 }

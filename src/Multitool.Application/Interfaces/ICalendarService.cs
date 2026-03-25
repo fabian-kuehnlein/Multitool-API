@@ -7,7 +7,7 @@ public interface ICalendarService
 {
     Task<List<CalendarEvent>> GetEventsByRangeAsync(DateTime start, DateTime end, string categories);
     Task<List<EventSearchResponse>> SearchCalendarEventsAsync(string searchString);
-    Task InsertEventAsync(CreateCalendarEvent createEvent);
+    Task<long> InsertEventAsync(CreateCalendarEvent newEvent);
     Task UpdateEventAsync(CalendarEvent updateEvent);
     Task DeleteEventAsync(int eventId);
     Task<List<Category>> GetCategoriesAsync();
