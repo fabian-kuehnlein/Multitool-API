@@ -3,8 +3,8 @@ using System.Text.Json.Serialization;
 using DotNetEnv;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
+using Multitool.Api.Exceptions;
 using Multitool.Application.Interfaces;
-using Multitool.Application.Mappings;
 using Multitool.Application.Services;
 using Multitool.Domain.Interfaces;
 using Multitool.Infrastructure.Data;
@@ -24,6 +24,16 @@ public class Program
         Env.Load();
 
         var builder = WebApplication.CreateBuilder(args);
+
+        builder.Services.AddProblemDetails(configure =>
+        {
+            configure.CustomizeProblemDetails = context =>
+            {
+                context.ProblemDetails.Extensions.TryAdd("requestId", context.HttpContext.TraceIdentifier);
+            };
+        });
+
+        builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
         // Calendar Infrastructure
         builder.Services.AddScoped<ICalendarService, CalendarService>();
@@ -86,6 +96,8 @@ public class Program
 
         app.UseSwagger();
         app.UseSwaggerUI();
+
+        app.UseExceptionHandler();
 
         app.UseRouting();
         app.UseCors("AllowAll");

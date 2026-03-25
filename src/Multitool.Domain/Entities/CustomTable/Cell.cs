@@ -1,10 +1,10 @@
 namespace Multitool.Domain.Entities.CustomTable;
 
-public class CustomCell {
+public class Cell {
     public long RowId { get; set; }
-    public CustomRow Row { get; set; } = default!;
+    public Row Row { get; set; } = default!;
     public long ColumnId { get; set; }
-    public CustomColumn Column { get; set; } = default!;
+    public Column Column { get; set; } = default!;
     public string?  ValString { get; set; }
     public long?    ValInt    { get; set; }
     public decimal? ValDec    { get; set; }

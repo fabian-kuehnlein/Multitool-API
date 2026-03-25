@@ -9,37 +9,23 @@ namespace Multitool.Application.Services;
 public class CalendarService(ICalendarRepository repository) : ICalendarService
 {
     public async Task<List<CalendarEvent>> GetEventsByRangeAsync(DateTime start, DateTime end, string categories)
-    {
-        return await repository.GetEventsByRangeAsync(start, end, categories);
-    }
+        => await repository.GetEventsByRangeAsync(start, end, categories);
 
     public async Task<List<EventSearchResponse>> SearchCalendarEventsAsync(string searchString)
-    {
-        return await repository.SearchCalendarEventsAsync(searchString);
-    }
+        => await repository.SearchCalendarEventsAsync(searchString);
 
     public async Task InsertEventAsync(CreateCalendarEvent newEvent)
-    {
-        await repository.InsertEventAsync(newEvent.Adapt<CalendarEvent>());
-    }
+        => await repository.InsertEventAsync(newEvent.Adapt<CalendarEvent>());
 
     public async Task UpdateEventAsync(CalendarEvent calendarEvent)
-    {
-        await repository.UpdateEventAsync(calendarEvent);
-    }
+        => await repository.UpdateEventAsync(calendarEvent);
 
     public async Task DeleteEventAsync(int id)
-    {
-        await repository.DeleteEventAsync(id);
-    }
+        => await repository.DeleteEventAsync(id);
 
     public async Task<List<Category>> GetCategoriesAsync()
-    {
-        return await repository.GetCategoriesAsync();
-    }
+        => await repository.GetCategoriesAsync();
 
     public async Task<List<Holiday>> GetHolidaysAsync(string year)
-    {
-        return await repository.GetHolidaysAsync(year);
-    }
+        => await repository.GetHolidaysAsync(year);
 }

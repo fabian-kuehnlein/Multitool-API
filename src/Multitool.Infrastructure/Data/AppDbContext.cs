@@ -11,10 +11,10 @@ public class AppDbContext : DbContext
 
     public DbSet<CalendarEvent> CalendarEvents { get; set; }
     public DbSet<Category> Categories { get;  set; }
-    public DbSet<CustomTable> CustomTables { get; set; }
-    public DbSet<CustomColumn> CustomColumns { get; set; }
-    public DbSet<CustomRow> CustomRows { get; set; }
-    public DbSet<CustomCell> CustomCells { get; set; }
+    public DbSet<Table> CustomTables { get; set; }
+    public DbSet<Column> CustomColumns { get; set; }
+    public DbSet<Row> CustomRows { get; set; }
+    public DbSet<Cell> CustomCells { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -82,7 +82,7 @@ public class AppDbContext : DbContext
                 .IsRequired();
         });
 
-        modelBuilder.Entity<CustomTable>(e =>
+        modelBuilder.Entity<Table>(e =>
         {
             e.ToTable("custom_table");
             e.HasKey(t => t.TableId);
@@ -102,7 +102,7 @@ public class AppDbContext : DbContext
         });
 
         // ---------- COLUMN ----------
-        modelBuilder.Entity<CustomColumn>(e =>
+        modelBuilder.Entity<Column>(e =>
         {
             e.ToTable("custom_column");
             e.HasKey(c => c.ColumnId);
@@ -131,7 +131,7 @@ public class AppDbContext : DbContext
         });
 
         // ---------- ROW ----------
-        modelBuilder.Entity<CustomRow>(e =>
+        modelBuilder.Entity<Row>(e =>
         {
             e.ToTable("custom_row");
             e.HasKey(r => r.RowId);
@@ -147,7 +147,7 @@ public class AppDbContext : DbContext
         });
 
         // ---------- CELL ----------
-        modelBuilder.Entity<CustomCell>(e =>
+        modelBuilder.Entity<Cell>(e =>
         {
             e.ToTable("custom_cell");
 
