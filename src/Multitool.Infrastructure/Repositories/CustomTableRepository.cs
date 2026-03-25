@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Multitool.Infrastructure.Repositories;
 
-public class CustomTableRepository(AppDbContext db, ILogger<CalendarRepository> logger) : ICustomTableRepository
+public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
 {
     public async Task<List<TableOverview>> GetTableListAsync()
     {
@@ -72,7 +72,7 @@ public class CustomTableRepository(AppDbContext db, ILogger<CalendarRepository> 
             : new TableDetail(t.TableId, t.Name, t.CreatedAt, columns, rows);
     }
 
-    public async Task<long> CreateTableAsync(CreateTableDto dto)
+    public async Task<long> CreateTableAsync(Table table, Column column)
     {
         var stradegy = db.Database.CreateExecutionStrategy();
 
@@ -80,23 +80,7 @@ public class CustomTableRepository(AppDbContext db, ILogger<CalendarRepository> 
         {
             await using var tx = await db.Database.BeginTransactionAsync();
 
-            var table = new CustomTable
-            {
-                Name = dto.Name,
-                CreatedAt = DateTime.UtcNow
-            };
-
             db.CustomTables.Add(table);
-            await db.SaveChangesAsync();
-
-            var column = new CustomColumn
-            {
-                TableId = table.TableId,
-                Name = dto.Column.Name,
-                DataType = dto.Column.DataType,
-                ColOrder = 0
-            };
-
             db.CustomColumns.Add(column);
             await db.SaveChangesAsync();
 
@@ -135,7 +119,7 @@ public class CustomTableRepository(AppDbContext db, ILogger<CalendarRepository> 
             .Select(c => (int?)c.ColOrder)
             .MaxAsync() ?? -1;
 
-        var column = new CustomColumn
+        var column = new Column
         {
             TableId = tableId,
             Name = "Neue Spalte",
@@ -147,31 +131,31 @@ public class CustomTableRepository(AppDbContext db, ILogger<CalendarRepository> 
         await db.SaveChangesAsync();
     }
 
-    public async Task UpdateColumnAsync(long columnId, UpdateColumnDto dto)
+    public async Task UpdateColumnAsync(Column column)
     {
-        var column = await db.CustomColumns
-            .FirstOrDefaultAsync(c => c.ColumnId == columnId);
+        var col = await db.CustomColumns
+            .FirstOrDefaultAsync(c => c.ColumnId == column.ColumnId);
 
-        if (column is null) throw new KeyNotFoundException("Column not found");
+        if (col is null) throw new KeyNotFoundException("Column not found");
 
-        var typeChanged = column.DataType != dto.DataType;
+        var typeChanged = col.DataType != column.DataType;
 
-        column.Name = dto.Name;
-        column.ColOrder = dto.ColOrder;
+        col.Name = column.Name;
+        col.ColOrder = column.ColOrder;
 
         if (typeChanged)
         {
-            column.DataType = dto.DataType;
+            col.DataType = column.DataType;
 
             await db.CustomCells
-                .Where(c => c.ColumnId == columnId)
+                .Where(c => c.ColumnId == column.ColumnId)
                 .ExecuteDeleteAsync();
         }
 
         await db.SaveChangesAsync();
     }
 
-    public async Task UpdateColumnOrderAsync(List<UpdateColumnOrderDto> cols)
+    public async Task UpdateColumnOrderAsync(List<Column> cols)
     {
         var ids = cols.Select(c => c.ColumnId).ToList();
 
@@ -209,7 +193,7 @@ public class CustomTableRepository(AppDbContext db, ILogger<CalendarRepository> 
             .Select(r => (int?)r.RowOrder)
             .MaxAsync() ?? -1;
 
-        var row = new CustomRow
+        var row = new Row
         {
             TableId = tableId,
             CreatedAt = DateTime.UtcNow,
@@ -220,7 +204,7 @@ public class CustomTableRepository(AppDbContext db, ILogger<CalendarRepository> 
         await db.SaveChangesAsync();
     }
 
-    public async Task UpdateRowOrderAsync(List<RowOrderUpdateDto> list)
+    public async Task UpdateRowOrderAsync(List<Row> list)
     {
         foreach (var item in list)
         {
@@ -260,7 +244,7 @@ public class CustomTableRepository(AppDbContext db, ILogger<CalendarRepository> 
         // create cell if it does not exist
         if (cell == null)
         {
-            cell = new CustomCell { RowId = rowId, ColumnId = columnId };
+            cell = new Cell { RowId = rowId, ColumnId = columnId };
             db.CustomCells.Add(cell);
         }
 
