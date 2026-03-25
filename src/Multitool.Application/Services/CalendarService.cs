@@ -12,9 +12,12 @@ public class CalendarService(ICalendarRepository repository) : ICalendarService
         => await repository.GetEventsByRangeAsync(start, end, categories);
 
     public async Task<List<EventSearchResponse>> SearchCalendarEventsAsync(string searchString)
-        => await repository.SearchCalendarEventsAsync(searchString);
+    {
+        var result = await repository.SearchCalendarEventsAsync(searchString);
+        return result.Adapt<List<EventSearchResponse>>();
+    }
 
-    public async Task InsertEventAsync(CreateCalendarEvent newEvent)
+    public async Task<long> InsertEventAsync(CreateCalendarEvent newEvent)
         => await repository.InsertEventAsync(newEvent.Adapt<CalendarEvent>());
 
     public async Task UpdateEventAsync(CalendarEvent calendarEvent)

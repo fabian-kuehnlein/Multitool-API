@@ -14,6 +14,7 @@ public class CustomTableController(ICustomTableService service) : ControllerBase
     [HttpGet("tables")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetTableList()
     {
@@ -27,24 +28,13 @@ public class CustomTableController(ICustomTableService service) : ControllerBase
     [HttpGet("tables/{id}")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetTable(long id)
     {
-        try
-        {
-            var table = await service.GetTableAsync(id);
-
-            if (table is null)
-                throw new KeyNotFoundException($"Table with id {id} not found.");
-
-            return Ok(table);
-        }
-        catch (Exception ex)
-        {
-            
-            return StatusCode(StatusCodes.Status500InternalServerError);
-        }
+        var table = await service.GetTableAsync(id);
+        return Ok(table);
     }
 
     /// <summary>
@@ -53,18 +43,12 @@ public class CustomTableController(ICustomTableService service) : ControllerBase
     [HttpPost("tables")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> CreateTable([FromBody] CreateTableDto dto)
     {
-        try
-        {
-            var id = await service.CreateTableAsync(dto);
-            return Ok(id);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
-        }
+        var id = await service.CreateTableAsync(dto);
+        return Ok(id);
     }
 
     /// <summary>
@@ -77,19 +61,8 @@ public class CustomTableController(ICustomTableService service) : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> UpdateTable(long id, [FromBody] string newName)
     {
-        try
-        {
-            await service.UpdateTableAsync(id, newName);
-            return NoContent();
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(ex.Message);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
-        }
+        await service.UpdateTableAsync(id, newName);
+        return NoContent();
     }
 
     /// <summary>
