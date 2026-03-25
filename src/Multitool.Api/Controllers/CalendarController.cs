@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Mvc;
 using Multitool.Application.Interfaces;
 using Multitool.Domain.Entities.Calendar;
@@ -14,23 +15,12 @@ public class CalendarController(ICalendarService service) : ControllerBase
     [HttpGet("events")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetEventsByRange([FromQuery] DateTime startDate, [FromQuery] DateTime endDate, [FromQuery] string? categories)
     {
-        try
-        {
-            var events = await service.GetEventsByRangeAsync(startDate, endDate, categories ?? string.Empty);
-
-            if (events is null || events.Count <= 0)
-                return NotFound();
-
-            return Ok(events);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
-        }
+        var events = await service.GetEventsByRangeAsync(startDate, endDate, categories ?? string.Empty);
+        return Ok(events);
     }
 
     /// <summary>
@@ -39,23 +29,12 @@ public class CalendarController(ICalendarService service) : ControllerBase
     [HttpGet("events/search")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> SearchEvents([FromQuery] string searchString)
+    public async Task<IActionResult> SearchEvents([FromQuery][Required] string searchString)
     {
-        try
-        {  
-            var events = await service.SearchCalendarEventsAsync(searchString);
-
-            if (events is null || events.Count <= 0)
-                return NotFound();
-
-            return Ok(events);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
-        }
+        var events = await service.SearchCalendarEventsAsync(searchString);
+        return Ok(events);
     }
 
     /// <summary>
@@ -64,18 +43,12 @@ public class CalendarController(ICalendarService service) : ControllerBase
     [HttpPost("events")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> InsertEvent([FromBody] CreateCalendarEvent calendarEvent)
     {
-        try
-        {
-            await service.InsertEventAsync(calendarEvent);
-            return Ok();
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
-        }
+        var id = await service.InsertEventAsync(calendarEvent);
+        return Ok(id);
     }
 
     /// <summary>
@@ -83,19 +56,13 @@ public class CalendarController(ICalendarService service) : ControllerBase
     /// </summary>
     [HttpPut("events/{id}")]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> UpdateEvent([FromBody] CalendarEvent calendarEvent)
     {
-        try
-        {
-            await service.UpdateEventAsync(calendarEvent);
-            return Ok();
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
-        }
+        await service.UpdateEventAsync(calendarEvent);
+        return NoContent();
     }
 
     /// <summary>
@@ -103,19 +70,13 @@ public class CalendarController(ICalendarService service) : ControllerBase
     /// </summary>
     [HttpDelete("events/{id}")]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> DeleteEvent([FromQuery] int id)
     {
-        try
-        {
-            await service.DeleteEventAsync(id);
-            return Ok();
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
-        }
+        await service.DeleteEventAsync(id);
+        return NoContent();
     }
 
     /// <summary>
@@ -124,23 +85,13 @@ public class CalendarController(ICalendarService service) : ControllerBase
     [HttpGet("categories")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetCategories()
-    {
-        try
-        {       
-            var categories = await service.GetCategoriesAsync();
-
-            if (categories is null || categories.Count <= 0)
-                return NotFound();
-
-            return Ok(categories);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
-        }
+    {     
+        var categories = await service.GetCategoriesAsync();
+        return Ok(categories);
     }
 
     /// <summary>
@@ -150,22 +101,12 @@ public class CalendarController(ICalendarService service) : ControllerBase
     [HttpGet("holidays/{year}")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetHolidays([FromQuery] string year)
     {
-        try
-        {
-            var result = await service.GetHolidaysAsync(year);
-
-            if (result is null || result.Count <= 0)
-                return NotFound();
-    
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
-        }
+        var result = await service.GetHolidaysAsync(year);
+        return Ok(result);
     }
 }

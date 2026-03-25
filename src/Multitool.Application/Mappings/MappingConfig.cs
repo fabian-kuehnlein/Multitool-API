@@ -11,6 +11,12 @@ public class MappingConfig : IRegister
 {
     public void Register(TypeAdapterConfig config)
     {
+        config.NewConfig<CalendarEvent, EventSearchResponse>()
+            .Map(dest => dest.EventId, src => src.Id)
+            .Map(dest => dest.EventTitle, src => src.Title)
+            .Map(dest => dest.EventNote, src => src.Note)
+            .Map(dest => dest.StartDateTime, src => src.StartDateTime);
+            
         config.NewConfig<CreateCalendarEvent, CalendarEvent>();
 
         config.NewConfig<CreateTableDto, Table>()
