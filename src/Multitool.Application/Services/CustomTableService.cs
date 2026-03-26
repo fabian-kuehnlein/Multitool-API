@@ -1,5 +1,6 @@
 using Mapster;
 using Multitool.Application.Interfaces;
+using Multitool.Application.Models;
 using Multitool.Domain.Entities.CustomTable;
 using Multitool.Domain.Interfaces;
 using MultitoolApi.WebApi.Models.CustomTable;
@@ -9,16 +10,15 @@ namespace Multitool.Application.Services;
 public class CustomTableService(ICustomTableRepository repository) : ICustomTableService
 {
     public async Task<List<TableOverview>> GetTableListAsync()
-        => await repository.GetTableListAsync();
+    {
+        var list = await repository.GetTableListAsync();
+        return list.Adapt<List<TableOverview>>();
+    }
 
-    public async Task<TableDetail?> GetTableAsync(long tableId)
+    public async Task<TableDetail> GetTableAsync(long tableId)
     {
         var table = await repository.GetTableAsync(tableId);
-
-        if (table is null)
-            throw new KeyNotFoundException($"Table with id {tableId} not found.");
-
-        return table;
+        return table.Adapt<TableDetail>();
     }
 
     public async Task<long> CreateTableAsync(CreateTableDto dto)
