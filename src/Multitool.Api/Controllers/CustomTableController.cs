@@ -14,7 +14,6 @@ public class CustomTableController(ICustomTableService service) : ControllerBase
     [HttpGet("tables")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetTableList()
     {
@@ -28,7 +27,6 @@ public class CustomTableController(ICustomTableService service) : ControllerBase
     [HttpGet("tables/{id}")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetTable(long id)
