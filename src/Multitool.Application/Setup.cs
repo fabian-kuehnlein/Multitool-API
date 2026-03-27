@@ -1,9 +1,19 @@
-﻿namespace Multitool.Application;
+﻿using Mapster;
+using Microsoft.Extensions.DependencyInjection;
+using Multitool.Application.Interfaces;
+using Multitool.Application.Services;
 
-public class Setup
+namespace Multitool.Application;
+
+public static class Setup
 {
-    public static void Configure()
+    public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        
+        services.AddMapster();
+
+        services.AddScoped<ICalendarService, CalendarService>();
+        services.AddScoped<ICustomTableService, CustomTableService>();
+
+        return services;
     }
 }

@@ -1,14 +1,10 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using DotNetEnv;
-using Mapster;
-using Microsoft.EntityFrameworkCore;
 using Multitool.Api.Exceptions;
-using Multitool.Application.Interfaces;
-using Multitool.Application.Services;
-using Multitool.Domain.Interfaces;
-using Multitool.Infrastructure.Data;
-using Multitool.Infrastructure.Repositories;
+using Multitool.Api.Extensions;
+using Multitool.Application;
+using Multitool.Infrastructure;
 
 namespace Multitool.Api;
 
@@ -35,13 +31,8 @@ public class Program
 
         builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
-        // Calendar Infrastructure
-        builder.Services.AddScoped<ICalendarService, CalendarService>();
-        builder.Services.AddScoped<ICalendarRepository, CalendarRepository>();
-
-        // Custom-Table Infrastructure
-        builder.Services.AddScoped<ICustomTableRepository, CustomTableRepository>();
-        builder.Services.AddScoped<ICustomTableService, CustomTableService>();
+        builder.Services.AddApplication();
+        builder.Services.AddInfrastructure(builder.Configuration);
 
         builder.Services.AddCors(options =>
         {
@@ -63,56 +54,20 @@ public class Program
         builder.Services.AddSwaggerGen();
         builder.Logging.ClearProviders();
         builder.Logging.AddConsole();
-        builder.Services.AddMapster();
-
-        builder.Services.AddHttpClient<ICalendarRepository, CalendarRepository>(client =>
-        {
-            client.BaseAddress = new Uri("https://get.api-feiertage.de");
-        });
-
-        var dbHost = Environment.GetEnvironmentVariable("DB_HOST") ?? "localhost";
-        var dbPort = Environment.GetEnvironmentVariable("DB_PORT") ?? "3306";
-        var dbName = Environment.GetEnvironmentVariable("DB_NAME");
-        var dbUser = Environment.GetEnvironmentVariable("DB_USER");
-        var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD");
-
-        Console.WriteLine($"DB Connection: {dbUser}@{dbHost}:{dbPort}/{dbName}");
-
-        var connectionString = $"server={dbHost};port={dbPort};database={dbName};user={dbUser};password={dbPassword}";
-
-        builder.Services.AddDbContext<AppDbContext>(options =>
-            options.UseMySql(
-                connectionString,
-                new MySqlServerVersion(new Version(11, 7, 2)),
-                mySqlOptions => mySqlOptions
-                    .EnableRetryOnFailure(
-                        maxRetryCount: 10,
-                        maxRetryDelay: TimeSpan.FromSeconds(5),
-                        errorNumbersToAdd: null
-                ))
-            );
 
         var app = builder.Build();
+
+        app.UseExceptionHandler();
 
         app.UseSwagger();
         app.UseSwaggerUI();
 
-        app.UseExceptionHandler();
-
-        app.UseRouting();
         app.UseCors("AllowAll");
 
         app.MapControllers().RequireCors("AllowAll");
 
-        using (var scope = app.Services.CreateScope())
-        {
-            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            
-            if (builder.Environment.IsProduction())
-            {
-                dbContext.Database.Migrate();
-            }
-        };
+        if (app.Environment.IsProduction())
+            app.ApplyMigrations();
 
         app.Run();
     }

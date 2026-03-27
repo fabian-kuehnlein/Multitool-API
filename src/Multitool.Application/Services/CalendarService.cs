@@ -2,11 +2,10 @@ using Mapster;
 using Multitool.Application.Interfaces;
 using Multitool.Domain.Entities.Calendar;
 using Multitool.Domain.Interfaces;
-using MultitoolApi.WebApi.Models;
 
 namespace Multitool.Application.Services;
 
-public class CalendarService(ICalendarRepository repository) : ICalendarService
+public class CalendarService(ICalendarRepository repository, ICalendarApiClient apiClient) : ICalendarService
 {
     public async Task<List<CalendarEvent>> GetEventsByRangeAsync(DateTime start, DateTime end, string categories)
         => await repository.GetEventsByRangeAsync(start, end, categories);
@@ -30,5 +29,5 @@ public class CalendarService(ICalendarRepository repository) : ICalendarService
         => await repository.GetCategoriesAsync();
 
     public async Task<List<Holiday>> GetHolidaysAsync(string year)
-        => await repository.GetHolidaysAsync(year);
+        => await apiClient.GetHolidaysAsync(year);
 }
