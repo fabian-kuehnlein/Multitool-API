@@ -1,80 +1,74 @@
-using MultitoolApi.WebApi.Models.CustomTable;
 using System.Data;
 using Microsoft.EntityFrameworkCore;
-using Multitool.Domain.Interfaces;
-using Multitool.Infrastructure.Data;
 using Multitool.Domain.Entities.CustomTable;
 using Multitool.Domain.Enums;
 using Multitool.Domain.Exceptions;
+using Multitool.Domain.Interfaces;
+using Multitool.Infrastructure.Data;
+
 
 namespace Multitool.Infrastructure.Repositories;
 
 public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
 {
-    public async Task<List<TableOverview>> GetTableListAsync()
+    public async Task<List<Table>> GetTableListAsync()
     {
         return await db.CustomTables
             .OrderBy(t => t.Name)
-            .Select(t => new TableOverview(t.TableId, t.Name))
+            .Select(t => new Table { TableId = t.TableId, Name = t.Name })
             .ToListAsync();
     }
 
-    public async Task<TableDetail?> GetTableAsync(long tableId)
+    public async Task<Table> GetTableAsync(long tableId)
     {
-        const int take = 100;
-
-        var columns = await db.CustomColumns
-            .Where(c => c.TableId == tableId)
-            .OrderBy(c => c.ColOrder)
-            .Select(c => new ColumnInfo(c.ColumnId, c.Name, c.DataType, c.ColOrder))
-            .ToListAsync();
-
-        var flatRows = await db.CustomRows
-            .Where(r => r.TableId == tableId)
-            .OrderBy(r => r.RowId)
-            .Take(take)
-            .Select(r => new
+        var table = await db.CustomTables
+            .Where(t => t.TableId == tableId)
+            .Select(t => new Table
             {
-                r.RowId,
-                r.RowOrder,
-                Cells = r.Cells.Select(c => new
-                {
-                    c.ColumnId,
-                    c.ValString,
-                    c.ValInt,
-                    c.ValDec,
-                    c.ValDate,
-                    c.ValBool
-                }).ToList()
+                TableId  = t.TableId,
+                Name     = t.Name,
+                CreatedAt = t.CreatedAt,
+                Columns  = t.Columns
+                    .OrderBy(c => c.ColOrder)
+                    .Select(c => new Column
+                    {
+                        ColumnId  = c.ColumnId,
+                        Name      = c.Name,
+                        DataType  = c.DataType,
+                        ColOrder  = c.ColOrder
+                    })
+                    .ToList(),
+                Rows = t.Rows
+                    .OrderBy(r => r.RowId)
+                    .Select(r => new Row
+                    {
+                        RowId    = r.RowId,
+                        RowOrder = r.RowOrder,
+                        Cells    = r.Cells.Select(c => new Cell
+                        {
+                            ColumnId  = c.ColumnId,
+                            ValString = c.ValString,
+                            ValInt    = c.ValInt,
+                            ValDec    = c.ValDec,
+                            ValDate   = c.ValDate,
+                            ValBool   = c.ValBool
+                        }).ToList()
+                    })
+                    .ToList()
             })
-            .ToListAsync();
+            .FirstOrDefaultAsync();
 
-        var rows = flatRows.Select(r => new RowInfo(
-                r.RowId,
-                r.Cells.ToDictionary(
-                    c => c.ColumnId,
-                    c => (object?)(
-                        c.ValString
-                        ?? (object?)c.ValInt
-                        ?? c.ValDec
-                        ?? (object?)c.ValDate
-                        ?? c.ValBool)),
-                r.RowOrder
-            )).ToList();
+        if (table is null)
+            throw new NotFoundException($"Table with Id {tableId} not found");
 
-        var t = await db.CustomTables
-            .FirstOrDefaultAsync(tt => tt.TableId == tableId);
-
-        return t is null
-            ? null
-            : new TableDetail(t.TableId, t.Name, t.CreatedAt, columns, rows);
+        return table;
     }
 
     public async Task<long> CreateTableAsync(Table table, Column column)
     {
-        var stradegy = db.Database.CreateExecutionStrategy();
+        var strategy = db.Database.CreateExecutionStrategy();
 
-        return await stradegy.ExecuteAsync(async () =>
+        return await strategy.ExecuteAsync(async () =>
         {
             await using var tx = await db.Database.BeginTransactionAsync();
 
@@ -103,15 +97,20 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
     {
         var table = await db.CustomTables.FindAsync(new object?[] { tableId });
 
-        if (table is not null)
-        {
-            db.CustomTables.Remove(table);
-            await db.SaveChangesAsync();
-        }
+        if (table is null)
+            throw new NotFoundException($"Table with Id {tableId} not found");
+
+        db.CustomTables.Remove(table);
+        await db.SaveChangesAsync();
     }
 
     public async Task CreateColumnAsync(long tableId)
     {
+        var tableExists = await db.CustomTables.AnyAsync(t => t.TableId == tableId);
+
+        if (!tableExists)
+            throw new NotFoundException($"Table with Id {tableId} not found");
+
         var maxOrder = await db.CustomColumns
             .Where(c => c.TableId == tableId)
             .Select(c => (int?)c.ColOrder)
@@ -119,8 +118,8 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
 
         var column = new Column
         {
-            TableId = tableId,
-            Name = "Neue Spalte",
+            TableId  = tableId,
+            Name     = "Neue Spalte",
             DataType = CustomDataType.String,
             ColOrder = maxOrder + 1
         };
@@ -134,11 +133,12 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
         var col = await db.CustomColumns
             .FirstOrDefaultAsync(c => c.ColumnId == column.ColumnId);
 
-        if (col is null) throw new KeyNotFoundException("Column not found");
+        if (col is null)
+            throw new NotFoundException($"Column with Id {column.ColumnId} not found");
 
         var typeChanged = col.DataType != column.DataType;
 
-        col.Name = column.Name;
+        col.Name     = column.Name;
         col.ColOrder = column.ColOrder;
 
         if (typeChanged)
@@ -153,21 +153,19 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
         await db.SaveChangesAsync();
     }
 
-    public async Task UpdateColumnOrderAsync(List<Column> cols)
+    public async Task UpdateColumnOrderAsync(List<Column> columns)
     {
-        var ids = cols.Select(c => c.ColumnId).ToList();
+        var ids = columns.Select(c => c.ColumnId).ToList();
 
-        var columns = await db.CustomColumns
+        var oldColumns = await db.CustomColumns
             .Where(c => ids.Contains(c.ColumnId))
             .ToListAsync();
 
-        foreach (var col in columns)
+        foreach (var col in oldColumns)
         {
-            var update = cols.FirstOrDefault(c => c.ColumnId == col.ColumnId);
-            if (update != null)
-            {
+            var update = columns.FirstOrDefault(c => c.ColumnId == col.ColumnId);
+            if (update is not null)
                 col.ColOrder = update.ColOrder;
-            }
         }
 
         await db.SaveChangesAsync();
@@ -178,7 +176,8 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
         var column = await db.CustomColumns
             .FirstOrDefaultAsync(c => c.ColumnId == columnId && c.TableId == tableId);
 
-        if (column is null) return;
+        if (column is null)
+            throw new NotFoundException($"Column with Id {columnId} not found in table {tableId}");
 
         db.CustomColumns.Remove(column);
         await db.SaveChangesAsync();
@@ -186,6 +185,11 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
 
     public async Task CreateRowAsync(long tableId)
     {
+        var tableExists = await db.CustomTables.AnyAsync(t => t.TableId == tableId);
+
+        if (!tableExists)
+            throw new NotFoundException($"Table with Id {tableId} not found");
+
         var maxOrder = await db.CustomRows
             .Where(r => r.TableId == tableId)
             .Select(r => (int?)r.RowOrder)
@@ -193,9 +197,9 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
 
         var row = new Row
         {
-            TableId = tableId,
+            TableId   = tableId,
             CreatedAt = DateTime.UtcNow,
-            RowOrder = maxOrder + 1
+            RowOrder  = maxOrder + 1
         };
 
         await db.CustomRows.AddAsync(row);
@@ -204,58 +208,73 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
 
     public async Task UpdateRowOrderAsync(List<Row> list)
     {
+        var ids = list.Select(r => r.RowId).ToList();
+
+        var rows = await db.CustomRows
+            .Where(r => ids.Contains(r.RowId))
+            .ToListAsync();
+
         foreach (var item in list)
         {
-            var row = await db.CustomRows.FirstOrDefaultAsync(r => r.RowId == item.RowId);
+            var row = rows.FirstOrDefault(r => r.RowId == item.RowId)
+                ?? throw new NotFoundException($"Row with Id {item.RowId} not found");
 
-            if (row != null)
-            {
-                row.RowOrder = item.RowOrder;
-            }
+            row.RowOrder = item.RowOrder;
         }
 
         await db.SaveChangesAsync();
     }
 
-    public async Task DeleteRowsAsync(long tableId, List<long> rows)
+    public async Task DeleteRowsAsync(long tableId, List<long> rowIds)
     {
+        var existingIds = await db.CustomRows
+            .Where(r => r.TableId == tableId && rowIds.Contains(r.RowId))
+            .Select(r => r.RowId)
+            .ToListAsync();
+
+        var missing = rowIds.Except(existingIds).ToList();
+
+        if (missing.Count > 0)
+            throw new NotFoundException($"Rows not found in table {tableId}: {string.Join(", ", missing)}");
+
         await db.CustomRows
-            .Where(r => r.TableId == tableId && rows.Contains(r.RowId))
+            .Where(r => r.TableId == tableId && rowIds.Contains(r.RowId))
             .ExecuteDeleteAsync();
     }
 
     public async Task UpsertCellAsync(long rowId, long columnId, object? value)
     {
+        var rowExists = await db.CustomRows.AnyAsync(r => r.RowId == rowId);
+
+        if (!rowExists)
+            throw new NotFoundException($"Row with Id {rowId} not found");
+
         var column = await db.CustomColumns
             .Where(c => c.ColumnId == columnId)
             .Select(c => new { c.TableId, c.DataType })
             .FirstOrDefaultAsync();
 
-        if (column == null)
-        {
-            throw new ArgumentException($"Column {columnId} not found");
-        }
+        if (column is null)
+            throw new NotFoundException($"Column with Id {columnId} not found");
 
-        var cell = await db.CustomCells
-            .FindAsync(new object?[] { rowId, columnId });
+        var cell = await db.CustomCells.FindAsync(new object?[] { rowId, columnId });
 
-        // create cell if it does not exist
-        if (cell == null)
+        if (cell is null)
         {
             cell = new Cell { RowId = rowId, ColumnId = columnId };
             db.CustomCells.Add(cell);
         }
 
         cell.ValString = null;
-        cell.ValInt = null;
-        cell.ValDec = null;
-        cell.ValDate = null;
-        cell.ValBool = null;
+        cell.ValInt    = null;
+        cell.ValDec    = null;
+        cell.ValDate   = null;
+        cell.ValBool   = null;
 
         switch (column.DataType)
         {
             case CustomDataType.String:
-                cell.ValString = value!.ToString();
+                cell.ValString = value?.ToString();
                 break;
 
             case CustomDataType.Int when int.TryParse(value?.ToString(), out var i):
@@ -275,7 +294,7 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
                 break;
 
             default:
-                throw new ArgumentException($"Unsupported data type: {column.DataType}");
+                throw new ArgumentException($"Unsupported data type or invalid value for type {column.DataType}: '{value}'");
         }
 
         await db.SaveChangesAsync();
