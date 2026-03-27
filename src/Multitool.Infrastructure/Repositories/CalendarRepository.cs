@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Multitool.Domain.Interfaces;
 using Multitool.Infrastructure.Data;
@@ -7,7 +6,7 @@ using Multitool.Domain.Exceptions;
 
 namespace Multitool.Infrastructure.Repositories;
 
-public class CalendarRepository(AppDbContext db, HttpClient httpClient) : ICalendarRepository
+public class CalendarRepository(AppDbContext db) : ICalendarRepository
 {
     public async Task<List<CalendarEvent>> GetEventsByRangeAsync(DateTime start, DateTime end, string? categories)
     {
@@ -42,8 +41,12 @@ public class CalendarRepository(AppDbContext db, HttpClient httpClient) : ICalen
         var results = await db.CalendarEvents
             .AsNoTracking()
             .Where(e =>
-                EF.Functions.Like(e.Title.ToLower(), pattern.ToLower()) ||
-                (e.Note != null && EF.Functions.Like(e.Note.ToLower(), pattern.ToLower())))
+                EF.Functions.Like(e.Title, pattern)
+                ||
+                (
+                    EF.Functions.Like(e.Note, pattern)
+                    && e.Note != null
+                ))
             .OrderBy(e => e.StartDateTime)
             .ToListAsync();
 
@@ -99,27 +102,5 @@ public class CalendarRepository(AppDbContext db, HttpClient httpClient) : ICalen
             throw new NotFoundException("No categories found");
 
         return categories;
-    }
-
-    public async Task<List<Holiday>> GetHolidaysAsync(string year)
-    {
-        var url = $"?years={year}&states=by";
-        var response = await httpClient.GetAsync(url);
-        response.EnsureSuccessStatusCode();
-
-        var jsonString = await response.Content.ReadAsStringAsync();
-        var data = JsonSerializer.Deserialize<HolidayResponse>(jsonString, new JsonSerializerOptions
-        {
-            PropertyNameCaseInsensitive = true
-        });
-
-        if (data is null || data.Feiertage is null || data.Feiertage.Count <= 0)
-            throw new NotFoundException($"No holidays found for year {year}");
-
-        return data?.Feiertage?.Select(item => new Holiday
-        {
-            Name = item.Fname,
-            Date = DateTime.Parse(item.Date)
-        }).ToList() ?? new List<Holiday>();
     }
 }
