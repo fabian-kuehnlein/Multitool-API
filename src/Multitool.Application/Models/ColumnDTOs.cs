@@ -20,5 +20,3 @@ public record UpdateColumnOrderDto(
     long ColumnId,
     int ColOrder
 );
-
-public record ColumnInfo (long ColumnId, string ColumnName, CustomDataType DataType, int ColOrder);
