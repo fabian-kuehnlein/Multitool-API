@@ -73,7 +73,7 @@ public class CalendarController(ICalendarService service) : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> DeleteEvent([FromQuery] int id)
+    public async Task<IActionResult> DeleteEvent([FromRoute] int id)
     {
         await service.DeleteEventAsync(id);
         return NoContent();
@@ -104,7 +104,7 @@ public class CalendarController(ICalendarService service) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> GetHolidays([FromQuery] string year)
+    public async Task<IActionResult> GetHolidays([FromRoute]string year)
     {
         var result = await service.GetHolidaysAsync(year);
         return Ok(result);
