@@ -20,7 +20,7 @@ public sealed class GlobalExceptionHandler(IProblemDetailsService problemDetails
                 Detail = exception.Message
             },
 
-            KeyNotFoundException or NotFoundException => new ProblemDetails
+            NotFoundException or KeyNotFoundException => new ProblemDetails
             {
                 Type = "https://httpstatuses.com/404",
                 Title = "Resource not found",

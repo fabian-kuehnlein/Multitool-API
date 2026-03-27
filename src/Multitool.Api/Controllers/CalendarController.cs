@@ -15,7 +15,6 @@ public class CalendarController(ICalendarService service) : ControllerBase
     [HttpGet("events")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetEventsByRange([FromQuery] DateTime startDate, [FromQuery] DateTime endDate, [FromQuery] string? categories)
     {
@@ -29,7 +28,6 @@ public class CalendarController(ICalendarService service) : ControllerBase
     [HttpGet("events/search")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> SearchEvents([FromQuery][Required] string searchString)
     {
@@ -43,7 +41,6 @@ public class CalendarController(ICalendarService service) : ControllerBase
     [HttpPost("events")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> InsertEvent([FromBody] CreateCalendarEvent calendarEvent)
     {
@@ -57,7 +54,6 @@ public class CalendarController(ICalendarService service) : ControllerBase
     [HttpPut("events/{id}")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> UpdateEvent([FromBody] CalendarEvent calendarEvent)
     {
@@ -71,7 +67,6 @@ public class CalendarController(ICalendarService service) : ControllerBase
     [HttpDelete("events/{id}")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> DeleteEvent([FromRoute] int id)
     {
@@ -85,7 +80,6 @@ public class CalendarController(ICalendarService service) : ControllerBase
     [HttpGet("categories")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetCategories()
@@ -101,7 +95,6 @@ public class CalendarController(ICalendarService service) : ControllerBase
     [HttpGet("holidays/{year}")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetHolidays([FromRoute]string year)
