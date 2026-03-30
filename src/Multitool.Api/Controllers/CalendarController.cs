@@ -51,7 +51,7 @@ public class CalendarController(ICalendarService service) : ControllerBase
     /// <summary>
     /// Updates an existing calendar event
     /// </summary>
-    [HttpPut("events/{id}")]
+    [HttpPut("events")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
