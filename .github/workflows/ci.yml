@@ -2,16 +2,12 @@ name: Build and Test
 
 on:
   push:
-    branches:
-      - main
-      - dev
+    branches: [ main, dev ]
   pull_request:
-    branches:
-      - main
-      - dev
+    branches: [ main, dev ]
 
 jobs:
-  build-dotnet-api:
+  multitool-api:
     name: Build and Test .NET API
     runs-on: ubuntu-latest
 
@@ -21,13 +17,17 @@ jobs:
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '10.0.x'
 
       - name: Restore dependencies
-        run: dotnet restore ./MultitoolApi.csproj
+        run: dotnet restore ./Multitool.sln
 
       - name: Build
-        run: dotnet build ./MultitoolApi.csproj --configuration Release --no-restore
+        run: dotnet build ./Multitool.sln --configuration Release --no-restore
 
-      # - name: Run tests
-      #   run: dotnet test ./MultitoolApi.csproj --no-build --verbosity normal
+      - name: Test API
+        run: dotnet test tests/Multitool.Api.Tests/Multitool.Api.Tests.csproj --configuration Release --no-build --verbosity normal
+
+      - name: Test Application
+        run: dotnet test tests/Multitool.Application.Tests/Multitool.Application.Tests.csproj --configuration Release --no-build --verbosity normal
+      
