@@ -1,6 +1,8 @@
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using DotNetEnv;
+using Microsoft.IdentityModel.Tokens;
 using Multitool.Api.Exceptions;
 using Multitool.Api.Extensions;
 using Multitool.Application;
@@ -36,13 +38,17 @@ public class Program
 
         builder.Services.AddCors(options =>
         {
-            options.AddPolicy("AllowAll",
-                builder =>
-                {
-                    builder.AllowAnyOrigin()
-                        .AllowAnyMethod()
-                        .AllowAnyHeader();
-                });
+            options.AddPolicy("AllowFrontendAndLocalhost", policy =>
+            {
+                policy.WithOrigins(
+                    "https://multitool-frontend-pi.vercel.app/", // Prod Frontend URL
+                    "https://multitool-frontend-integration.vercel.app/", // Integration Frontend URL
+                    "http://localhost:4200" // Angular local development on ng serve
+                )
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
+            });
         });
 
         builder.Services.AddControllers()
@@ -55,19 +61,47 @@ public class Program
         builder.Logging.ClearProviders();
         builder.Logging.AddConsole();
 
+        var jwtSettings = builder.Configuration.GetSection("Jwt");
+        var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY");
+
+        builder.Services
+            .AddAuthentication("Bearer")
+            .AddJwtBearer("Bearer", options =>
+            {
+                options.TokenValidationParameters = new()
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = jwtSettings["Issuer"],
+                    ValidAudience = jwtSettings["Audience"],
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey!))
+                };
+            });
+
         var app = builder.Build();
 
         app.UseExceptionHandler();
 
-        app.UseSwagger();
-        app.UseSwaggerUI();
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseSwagger();
+            app.UseSwaggerUI();
+        }
 
-        app.UseCors("AllowAll");
+        app.UseCors("AllowFrontendAndLocalhost");
 
-        app.MapControllers().RequireCors("AllowAll");
+        app.UseAuthentication();
+        app.UseAuthorization();
 
-        if (app.Environment.IsProduction())
+        app.MapControllers().RequireCors("AllowFrontendAndLocalhost");
+
+        // Apply migrations on startup in production, or in development if enabled via environment variable
+        if (app.Environment.IsProduction() || (app.Environment.IsDevelopment() && Environment.GetEnvironmentVariable("APPLY_MIGRATIONS") == "true"))
+        {
             app.ApplyMigrations();
+        }
 
         app.Run();
     }

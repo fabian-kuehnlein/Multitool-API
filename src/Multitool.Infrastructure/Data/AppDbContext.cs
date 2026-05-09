@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Multitool.Domain.Entities.Calendar;
+using Multitool.Domain.Entities.Config;
 using Multitool.Domain.Entities.CustomTable;
-using Multitool.Domain.Enums;
 
 namespace Multitool.Infrastructure.Data;
 
@@ -9,6 +9,7 @@ public class AppDbContext : DbContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
+    public DbSet<User> Users { get; set; }
     public DbSet<CalendarEvent> CalendarEvents { get; set; }
     public DbSet<Category> Categories { get;  set; }
     public DbSet<Table> CustomTables { get; set; }

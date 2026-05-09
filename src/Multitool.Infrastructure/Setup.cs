@@ -1,8 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Multitool.Domain.Interfaces;
 using Multitool.Infrastructure.ApiClients;
+using Multitool.Infrastructure.Authentification;
 using Multitool.Infrastructure.Data;
 using Multitool.Infrastructure.Repositories;
 
@@ -14,6 +14,10 @@ public static class Setup
     {
         if (string.IsNullOrWhiteSpace(connectionString))
             throw new InvalidOperationException("Database connection string is missing. Set DB_CONNECTION_STRING in environment variables.");
+
+        services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+        services.AddScoped<IPasswordHasher, PasswordHasher>();
+        services.AddScoped<IUserRepository, UserRepository>();
 
         services.AddScoped<ICalendarRepository, CalendarRepository>();
         services.AddScoped<ICustomTableRepository, CustomTableRepository>();
