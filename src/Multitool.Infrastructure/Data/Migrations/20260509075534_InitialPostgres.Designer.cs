@@ -2,104 +2,104 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Multitool.Infrastructure.Data;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace MultitoolApi.Migrations
+namespace Multitool.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260107192123_AddCategoryColors")]
-    partial class AddCategoryColors
+    [Migration("20260509075534_InitialPostgres")]
+    partial class InitialPostgres
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.16")
-                .HasAnnotation("Relational:MaxIdentifierLength", 64);
+                .HasAnnotation("ProductVersion", "10.0.7")
+                .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-            MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
+            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("MultitoolApi.Businesslogic.Models.CalendarEvent", b =>
+            modelBuilder.Entity("Multitool.Domain.Entities.Calendar.CalendarEvent", b =>
                 {
-                    b.Property<int>("EventId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("eventId");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("EventId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<int>("CategoryId")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("categoryId");
 
                     b.Property<DateTime?>("EndDateTime")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("endDateTime");
 
-                    b.Property<string>("EventNote")
-                        .HasColumnType("longtext")
-                        .HasColumnName("eventNote");
-
-                    b.Property<string>("EventTitle")
-                        .IsRequired()
-                        .HasColumnType("longtext")
-                        .HasColumnName("eventTitle");
-
                     b.Property<bool>("IsAllDay")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("isAllDay");
 
+                    b.Property<string>("Note")
+                        .HasColumnType("text")
+                        .HasColumnName("eventNote");
+
                     b.Property<DateTime?>("RecurrenceEnd")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("recurrenceEnd");
 
                     b.Property<string>("RecurrenceRule")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("recurrenceRule");
 
                     b.Property<DateTime>("StartDateTime")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("startDateTime");
 
-                    b.HasKey("EventId");
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("eventTitle");
+
+                    b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
 
                     b.ToTable("calendar_events", (string)null);
                 });
 
-            modelBuilder.Entity("MultitoolApi.Businesslogic.Models.Category", b =>
+            modelBuilder.Entity("Multitool.Domain.Entities.Calendar.Category", b =>
                 {
-                    b.Property<int>("CategoryId")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("categoryId");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("CategoryId"));
-
-                    b.Property<string>("CategoryName")
-                        .IsRequired()
-                        .HasColumnType("longtext")
-                        .HasColumnName("categoryName");
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Color")
                         .IsRequired()
                         .HasMaxLength(9)
-                        .HasColumnType("varchar(9)")
+                        .HasColumnType("character varying(9)")
                         .HasColumnName("color");
 
-                    b.HasKey("CategoryId");
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("categoryName");
+
+                    b.HasKey("Id");
 
                     b.ToTable("categories", (string)null);
                 });
 
-            modelBuilder.Entity("MultitoolApi.Infrastructure.DataAccessLayer.Models.CustomTable.CustomCell", b =>
+            modelBuilder.Entity("Multitool.Domain.Entities.CustomTable.Cell", b =>
                 {
                     b.Property<long>("RowId")
                         .HasColumnType("bigint");
@@ -108,15 +108,15 @@ namespace MultitoolApi.Migrations
                         .HasColumnType("bigint");
 
                     b.Property<bool?>("ValBool")
-                        .HasColumnType("tinyint(1)")
+                        .HasColumnType("boolean")
                         .HasColumnName("val_bool");
 
                     b.Property<DateTime?>("ValDate")
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("val_date");
 
                     b.Property<decimal?>("ValDec")
-                        .HasColumnType("decimal(65,30)")
+                        .HasColumnType("numeric")
                         .HasColumnName("val_dec");
 
                     b.Property<long?>("ValInt")
@@ -124,7 +124,7 @@ namespace MultitoolApi.Migrations
                         .HasColumnName("val_int");
 
                     b.Property<string>("ValString")
-                        .HasColumnType("longtext")
+                        .HasColumnType("text")
                         .HasColumnName("val_string");
 
                     b.HasKey("RowId", "ColumnId");
@@ -141,16 +141,16 @@ namespace MultitoolApi.Migrations
                     b.ToTable("custom_cell", (string)null);
                 });
 
-            modelBuilder.Entity("MultitoolApi.Infrastructure.DataAccessLayer.Models.CustomTable.CustomColumn", b =>
+            modelBuilder.Entity("Multitool.Domain.Entities.CustomTable.Column", b =>
                 {
                     b.Property<long>("ColumnId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("ColumnId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("ColumnId"));
 
                     b.Property<int>("ColOrder")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("col_order");
 
                     b.Property<string>("DataType")
@@ -161,7 +161,7 @@ namespace MultitoolApi.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(120)
-                        .HasColumnType("varchar(120)")
+                        .HasColumnType("character varying(120)")
                         .HasColumnName("name");
 
                     b.Property<long>("TableId")
@@ -174,22 +174,22 @@ namespace MultitoolApi.Migrations
                     b.ToTable("custom_column", (string)null);
                 });
 
-            modelBuilder.Entity("MultitoolApi.Infrastructure.DataAccessLayer.Models.CustomTable.CustomRow", b =>
+            modelBuilder.Entity("Multitool.Domain.Entities.CustomTable.Row", b =>
                 {
                     b.Property<long>("RowId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("RowId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("RowId"));
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<int>("RowOrder")
-                        .HasColumnType("int");
+                        .HasColumnType("integer");
 
                     b.Property<long>("TableId")
                         .HasColumnType("bigint");
@@ -201,25 +201,25 @@ namespace MultitoolApi.Migrations
                     b.ToTable("custom_row", (string)null);
                 });
 
-            modelBuilder.Entity("MultitoolApi.Infrastructure.DataAccessLayer.Models.CustomTable.CustomTable", b =>
+            modelBuilder.Entity("Multitool.Domain.Entities.CustomTable.Table", b =>
                 {
                     b.Property<long>("TableId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint")
                         .HasColumnName("tableId");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<long>("TableId"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("TableId"));
 
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime(6)")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(120)
-                        .HasColumnType("varchar(120)")
+                        .HasColumnType("character varying(120)")
                         .HasColumnName("tableName");
 
                     b.HasKey("TableId");
@@ -227,9 +227,9 @@ namespace MultitoolApi.Migrations
                     b.ToTable("custom_table", (string)null);
                 });
 
-            modelBuilder.Entity("MultitoolApi.Businesslogic.Models.CalendarEvent", b =>
+            modelBuilder.Entity("Multitool.Domain.Entities.Calendar.CalendarEvent", b =>
                 {
-                    b.HasOne("MultitoolApi.Businesslogic.Models.Category", null)
+                    b.HasOne("Multitool.Domain.Entities.Calendar.Category", null)
                         .WithMany()
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -237,15 +237,15 @@ namespace MultitoolApi.Migrations
                         .HasConstraintName("FK_calendar_events_categoryId");
                 });
 
-            modelBuilder.Entity("MultitoolApi.Infrastructure.DataAccessLayer.Models.CustomTable.CustomCell", b =>
+            modelBuilder.Entity("Multitool.Domain.Entities.CustomTable.Cell", b =>
                 {
-                    b.HasOne("MultitoolApi.Infrastructure.DataAccessLayer.Models.CustomTable.CustomColumn", "Column")
+                    b.HasOne("Multitool.Domain.Entities.CustomTable.Column", "Column")
                         .WithMany()
                         .HasForeignKey("ColumnId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("MultitoolApi.Infrastructure.DataAccessLayer.Models.CustomTable.CustomRow", "Row")
+                    b.HasOne("Multitool.Domain.Entities.CustomTable.Row", "Row")
                         .WithMany("Cells")
                         .HasForeignKey("RowId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -256,9 +256,9 @@ namespace MultitoolApi.Migrations
                     b.Navigation("Row");
                 });
 
-            modelBuilder.Entity("MultitoolApi.Infrastructure.DataAccessLayer.Models.CustomTable.CustomColumn", b =>
+            modelBuilder.Entity("Multitool.Domain.Entities.CustomTable.Column", b =>
                 {
-                    b.HasOne("MultitoolApi.Infrastructure.DataAccessLayer.Models.CustomTable.CustomTable", "Table")
+                    b.HasOne("Multitool.Domain.Entities.CustomTable.Table", "Table")
                         .WithMany("Columns")
                         .HasForeignKey("TableId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -267,9 +267,9 @@ namespace MultitoolApi.Migrations
                     b.Navigation("Table");
                 });
 
-            modelBuilder.Entity("MultitoolApi.Infrastructure.DataAccessLayer.Models.CustomTable.CustomRow", b =>
+            modelBuilder.Entity("Multitool.Domain.Entities.CustomTable.Row", b =>
                 {
-                    b.HasOne("MultitoolApi.Infrastructure.DataAccessLayer.Models.CustomTable.CustomTable", "Table")
+                    b.HasOne("Multitool.Domain.Entities.CustomTable.Table", "Table")
                         .WithMany("Rows")
                         .HasForeignKey("TableId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -278,12 +278,12 @@ namespace MultitoolApi.Migrations
                     b.Navigation("Table");
                 });
 
-            modelBuilder.Entity("MultitoolApi.Infrastructure.DataAccessLayer.Models.CustomTable.CustomRow", b =>
+            modelBuilder.Entity("Multitool.Domain.Entities.CustomTable.Row", b =>
                 {
                     b.Navigation("Cells");
                 });
 
-            modelBuilder.Entity("MultitoolApi.Infrastructure.DataAccessLayer.Models.CustomTable.CustomTable", b =>
+            modelBuilder.Entity("Multitool.Domain.Entities.CustomTable.Table", b =>
                 {
                     b.Navigation("Columns");
 
