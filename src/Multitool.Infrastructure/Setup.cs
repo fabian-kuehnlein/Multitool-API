@@ -10,23 +10,24 @@ namespace Multitool.Infrastructure;
 
 public static class Setup
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration config)
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, string connectionString)
     {
+        if (string.IsNullOrWhiteSpace(connectionString))
+            throw new InvalidOperationException("Database connection string is missing. Set DB_CONNECTION_STRING in environment variables.");
+
         services.AddScoped<ICalendarRepository, CalendarRepository>();
         services.AddScoped<ICustomTableRepository, CustomTableRepository>();
 
-        var connectionString = BuildConnectionString(config);
-
         services.AddDbContext<AppDbContext>(options =>
-            options.UseMySql(
+            options.UseNpgsql(
                 connectionString,
-                ServerVersion.AutoDetect(connectionString),
-                mySqlOptions => mySqlOptions
-                    .EnableRetryOnFailure(
+                npgsqlOptions => {
+                    npgsqlOptions.EnableRetryOnFailure(
                         maxRetryCount: 10,
                         maxRetryDelay: TimeSpan.FromSeconds(5),
-                        errorNumbersToAdd: null
-                ))
+                        errorCodesToAdd: null
+                    );
+                })
         );
 
         services.AddHttpClient<ICalendarApiClient, CalendarApiClient>(client =>
@@ -35,22 +36,5 @@ public static class Setup
         });
 
         return services;
-    }
-
-    private static string BuildConnectionString(IConfiguration config)
-    {
-        var dbHost = config["DB_HOST"];
-        var dbPort = config["DB_PORT"];
-        var dbName = config["DB_NAME"];
-        var dbUser = config["DB_USER"];
-        var dbPassword = config["DB_PASSWORD"];
-
-        ArgumentException.ThrowIfNullOrEmpty(dbHost);
-        ArgumentException.ThrowIfNullOrEmpty(dbPort);
-        ArgumentException.ThrowIfNullOrEmpty(dbName);
-        ArgumentException.ThrowIfNullOrEmpty(dbUser);
-        ArgumentException.ThrowIfNullOrEmpty(dbPassword);
-
-        return $"server={dbHost};port={dbPort};database={dbName};user={dbUser};password={dbPassword}";
     }
 }
