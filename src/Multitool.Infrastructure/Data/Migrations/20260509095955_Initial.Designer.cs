@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Multitool.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260509075534_InitialPostgres")]
-    partial class InitialPostgres
+    [Migration("20260509095955_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -155,7 +155,7 @@ namespace Multitool.Infrastructure.Migrations
 
                     b.Property<string>("DataType")
                         .IsRequired()
-                        .HasColumnType("enum('string','int','decimal','date','bool')")
+                        .HasColumnType("text")
                         .HasColumnName("data_type");
 
                     b.Property<string>("Name")

@@ -120,13 +120,9 @@ public class AppDbContext : DbContext
             e.Property(c => c.ColOrder)
              .HasColumnName("col_order");
 
-            // CLR Enum  ⇄  MySQL ENUM
             e.Property(c => c.DataType)
              .HasColumnName("data_type")
-             .HasColumnType("enum('string','int','decimal','date','bool')")
-             .HasConversion(
-                 v => v.ToString().ToLower(),                    // CLR → DB
-                 v => Enum.Parse<CustomDataType>(v, true))       // DB  → CLR
+             .HasConversion<string>()
              .IsRequired();
         });
 

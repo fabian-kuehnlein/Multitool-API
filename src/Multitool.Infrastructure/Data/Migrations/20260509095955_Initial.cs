@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Multitool.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialPostgres : Migration
+    public partial class Initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -74,7 +74,7 @@ namespace Multitool.Infrastructure.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     TableId = table.Column<long>(type: "bigint", nullable: false),
                     name = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
-                    data_type = table.Column<string>(type: "enum('string','int','decimal','date','bool')", nullable: false),
+                    data_type = table.Column<string>(type: "text", nullable: false),
                     col_order = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>

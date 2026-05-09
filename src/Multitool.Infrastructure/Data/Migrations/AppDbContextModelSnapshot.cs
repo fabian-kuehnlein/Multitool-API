@@ -152,7 +152,7 @@ namespace Multitool.Infrastructure.Migrations
 
                     b.Property<string>("DataType")
                         .IsRequired()
-                        .HasColumnType("enum('string','int','decimal','date','bool')")
+                        .HasColumnType("text")
                         .HasColumnName("data_type");
 
                     b.Property<string>("Name")
