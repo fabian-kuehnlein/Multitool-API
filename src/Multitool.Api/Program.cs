@@ -32,7 +32,7 @@ public class Program
         builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
         builder.Services.AddApplication();
-        builder.Services.AddInfrastructure(Environment.GetEnvironmentVariable("DB_CONNECTION_STRING"));
+        builder.Services.AddInfrastructure(Environment.GetEnvironmentVariable("DB_CONNECTION_STRING") ?? "");
 
         builder.Services.AddCors(options =>
         {
