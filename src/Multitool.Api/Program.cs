@@ -1,11 +1,12 @@
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using DotNetEnv;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using Multitool.Api.Exceptions;
 using Multitool.Api.Extensions;
 using Multitool.Application;
+using Multitool.Domain.Exceptions;
 using Multitool.Infrastructure;
 
 namespace Multitool.Api;
@@ -19,8 +20,6 @@ public class Program
 
     public static void RunStartup(string[] args)
     {
-        Env.Load();
-
         var builder = WebApplication.CreateBuilder(args);
 
         builder.Services.AddProblemDetails(configure =>
@@ -57,12 +56,33 @@ public class Program
                 new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
 
         builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen();
+
+        builder.Services.AddSwaggerGen(c =>
+        {
+            c.SwaggerDoc("v1", new OpenApiInfo { Title = "API", Version = "v1" });
+
+            c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+            {
+                Name = "Authorization",
+                Type = SecuritySchemeType.Http,
+                Scheme = "bearer",
+                BearerFormat = "JWT",
+                In = ParameterLocation.Header,
+                Description = "Gib hier deinen JWT ein"
+            });
+
+            c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+            {
+                [new OpenApiSecuritySchemeReference("Bearer", document)] = new List<string>()
+            });
+        });
+
         builder.Logging.ClearProviders();
         builder.Logging.AddConsole();
 
         var jwtSettings = builder.Configuration.GetSection("Jwt");
-        var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY");
+        var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY")
+            ?? throw new JwtMissingException("JWT_KEY missing");
 
         builder.Services
             .AddAuthentication("Bearer")
@@ -76,7 +96,7 @@ public class Program
                     ValidateIssuerSigningKey = true,
                     ValidIssuer = jwtSettings["Issuer"],
                     ValidAudience = jwtSettings["Audience"],
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey!))
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
                 };
             });
 

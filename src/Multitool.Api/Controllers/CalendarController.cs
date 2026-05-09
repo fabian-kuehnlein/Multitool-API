@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Multitool.Application.Interfaces;
 using Multitool.Domain.Entities.Calendar;
@@ -12,6 +13,7 @@ public class CalendarController(ICalendarService service) : ControllerBase
     /// <summary>
     /// Gets calendar events within a specified date range.
     /// </summary>
+    [Authorize]
     [HttpGet("events")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -25,6 +27,7 @@ public class CalendarController(ICalendarService service) : ControllerBase
     /// <summary>
     /// Searches calendar events based on a search string that matches the title or note of the event.
     /// </summary>
+    [Authorize]
     [HttpGet("events/search")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -38,6 +41,7 @@ public class CalendarController(ICalendarService service) : ControllerBase
     /// <summary>
     /// Inserts a new calendar event
     /// </summary>
+    [Authorize]
     [HttpPost("events")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -51,6 +55,7 @@ public class CalendarController(ICalendarService service) : ControllerBase
     /// <summary>
     /// Updates an existing calendar event
     /// </summary>
+    [Authorize]
     [HttpPut("events")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -64,6 +69,7 @@ public class CalendarController(ICalendarService service) : ControllerBase
     /// <summary>
     /// Deletes an existing calendar event via its Id
     /// </summary>
+    [Authorize]
     [HttpDelete("events/{id}")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -77,6 +83,7 @@ public class CalendarController(ICalendarService service) : ControllerBase
     /// <summary>
     /// Returns a list of all available categories for calendar events
     /// </summary>
+    [Authorize]
     [HttpGet("categories")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]

@@ -1,3 +1,4 @@
+using System.Security.Authentication;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Multitool.Domain.Exceptions;
@@ -20,11 +21,27 @@ public sealed class GlobalExceptionHandler(IProblemDetailsService problemDetails
                 Detail = exception.Message
             },
 
+            InvalidCredentialException => new ProblemDetails
+            {
+                Type = "https://httpstatuses.com/401",
+                Title = "Unauthorized",
+                Status = StatusCodes.Status401Unauthorized,
+                Detail = exception.Message
+            },
+
             NotFoundException or KeyNotFoundException => new ProblemDetails
             {
                 Type = "https://httpstatuses.com/404",
                 Title = "Resource not found",
                 Status = StatusCodes.Status404NotFound,
+                Detail = exception.Message
+            },
+
+            UserAlreadyExistsException => new ProblemDetails
+            {
+                Type = "https://httpstatuses.com/409",
+                Title = "Conflict",
+                Status = StatusCodes.Status409Conflict,
                 Detail = exception.Message
             },
 

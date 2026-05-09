@@ -5,6 +5,7 @@ using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Multitool.Domain.Exceptions;
 
 namespace Multitool.Infrastructure.Authentification;
 public class JwtTokenGenerator(IConfiguration config) : IJwtTokenGenerator
@@ -19,8 +20,10 @@ public class JwtTokenGenerator(IConfiguration config) : IJwtTokenGenerator
             new Claim(ClaimTypes.Name, user.Username)
         };
 
-        var key = Environment.GetEnvironmentVariable("JWT_KEY");
-        var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key!));
+        var key = Environment.GetEnvironmentVariable("JWT_KEY")
+            ?? throw new JwtMissingException("JWT_KEY missing in token generation");
+
+        var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
 
         var creds = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
 

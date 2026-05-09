@@ -1,5 +1,7 @@
+using System.Security.Authentication;
 using Multitool.Application.Interfaces;
 using Multitool.Domain.Entities.Config;
+using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
 using Multitool.Infrastructure.Authentification;
 
@@ -11,7 +13,7 @@ public class AuthenticationService(IUserRepository userRepository, IPasswordHash
     {
         var existing = await userRepository.GetByUsernameAsync(username);
         if (existing != null)
-            throw new Exception("User already exists");
+            throw new UserAlreadyExistsException(username);
 
         var user = new User
         {
@@ -27,7 +29,7 @@ public class AuthenticationService(IUserRepository userRepository, IPasswordHash
         var user = await userRepository.GetByUsernameAsync(username);
         
         if (user == null || !hasher.Verify(password, user.PasswordHash))
-            throw new Exception("Invalid credentials");
+            throw new InvalidCredentialException("Invalid credentials");
 
         return jwt.GenerateToken(user);
     }
