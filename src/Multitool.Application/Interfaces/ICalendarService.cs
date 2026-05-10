@@ -1,5 +1,4 @@
 using Multitool.Domain.Entities.Calendar;
-using MultitoolApi.WebApi.Models;
 
 namespace Multitool.Application.Interfaces;
 

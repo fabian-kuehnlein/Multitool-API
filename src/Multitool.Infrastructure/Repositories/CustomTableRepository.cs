@@ -14,14 +14,16 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
     public async Task<List<Table>> GetTableListAsync()
     {
         return await db.CustomTables
+            .AsNoTracking()
             .OrderBy(t => t.Name)
             .Select(t => new Table { TableId = t.TableId, Name = t.Name })
             .ToListAsync();
     }
 
-    public async Task<Table> GetTableAsync(long tableId)
+    public async Task<Table?> GetTableAsync(long tableId)
     {
-        var table = await db.CustomTables
+        return await db.CustomTables
+            .AsNoTracking()
             .Where(t => t.TableId == tableId)
             .Select(t => new Table
             {
@@ -57,60 +59,32 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
                     .ToList()
             })
             .FirstOrDefaultAsync();
-
-        if (table is null)
-            throw new NotFoundException($"Table with Id {tableId} not found");
-
-        return table;
     }
 
-    public async Task<long> CreateTableAsync(Table table, Column column)
+    public async Task<long> CreateTableAsync(Table table)
     {
-        var strategy = db.Database.CreateExecutionStrategy();
+        Console.WriteLine($"Creating table: {table.Name}, {table.Columns.Count} columns");
+        db.CustomTables.Add(table);
+        await db.SaveChangesAsync();
 
-        return await strategy.ExecuteAsync(async () =>
-        {
-            await using var tx = await db.Database.BeginTransactionAsync();
-
-            db.CustomTables.Add(table);
-            db.CustomColumns.Add(column);
-            await db.SaveChangesAsync();
-
-            await tx.CommitAsync();
-
-            return table.TableId;
-        });
+        return table.TableId;
     }
 
-    public async Task UpdateTableAsync(long tableId, string newName)
+    public async Task UpdateTableAsync(Table table)
     {
-        var table = await db.CustomTables.FindAsync(new object?[] { tableId });
-
-        if (table is null)
-            throw new NotFoundException($"Table with Id {tableId} not found");
-
-        table.Name = newName;
+        db.CustomTables.Update(table);
         await db.SaveChangesAsync();
     }
 
     public async Task DeleteTableAsync(long tableId)
     {
-        var table = await db.CustomTables.FindAsync(new object?[] { tableId });
-
-        if (table is null)
-            throw new NotFoundException($"Table with Id {tableId} not found");
-
-        db.CustomTables.Remove(table);
-        await db.SaveChangesAsync();
+        await db.CustomTables
+            .Where(t => t.TableId == tableId)
+            .ExecuteDeleteAsync();
     }
 
     public async Task CreateColumnAsync(long tableId)
     {
-        var tableExists = await db.CustomTables.AnyAsync(t => t.TableId == tableId);
-
-        if (!tableExists)
-            throw new NotFoundException($"Table with Id {tableId} not found");
-
         var maxOrder = await db.CustomColumns
             .Where(c => c.TableId == tableId)
             .Select(c => (int?)c.ColOrder)
@@ -128,28 +102,16 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
         await db.SaveChangesAsync();
     }
 
-    public async Task UpdateColumnAsync(Column column)
+    public async Task UpdateColumnAsync(Column col, bool typeChanged)
     {
-        var col = await db.CustomColumns
-            .FirstOrDefaultAsync(c => c.ColumnId == column.ColumnId);
-
-        if (col is null)
-            throw new NotFoundException($"Column with Id {column.ColumnId} not found");
-
-        var typeChanged = col.DataType != column.DataType;
-
-        col.Name     = column.Name;
-        col.ColOrder = column.ColOrder;
-
         if (typeChanged)
         {
-            col.DataType = column.DataType;
-
             await db.CustomCells
-                .Where(c => c.ColumnId == column.ColumnId)
+                .Where(c => c.ColumnId == col.ColumnId)
                 .ExecuteDeleteAsync();
         }
 
+        db.CustomColumns.Update(col);
         await db.SaveChangesAsync();
     }
 
@@ -171,25 +133,15 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
         await db.SaveChangesAsync();
     }
 
-    public async Task DeleteColumnAsync(long tableId, long columnId)
+    public async Task DeleteColumnAsync(long columnId)
     {
-        var column = await db.CustomColumns
-            .FirstOrDefaultAsync(c => c.ColumnId == columnId && c.TableId == tableId);
-
-        if (column is null)
-            throw new NotFoundException($"Column with Id {columnId} not found in table {tableId}");
-
-        db.CustomColumns.Remove(column);
-        await db.SaveChangesAsync();
+        await db.CustomColumns
+            .Where(c => c.ColumnId == columnId)
+            .ExecuteDeleteAsync();
     }
 
     public async Task CreateRowAsync(long tableId)
     {
-        var tableExists = await db.CustomTables.AnyAsync(t => t.TableId == tableId);
-
-        if (!tableExists)
-            throw new NotFoundException($"Table with Id {tableId} not found");
-
         var maxOrder = await db.CustomRows
             .Where(r => r.TableId == tableId)
             .Select(r => (int?)r.RowOrder)
@@ -206,7 +158,7 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
         await db.SaveChangesAsync();
     }
 
-    public async Task UpdateRowOrderAsync(List<Row> list)
+    public async Task UpdateRowOrderAsync(List<RowOrderUpdateDto> list)
     {
         var ids = list.Select(r => r.RowId).ToList();
 
@@ -216,10 +168,9 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
 
         foreach (var item in list)
         {
-            var row = rows.FirstOrDefault(r => r.RowId == item.RowId)
-                ?? throw new NotFoundException($"Row with Id {item.RowId} not found");
-
-            row.RowOrder = item.RowOrder;
+            var row = rows.FirstOrDefault(r => r.RowId == item.RowId);
+            if (row != null)
+                row.RowOrder = item.RowOrder;
         }
 
         await db.SaveChangesAsync();
@@ -227,36 +178,13 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
 
     public async Task DeleteRowsAsync(long tableId, List<long> rowIds)
     {
-        var existingIds = await db.CustomRows
-            .Where(r => r.TableId == tableId && rowIds.Contains(r.RowId))
-            .Select(r => r.RowId)
-            .ToListAsync();
-
-        var missing = rowIds.Except(existingIds).ToList();
-
-        if (missing.Count > 0)
-            throw new NotFoundException($"Rows not found in table {tableId}: {string.Join(", ", missing)}");
-
         await db.CustomRows
             .Where(r => r.TableId == tableId && rowIds.Contains(r.RowId))
             .ExecuteDeleteAsync();
     }
 
-    public async Task UpsertCellAsync(long rowId, long columnId, object? value)
+    public async Task UpsertCellAsync(long rowId, long columnId, CustomDataType dataType, object? value)
     {
-        var rowExists = await db.CustomRows.AnyAsync(r => r.RowId == rowId);
-
-        if (!rowExists)
-            throw new NotFoundException($"Row with Id {rowId} not found");
-
-        var column = await db.CustomColumns
-            .Where(c => c.ColumnId == columnId)
-            .Select(c => new { c.TableId, c.DataType })
-            .FirstOrDefaultAsync();
-
-        if (column is null)
-            throw new NotFoundException($"Column with Id {columnId} not found");
-
         var cell = await db.CustomCells.FindAsync(new object?[] { rowId, columnId });
 
         if (cell is null)
@@ -271,13 +199,13 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
         cell.ValDate   = null;
         cell.ValBool   = null;
 
-        switch (column.DataType)
+        switch (dataType)
         {
             case CustomDataType.String:
                 cell.ValString = value?.ToString();
                 break;
 
-            case CustomDataType.Int when int.TryParse(value?.ToString(), out var i):
+            case CustomDataType.Int when long.TryParse(value?.ToString(), out var i):
                 cell.ValInt = i;
                 break;
 
@@ -294,9 +222,28 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
                 break;
 
             default:
-                throw new ArgumentException($"Unsupported data type or invalid value for type {column.DataType}: '{value}'");
+                throw new ArgumentException($"Unsupported data type or invalid value for type {dataType}: '{value}'");
         }
 
         await db.SaveChangesAsync();
     }
+
+    public async Task<Table?> GetTableRawAsync(long tableId)
+        => await db.CustomTables.FindAsync(tableId);
+
+    public async Task<Column?> GetColumnAsync(long columnId)
+        => await db.CustomColumns.FindAsync(columnId);
+
+    public async Task<Row?> GetRowAsync(long rowId)
+        => await db.CustomRows.FindAsync(rowId);
+    
+    public async Task<bool> TableExistsAsync(long tableId)
+        => await db.CustomTables.AnyAsync(t => t.TableId == tableId);
+    
+    public async Task<List<long>> GetExistingRowIdsAsync(long tableId, List<long> rowIds)
+        => await db.CustomRows
+            .Where(r => r.TableId == tableId && rowIds.Contains(r.RowId))
+            .Select(r => r.RowId)
+            .ToListAsync();
+
 }

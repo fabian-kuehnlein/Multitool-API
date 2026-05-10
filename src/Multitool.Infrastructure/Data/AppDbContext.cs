@@ -108,6 +108,10 @@ public class AppDbContext : DbContext
             e.ToTable("custom_column");
             e.HasKey(c => c.ColumnId);
 
+            e.Property(c => c.ColumnId)
+             .HasColumnName("column_id")
+             .ValueGeneratedOnAdd(); // AUTO_INCREMENT
+
             e.HasOne(c => c.Table)
              .WithMany(t => t.Columns)
              .HasForeignKey(c => c.TableId)

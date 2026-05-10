@@ -2,7 +2,8 @@ using Mapster;
 using Multitool.Application.Models;
 using Multitool.Domain.Entities.Calendar;
 using Multitool.Domain.Entities.CustomTable;
-using MultitoolApi.WebApi.Models.CustomTable;
+using Multitool.Application.Models.CustomTable;
+
 namespace Multitool.Application.Mappings;
 
 public class MappingConfig : IRegister
@@ -34,12 +35,9 @@ public class MappingConfig : IRegister
             ));
 
         config.NewConfig<CreateTableDto, Table>()
-            .Map(dest => dest.Name, src => src.Name)
             .Map(dest => dest.CreatedAt, src => DateTime.UtcNow);
 
-        config.NewConfig<CreateTableDto, Column>()
-            .Map(dest => dest.Name, src => src.Column.Name)
-            .Map(dest => dest.DataType, src => src.Column.DataType)
+        config.NewConfig<CreateColumnDto, Column>()
             .Map(dest => dest.ColOrder, src => 0);
     }
 

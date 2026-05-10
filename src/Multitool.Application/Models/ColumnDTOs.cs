@@ -2,7 +2,7 @@
 
 using Multitool.Domain.Enums;
 
-namespace MultitoolApi.WebApi.Models.CustomTable;
+namespace Multitool.Application.Models.CustomTable;
 
 public record CreateColumnDto(
     string Name,

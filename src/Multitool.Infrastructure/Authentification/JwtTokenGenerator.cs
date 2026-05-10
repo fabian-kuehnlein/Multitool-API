@@ -20,8 +20,8 @@ public class JwtTokenGenerator(IConfiguration config) : IJwtTokenGenerator
             new Claim(ClaimTypes.Name, user.Username)
         };
 
-        var key = Environment.GetEnvironmentVariable("JWT_KEY")
-            ?? throw new JwtMissingException("JWT_KEY missing in token generation");
+        var key = config["Jwt:Key"]
+            ?? throw new JwtMissingException("Jwt:Key missing in configuration");
 
         var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
 

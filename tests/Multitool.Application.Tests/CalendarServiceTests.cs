@@ -5,6 +5,7 @@ using Multitool.Api.Tests;
 using Multitool.Application.Mappings;
 using Multitool.Application.Services;
 using Multitool.Domain.Entities.Calendar;
+using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
 
 namespace Multitool.Application.Tests;
@@ -150,22 +151,50 @@ public class CalendarServiceTests
     // UpdateEventAsync
 
     [Fact]
-    public async Task UpdateEventAsync_DelegatesToRepository()
+    public async Task UpdateEventAsync_WhenEventExists_DelegatesToRepository()
     {
+        var existingEvent = new CalendarEvent
+        {
+            Id = CalendarTestData.DefaultEvent.Id,
+            Title = "Old Title",
+            StartDateTime = DateTime.Now,
+            IsAllDay = false,
+            CategoryId = 1
+        };
         _repositoryMock
-            .Setup(r => r.UpdateEventAsync(CalendarTestData.DefaultEvent))
+            .Setup(r => r.GetByIdAsync(CalendarTestData.DefaultEvent.Id))
+            .ReturnsAsync(existingEvent);
+        _repositoryMock
+            .Setup(r => r.UpdateEventAsync(existingEvent))
             .Returns(Task.CompletedTask);
 
         await _sut.UpdateEventAsync(CalendarTestData.DefaultEvent);
 
-        _repositoryMock.Verify(r => r.UpdateEventAsync(CalendarTestData.DefaultEvent), Times.Once);
+        _repositoryMock.Verify(r => r.UpdateEventAsync(existingEvent), Times.Once);
+        existingEvent.Title.Should().Be(CalendarTestData.DefaultEvent.Title);
+    }
+
+    [Fact]
+    public async Task UpdateEventAsync_WhenEventDoesNotExist_ThrowsNotFoundException()
+    {
+        _repositoryMock
+            .Setup(r => r.GetByIdAsync(It.IsAny<int>()))
+            .ReturnsAsync((CalendarEvent?)null);
+
+        var act = () => _sut.UpdateEventAsync(CalendarTestData.DefaultEvent);
+
+        await act.Should().ThrowAsync<NotFoundException>();
+        _repositoryMock.Verify(r => r.UpdateEventAsync(It.IsAny<CalendarEvent>()), Times.Never);
     }
 
     // DeleteEventAsync
 
     [Fact]
-    public async Task DeleteEventAsync_DelegatesToRepository_WithCorrectId()
+    public async Task DeleteEventAsync_WhenEventExists_DelegatesToRepository_WithCorrectId()
     {
+        _repositoryMock
+            .Setup(r => r.GetByIdAsync(CalendarTestData.DefaultEvent.Id))
+            .ReturnsAsync(CalendarTestData.DefaultEvent);
         _repositoryMock
             .Setup(r => r.DeleteEventAsync(CalendarTestData.DefaultEvent.Id))
             .Returns(Task.CompletedTask);
@@ -173,6 +202,19 @@ public class CalendarServiceTests
         await _sut.DeleteEventAsync(CalendarTestData.DefaultEvent.Id);
 
         _repositoryMock.Verify(r => r.DeleteEventAsync(CalendarTestData.DefaultEvent.Id), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteEventAsync_WhenEventDoesNotExist_ThrowsNotFoundException()
+    {
+        _repositoryMock
+            .Setup(r => r.GetByIdAsync(It.IsAny<int>()))
+            .ReturnsAsync((CalendarEvent?)null);
+
+        var act = () => _sut.DeleteEventAsync(CalendarTestData.DefaultEvent.Id);
+
+        await act.Should().ThrowAsync<NotFoundException>();
+        _repositoryMock.Verify(r => r.DeleteEventAsync(It.IsAny<int>()), Times.Never);
     }
 
     // GetCategoriesAsync
@@ -186,6 +228,16 @@ public class CalendarServiceTests
         var result = await _sut.GetCategoriesAsync();
 
         result.Should().BeEquivalentTo(categories);
+    }
+
+    [Fact]
+    public async Task GetCategoriesAsync_WhenNoCategoriesFound_ThrowsNotFoundException()
+    {
+        _repositoryMock.Setup(r => r.GetCategoriesAsync()).ReturnsAsync(new List<Category>());
+
+        var act = () => _sut.GetCategoriesAsync();
+
+        await act.Should().ThrowAsync<NotFoundException>();
     }
 
     // GetHolidaysAsync

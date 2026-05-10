@@ -1,6 +1,8 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using MultitoolApi.WebApi.Models.CustomTable;
 using Multitool.Application.Interfaces;
+using Multitool.Application.Models.CustomTable;
+using Multitool.Domain.Entities.CustomTable;
 
 namespace Multitool.Api.Controllers;
 
@@ -11,6 +13,7 @@ public class CustomTableController(ICustomTableService service) : ControllerBase
     /// <summary>
     /// Returns all tables with name and id.
     /// </summary>
+    [Authorize]
     [HttpGet("tables")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -24,12 +27,13 @@ public class CustomTableController(ICustomTableService service) : ControllerBase
     /// <summary>
     /// Returns a single table with its columns and rows.
     /// </summary>
+    [Authorize]
     [HttpGet("tables/{id}")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> GetTable(long id)
+    public async Task<IActionResult> GetTable([FromRoute] long id)
     {
         var table = await service.GetTableAsync(id);
         return Ok(table);
@@ -38,6 +42,7 @@ public class CustomTableController(ICustomTableService service) : ControllerBase
     /// <summary>
     /// Creates a new table with an initial column.
     /// </summary>
+    [Authorize]
     [HttpPost("tables")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -52,209 +57,144 @@ public class CustomTableController(ICustomTableService service) : ControllerBase
     /// <summary>
     /// Renames a table.
     /// </summary>
+    [Authorize]
     [HttpPut("tables/{id}")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> UpdateTable(long id, [FromBody] string newName)
+    public async Task<IActionResult> UpdateTable([FromRoute] long id, [FromBody] UpdateTableDto dto)
     {
-        await service.UpdateTableAsync(id, newName);
+        await service.UpdateTableAsync(id, dto);
         return NoContent();
     }
 
     /// <summary>
     /// Deletes a table including all its columns and rows.
     /// </summary>
+    [Authorize]
     [HttpDelete("tables/{id}")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> DeleteTable(long id)
+    public async Task<IActionResult> DeleteTable([FromRoute] long id)
     {
-        try
-        {
-            await service.DeleteTableAsync(id);
-            return NoContent();
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(ex.Message);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
-        }
+        await service.DeleteTableAsync(id);
+        return NoContent();
     }
 
     /// <summary>
     /// Adds a new default column to a table.
     /// </summary>
+    [Authorize]
     [HttpPost("tables/{tableId}/columns")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> CreateColumn(long tableId)
+    public async Task<IActionResult> CreateColumn([FromRoute] long tableId)
     {
-        try
-        {
-            await service.CreateColumnAsync(tableId);
-            return NoContent();
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
-        }
+        await service.CreateColumnAsync(tableId);
+        return NoContent();
     }
 
     /// <summary>
     /// Updates name, type and order of a column.
     /// </summary>
+    [Authorize]
     [HttpPut("columns/{id}")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> UpdateColumn(long id, [FromBody] UpdateColumnDto dto)
+    public async Task<IActionResult> UpdateColumn([FromRoute] long id, [FromBody] UpdateColumnDto dto)
     {
-        try
-        {
-            await service.UpdateColumnAsync(id, dto);
-            return NoContent();
-        }
-        catch (KeyNotFoundException ex)
-        {
-            return NotFound(ex.Message);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
-        }
+        await service.UpdateColumnAsync(id, dto);
+        return NoContent();
     }
 
     /// <summary>
     /// Updates the order of multiple columns at once.
     /// </summary>
+    [Authorize]
     [HttpPut("columns/order")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> UpdateColumnOrder([FromBody] List<UpdateColumnOrderDto> columns)
     {
-        try
-        {
-            await service.UpdateColumnOrderAsync(columns);
-            return NoContent();
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
-        }
+        await service.UpdateColumnOrderAsync(columns);
+        return NoContent();
     }
 
     /// <summary>
     /// Deletes a column and all its cell data.
     /// </summary>
+    [Authorize]
     [HttpDelete("tables/{tableId}/columns/{columnId}")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> DeleteColumn(long tableId, long columnId)
+    public async Task<IActionResult> DeleteColumn([FromRoute] long tableId, [FromRoute] long columnId)
     {
-        try
-        {
-            await service.DeleteColumnAsync(tableId, columnId);
-            return NoContent();
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
-        }
+        await service.DeleteColumnAsync(tableId, columnId);
+        return NoContent();
     }
 
     /// <summary>
     /// Adds a new empty row to a table.
     /// </summary>
+    [Authorize]
     [HttpPost("tables/{tableId}/rows")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> CreateRow(long tableId)
+    public async Task<IActionResult> CreateRow([FromRoute] long tableId)
     {
-        try
-        {
-            await service.CreateRowAsync(tableId);
-            return NoContent();
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
-        }
+        await service.CreateRowAsync(tableId);
+        return NoContent();
     }
 
     /// <summary>
     /// Updates the order of multiple rows at once.
     /// </summary>
+    [Authorize]
     [HttpPut("rows/order")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> UpdateRowOrder([FromBody] List<RowOrderUpdateDto> rows)
     {
-        try
-        {
-            await service.UpdateRowOrderAsync(rows);
-            return NoContent();
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
-        }
+        await service.UpdateRowOrderAsync(rows);
+        return NoContent();
     }
 
     /// <summary>
     /// Deletes multiple rows by id.
     /// </summary>
-    [HttpDelete("tables/{tableId:long}/rows")]
+    [Authorize]
+    [HttpDelete("tables/{tableId}/rows")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> DeleteRows(long tableId, [FromBody] List<long> rowIds)
+    public async Task<IActionResult> DeleteRows([FromRoute] long tableId, [FromBody] List<long> rowIds)
     {
-        try
-        {
-            await service.DeleteRowsAsync(tableId, rowIds);
-            return NoContent();
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
-        }
+        await service.DeleteRowsAsync(tableId, rowIds);
+        return NoContent();
     }
 
     /// <summary>
     /// Creates or updates a single cell value.
     /// </summary>
+    [Authorize]
     [HttpPut("rows/{rowId}/cells/{columnId}")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> SetCell(long rowId, long columnId, [FromBody] object? newValue)
+    public async Task<IActionResult> SetCell([FromRoute] long rowId, [FromRoute] long columnId, [FromBody] object? newValue)
     {
-        try
-        {
-            await service.UpsertCellAsync(rowId, columnId, newValue);
-            return NoContent();
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(ex.Message);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
-        }
+        await service.UpsertCellAsync(rowId, columnId, newValue);
+        return NoContent();
     }
 }

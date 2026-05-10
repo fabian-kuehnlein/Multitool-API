@@ -1,5 +1,6 @@
 using Multitool.Application.Models;
-using MultitoolApi.WebApi.Models.CustomTable;
+using Multitool.Application.Models.CustomTable;
+using Multitool.Domain.Entities.CustomTable;
 
 namespace Multitool.Application.Interfaces;
 
@@ -8,7 +9,7 @@ public interface ICustomTableService
     Task<List<TableOverview>> GetTableListAsync();
     Task<TableDetail> GetTableAsync(long tableId);
     Task<long> CreateTableAsync(CreateTableDto dto);
-    Task UpdateTableAsync(long tableId, string name);
+    Task UpdateTableAsync(long tableId, UpdateTableDto dto);
     Task DeleteTableAsync(long tableId);
     Task CreateColumnAsync(long tableId);
     Task UpdateColumnAsync(long columnId, UpdateColumnDto dto);

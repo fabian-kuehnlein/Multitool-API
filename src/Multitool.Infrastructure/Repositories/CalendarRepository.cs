@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Multitool.Domain.Interfaces;
 using Multitool.Infrastructure.Data;
 using Multitool.Domain.Entities.Calendar;
-using Multitool.Domain.Exceptions;
 
 namespace Multitool.Infrastructure.Repositories;
 

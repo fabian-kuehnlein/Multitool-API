@@ -32,8 +32,10 @@ public class Program
 
         builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
+        var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
         builder.Services.AddApplication();
-        builder.Services.AddInfrastructure(Environment.GetEnvironmentVariable("DB_CONNECTION_STRING") ?? "");
+        builder.Services.AddInfrastructure(connectionString!);
 
         builder.Services.AddCors(options =>
         {
@@ -81,8 +83,8 @@ public class Program
         builder.Logging.AddConsole();
 
         var jwtSettings = builder.Configuration.GetSection("Jwt");
-        var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY")
-            ?? throw new JwtMissingException("JWT_KEY missing");
+        var jwtKey = builder.Configuration["Jwt:Key"]
+            ?? throw new JwtMissingException("JWT key is missing.");
 
         builder.Services
             .AddAuthentication("Bearer")
