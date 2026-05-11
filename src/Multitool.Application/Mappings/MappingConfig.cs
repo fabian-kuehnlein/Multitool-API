@@ -13,20 +13,9 @@ public class MappingConfig : IRegister
         config.NewConfig<CalendarEvent, EventSearchResponse>()
             .Map(dest => dest.EventId, src => src.Id)
             .Map(dest => dest.EventTitle, src => src.Title)
-            .Map(dest => dest.EventNote, src => src.Note)
-            .Map(dest => dest.StartDateTime, src => src.StartDateTime);
-            
-        config.NewConfig<CreateCalendarEvent, CalendarEvent>();
+            .Map(dest => dest.EventNote, src => src.Note);
 
         // -----------------------------------------------------------------
-
-        config.NewConfig<Table, TableOverview>();
-
-        config.NewConfig<Table, TableDetail>()
-            .Map(dest => dest.Columns, src => src.Columns.Adapt<List<ColumnInfo>>())
-            .Map(dest => dest.Rows, src => src.Rows.Adapt<List<RowInfo>>());
-
-        config.NewConfig<Column, ColumnInfo>();
 
         config.NewConfig<Row, RowInfo>()
             .Map(dest => dest.Cells, src => src.Cells.ToDictionary(
@@ -36,9 +25,6 @@ public class MappingConfig : IRegister
 
         config.NewConfig<CreateTableDto, Table>()
             .Map(dest => dest.CreatedAt, src => DateTime.UtcNow);
-
-        config.NewConfig<CreateColumnDto, Column>()
-            .Map(dest => dest.ColOrder, src => 0);
     }
 
     private static object? CellValue(Cell cell) =>

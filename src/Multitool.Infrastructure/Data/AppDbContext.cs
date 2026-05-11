@@ -19,140 +19,80 @@ public class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        // ---------- CALENDAR ----------
         modelBuilder.Entity<CalendarEvent>(e =>
         {
             e.ToTable("calendar_events");
-
             e.HasKey(e => e.Id);
 
-            e.Property(e => e.Id)
-                .HasColumnName("eventId")
-                .ValueGeneratedOnAdd(); // AUTO_INCREMENT
-
-            e.Property(e => e.Title)
-                .HasColumnName("eventTitle")
-                .IsRequired(); // NOT NULL
-
-            e.Property(e => e.Note)
-                .HasColumnName("eventNote");
-
-            e.Property(e => e.StartDateTime)
-                .HasColumnName("startDateTime")
-                .IsRequired();
-
-            e.Property(e => e.EndDateTime)
-                .HasColumnName("endDateTime");
-
-            e.Property(e => e.IsAllDay)
-                .HasColumnName("isAllDay")
-                .IsRequired();
-
-            e.Property(e => e.CategoryId)
-                .HasColumnName("categoryId")
-                .IsRequired();
-
-            e.Property(e => e.RecurrenceRule)
-                .HasColumnName("recurrenceRule");
-
-            e.Property(e => e.RecurrenceEnd)
-                .HasColumnName("recurrenceEnd");
+            e.Property(e => e.Id).HasColumnName("event_id").ValueGeneratedOnAdd();
+            e.Property(e => e.Title).HasColumnName("event_title").IsRequired();
+            e.Property(e => e.Note).HasColumnName("event_note");
+            e.Property(e => e.StartDateTime).HasColumnName("start_date_time").IsRequired();
+            e.Property(e => e.EndDateTime).HasColumnName("end_date_time");
+            e.Property(e => e.IsAllDay).HasColumnName("is_all_day").IsRequired();
+            e.Property(e => e.CategoryId).HasColumnName("category_id").IsRequired();
+            e.Property(e => e.RecurrenceRule).HasColumnName("recurrence_rule");
+            e.Property(e => e.RecurrenceEnd).HasColumnName("recurrence_end");
 
             e.HasOne<Category>()
                 .WithMany()
                 .HasForeignKey(e => e.CategoryId)
-                .HasConstraintName("FK_calendar_events_categoryId");
+                .HasConstraintName("fk_calendar_events_category_id");
         });
 
         modelBuilder.Entity<Category>(e =>
         {
             e.ToTable("categories");
-
             e.HasKey(c => c.Id);
 
-            e.Property(c => c.Id)
-                .HasColumnName("categoryId")
-                .ValueGeneratedOnAdd();
-
-            e.Property(c => c.Name)
-                .HasColumnName("categoryName")
-                .IsRequired();
-
-            e.Property(c => c.Color)
-                .HasColumnName("color")
-                .HasMaxLength(9)
-                .IsRequired();
+            e.Property(c => c.Id).HasColumnName("category_id").ValueGeneratedOnAdd();
+            e.Property(c => c.Name).HasColumnName("category_name").IsRequired();
+            e.Property(c => c.Color).HasMaxLength(9).IsRequired();
         });
 
+        // ---------- CUSTOM TABLE ----------
         modelBuilder.Entity<Table>(e =>
         {
-            e.ToTable("custom_table");
+            e.ToTable("custom_tables");
             e.HasKey(t => t.TableId);
 
-            e.Property(t => t.TableId)
-              .HasColumnName("tableId")
-              .ValueGeneratedOnAdd(); // AUTO_INCREMENT
-
-            e.Property(t => t.Name)
-              .HasColumnName("tableName")
-              .HasMaxLength(120)
-              .IsRequired();
-
-            e.Property(t => t.CreatedAt)
-              .HasColumnName("created_at")
-              .HasDefaultValueSql("CURRENT_TIMESTAMP");
+            e.Property(t => t.TableId).HasColumnName("table_id").ValueGeneratedOnAdd();
+            e.Property(t => t.Name).HasColumnName("table_name").HasMaxLength(120).IsRequired();
         });
 
-        // ---------- COLUMN ----------
         modelBuilder.Entity<Column>(e =>
         {
-            e.ToTable("custom_column");
+            e.ToTable("custom_columns");
             e.HasKey(c => c.ColumnId);
 
-            e.Property(c => c.ColumnId)
-             .HasColumnName("column_id")
-             .ValueGeneratedOnAdd(); // AUTO_INCREMENT
+            e.Property(c => c.ColumnId).HasColumnName("column_id").ValueGeneratedOnAdd();
 
             e.HasOne(c => c.Table)
              .WithMany(t => t.Columns)
              .HasForeignKey(c => c.TableId)
              .OnDelete(DeleteBehavior.Cascade);
 
-            e.Property(c => c.Name)
-             .HasColumnName("name")
-             .HasMaxLength(120)
-             .IsRequired();
-
-            e.Property(c => c.ColOrder)
-             .HasColumnName("col_order");
-
-            e.Property(c => c.DataType)
-             .HasColumnName("data_type")
-             .HasConversion<string>()
-             .IsRequired();
+            e.Property(c => c.Name).HasMaxLength(120).IsRequired();
+            e.Property(c => c.DataType).HasConversion<string>().IsRequired();
         });
 
-        // ---------- ROW ----------
         modelBuilder.Entity<Row>(e =>
         {
-            e.ToTable("custom_row");
+            e.ToTable("custom_rows");
             e.HasKey(r => r.RowId);
+
+            e.Property(r => r.RowId).HasColumnName("row_id");
 
             e.HasOne(r => r.Table)
              .WithMany(t => t.Rows)
              .HasForeignKey(r => r.TableId)
              .OnDelete(DeleteBehavior.Cascade);
-
-            e.Property(r => r.CreatedAt)
-             .HasColumnName("created_at")
-             .HasDefaultValueSql("CURRENT_TIMESTAMP");
         });
 
-        // ---------- CELL ----------
         modelBuilder.Entity<Cell>(e =>
         {
-            e.ToTable("custom_cell");
-
-            // Composite PK  (RowId + ColumnId)
+            e.ToTable("custom_cells");
             e.HasKey(c => new { c.RowId, c.ColumnId });
 
             e.HasOne(c => c.Row)
@@ -165,17 +105,44 @@ public class AppDbContext : DbContext
              .HasForeignKey(c => c.ColumnId)
              .OnDelete(DeleteBehavior.Cascade);
 
-            // Value‑Spalten → snake_case
-            e.Property(c => c.ValString).HasColumnName("val_string");
-            e.Property(c => c.ValInt   ).HasColumnName("val_int");
-            e.Property(c => c.ValDec   ).HasColumnName("val_dec");
-            e.Property(c => c.ValDate  ).HasColumnName("val_date");
-            e.Property(c => c.ValBool  ).HasColumnName("val_bool");
-
-            // Typ‑spezifische Indizes
+            // Indices
             e.HasIndex(c => new { c.ColumnId, c.ValInt  }).HasDatabaseName("idx_cell_int");
             e.HasIndex(c => new { c.ColumnId, c.ValDec  }).HasDatabaseName("idx_cell_dec");
             e.HasIndex(c => new { c.ColumnId, c.ValDate }).HasDatabaseName("idx_cell_date");
         });
+
+        // Global Snake Case naming convention for everything not explicitly mapped above
+        foreach (var entity in modelBuilder.Model.GetEntityTypes())
+        {
+            // Table names (if not set)
+            var tableName = entity.GetTableName();
+            if (tableName != null) entity.SetTableName(ToSnakeCase(tableName));
+
+            foreach (var property in entity.GetProperties())
+            {
+                // Column names (if not set explicitly via HasColumnName)
+                var explicitName = property.GetColumnName();
+                if (explicitName == property.Name) // EF default
+                {
+                    property.SetColumnName(ToSnakeCase(property.Name));
+                }
+            }
+
+            foreach (var key in entity.GetKeys())
+                key.SetName(ToSnakeCase(key.GetName() ?? ""));
+
+            foreach (var key in entity.GetForeignKeys())
+                key.SetConstraintName(ToSnakeCase(key.GetConstraintName() ?? ""));
+
+            foreach (var index in entity.GetIndexes())
+                index.SetDatabaseName(ToSnakeCase(index.GetDatabaseName() ?? ""));
+        }
+    }
+
+    private static string ToSnakeCase(string input)
+    {
+        if (string.IsNullOrEmpty(input)) return input;
+        var startUnderscores = System.Text.RegularExpressions.Regex.Match(input, @"^_+");
+        return startUnderscores + System.Text.RegularExpressions.Regex.Replace(input, @"([a-z0-9])([A-Z])", "$1_$2").ToLower();
     }
 }

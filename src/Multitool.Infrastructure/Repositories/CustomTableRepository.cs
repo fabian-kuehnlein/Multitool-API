@@ -63,7 +63,6 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
 
     public async Task<long> CreateTableAsync(Table table)
     {
-        Console.WriteLine($"Creating table: {table.Name}, {table.Columns.Count} columns");
         db.CustomTables.Add(table);
         await db.SaveChangesAsync();
 

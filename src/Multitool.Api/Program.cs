@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -77,6 +78,11 @@ public class Program
             {
                 [new OpenApiSecuritySchemeReference("Bearer", document)] = new List<string>()
             });
+
+            var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+            var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
+
+            c.IncludeXmlComments(xmlPath);
         });
 
         builder.Logging.ClearProviders();
