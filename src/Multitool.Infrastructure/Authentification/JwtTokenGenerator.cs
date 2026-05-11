@@ -31,7 +31,7 @@ public class JwtTokenGenerator(IConfiguration config) : IJwtTokenGenerator
             issuer: jwtSettings["Issuer"],
             audience: jwtSettings["Audience"],
             claims: claims,
-            expires: DateTime.UtcNow.AddDays(7),
+            expires: DateTime.UtcNow.AddDays(1).AddSeconds(-1), // token expires at the end of the day
             signingCredentials: creds
         );
 

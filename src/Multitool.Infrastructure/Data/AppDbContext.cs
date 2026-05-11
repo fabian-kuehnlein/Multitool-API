@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Multitool.Domain.Entities.Calendar;
 using Multitool.Domain.Entities.Config;
 using Multitool.Domain.Entities.CustomTable;
