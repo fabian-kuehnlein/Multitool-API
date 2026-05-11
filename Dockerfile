@@ -12,6 +12,7 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y \
     libkrb5-3 \
+    libgssapi-krb5-2 \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /app/publish .

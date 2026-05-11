@@ -43,11 +43,10 @@ public class CalendarRepository(AppDbContext db) : ICalendarRepository
         var results = await db.CalendarEvents
             .AsNoTracking()
             .Where(e =>
-                EF.Functions.Like(e.Title, pattern)
+                EF.Functions.ILike(e.Title, pattern)
                 ||
                 (
-                    EF.Functions.Like(e.Note, pattern)
-                    && e.Note != null
+                    e.Note != null && EF.Functions.ILike(e.Note, pattern)
                 ))
             .OrderBy(e => e.StartDateTime)
             .ToListAsync();
