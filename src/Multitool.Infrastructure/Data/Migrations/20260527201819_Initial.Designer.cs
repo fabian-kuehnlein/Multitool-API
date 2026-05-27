@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Multitool.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260511200116_AddValueConverter")]
-    partial class AddValueConverter
+    [Migration("20260527201819_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -281,14 +281,14 @@ namespace Multitool.Infrastructure.Migrations
                         .HasForeignKey("ColumnId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_custom_cells_custom_columns_column_id");
+                        .HasConstraintName("fk_custom_cells_column_id");
 
                     b.HasOne("Multitool.Domain.Entities.CustomTable.Row", "Row")
                         .WithMany("Cells")
                         .HasForeignKey("RowId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_custom_cells_custom_rows_row_id");
+                        .HasConstraintName("fk_custom_cells_row_id");
 
                     b.Navigation("Column");
 
@@ -302,7 +302,7 @@ namespace Multitool.Infrastructure.Migrations
                         .HasForeignKey("TableId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_custom_columns_custom_tables_table_id");
+                        .HasConstraintName("fk_custom_columns_table_id");
 
                     b.Navigation("Table");
                 });
@@ -314,7 +314,7 @@ namespace Multitool.Infrastructure.Migrations
                         .HasForeignKey("TableId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_custom_rows_custom_tables_table_id");
+                        .HasConstraintName("fk_custom_rows_table_id");
 
                     b.Navigation("Table");
                 });

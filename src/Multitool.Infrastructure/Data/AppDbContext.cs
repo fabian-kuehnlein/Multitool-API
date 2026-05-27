@@ -12,7 +12,7 @@ public class AppDbContext : DbContext
 
     public DbSet<User> Users { get; set; }
     public DbSet<CalendarEvent> CalendarEvents { get; set; }
-    public DbSet<Category> Categories { get;  set; }
+    public DbSet<Category> Categories { get; set; }
     public DbSet<Table> CustomTables { get; set; }
     public DbSet<Column> CustomColumns { get; set; }
     public DbSet<Row> CustomRows { get; set; }
@@ -72,6 +72,7 @@ public class AppDbContext : DbContext
             e.HasOne(c => c.Table)
              .WithMany(t => t.Columns)
              .HasForeignKey(c => c.TableId)
+             .HasConstraintName("fk_custom_columns_table_id")
              .OnDelete(DeleteBehavior.Cascade);
 
             e.Property(c => c.Name).HasMaxLength(120).IsRequired();
@@ -88,6 +89,7 @@ public class AppDbContext : DbContext
             e.HasOne(r => r.Table)
              .WithMany(t => t.Rows)
              .HasForeignKey(r => r.TableId)
+             .HasConstraintName("fk_custom_rows_table_id")
              .OnDelete(DeleteBehavior.Cascade);
         });
 
@@ -99,46 +101,46 @@ public class AppDbContext : DbContext
             e.HasOne(c => c.Row)
              .WithMany(r => r.Cells)
              .HasForeignKey(c => c.RowId)
+             .HasConstraintName("fk_custom_cells_row_id")
              .OnDelete(DeleteBehavior.Cascade);
 
             e.HasOne(c => c.Column)
              .WithMany()
              .HasForeignKey(c => c.ColumnId)
+             .HasConstraintName("fk_custom_cells_column_id")
              .OnDelete(DeleteBehavior.Cascade);
 
-            // Indices
-            e.HasIndex(c => new { c.ColumnId, c.ValInt  }).HasDatabaseName("idx_cell_int");
-            e.HasIndex(c => new { c.ColumnId, c.ValDec  }).HasDatabaseName("idx_cell_dec");
+            e.HasIndex(c => new { c.ColumnId, c.ValInt }).HasDatabaseName("idx_cell_int");
+            e.HasIndex(c => new { c.ColumnId, c.ValDec }).HasDatabaseName("idx_cell_dec");
             e.HasIndex(c => new { c.ColumnId, c.ValDate }).HasDatabaseName("idx_cell_date");
         });
 
-        // Global Snake Case naming convention for everything not explicitly mapped above
+        // ---------- GLOBAL SNAKE CASE ----------
         foreach (var entity in modelBuilder.Model.GetEntityTypes())
         {
-            // Table names (if not set)
             var tableName = entity.GetTableName();
-            if (tableName != null) entity.SetTableName(ToSnakeCase(tableName));
+            if (tableName != null)
+                entity.SetTableName(ToSnakeCase(tableName));
 
             foreach (var property in entity.GetProperties())
             {
-                // Column names (if not set explicitly via HasColumnName)
                 var explicitName = property.GetColumnName();
-                if (explicitName == property.Name) // EF default
-                {
+                if (explicitName == property.Name)
                     property.SetColumnName(ToSnakeCase(property.Name));
-                }
             }
 
             foreach (var key in entity.GetKeys())
                 key.SetName(ToSnakeCase(key.GetName() ?? ""));
 
-            foreach (var key in entity.GetForeignKeys())
-                key.SetConstraintName(ToSnakeCase(key.GetConstraintName() ?? ""));
+            // ❌ Foreign Keys NICHT automatisch umbenennen
+            // foreach (var key in entity.GetForeignKeys())
+            //     key.SetConstraintName(ToSnakeCase(key.GetConstraintName() ?? ""));
 
             foreach (var index in entity.GetIndexes())
                 index.SetDatabaseName(ToSnakeCase(index.GetDatabaseName() ?? ""));
         }
 
+        // ---------- UTC CONVERTER ----------
         var utcConverter = new ValueConverter<DateTime, DateTime>(
             v => v.Kind == DateTimeKind.Unspecified ? DateTime.SpecifyKind(v, DateTimeKind.Utc) : v.ToUniversalTime(),
             v => v.Kind == DateTimeKind.Unspecified ? DateTime.SpecifyKind(v, DateTimeKind.Utc) : v.ToUniversalTime()
@@ -160,6 +162,8 @@ public class AppDbContext : DbContext
     {
         if (string.IsNullOrEmpty(input)) return input;
         var startUnderscores = System.Text.RegularExpressions.Regex.Match(input, @"^_+");
-        return startUnderscores + System.Text.RegularExpressions.Regex.Replace(input, @"([a-z0-9])([A-Z])", "$1_$2").ToLower();
+        return startUnderscores + System.Text.RegularExpressions.Regex
+            .Replace(input, @"([a-z0-9])([A-Z])", "$1_$2")
+            .ToLower();
     }
 }
