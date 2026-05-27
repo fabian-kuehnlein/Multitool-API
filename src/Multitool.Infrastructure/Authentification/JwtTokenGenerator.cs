@@ -6,6 +6,7 @@ using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Multitool.Domain.Exceptions;
+using Multitool.Domain.Interfaces;
 
 namespace Multitool.Infrastructure.Authentification;
 public class JwtTokenGenerator(IConfiguration config) : IJwtTokenGenerator

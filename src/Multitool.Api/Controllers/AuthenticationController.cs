@@ -12,14 +12,15 @@ public class AuthController(IAuthenticationService authenticationService) : Cont
     /// <summary>
     /// Registers a new user with the provided username and password.
     /// </summary>
+    [AllowAnonymous]
     [HttpPost("register")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Register(RegisterRequest request)
+    public async Task<IActionResult> Register(RegisterRequest request, [FromHeader(Name = "X-Admin-Key")] string adminKey)
     {
-        await authenticationService.RegisterAsync(request.Username, request.Password);
+        await authenticationService.RegisterAsync(request.Username, request.Password, adminKey);
         return Ok("User created");
     }
 

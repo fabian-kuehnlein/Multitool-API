@@ -1,3 +1,5 @@
+using Multitool.Domain.Interfaces;
+
 namespace Multitool.Infrastructure.Authentification;
 
 public class PasswordHasher : IPasswordHasher

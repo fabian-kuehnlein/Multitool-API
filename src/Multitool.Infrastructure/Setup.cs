@@ -15,6 +15,7 @@ public static class Setup
         if (string.IsNullOrWhiteSpace(connectionString))
             throw new InvalidOperationException("Database connection string is missing. Set DB_CONNECTION_STRING in environment variables.");
 
+        services.AddScoped<IAdminKeyProvider, AdminKeyProvider>();
         services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
         services.AddScoped<IPasswordHasher, PasswordHasher>();
         services.AddScoped<IUserRepository, UserRepository>();

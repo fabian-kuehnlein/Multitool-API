@@ -1,4 +1,4 @@
-namespace Multitool.Infrastructure.Authentification;
+namespace Multitool.Domain.Interfaces;
 
 public interface IPasswordHasher
 {

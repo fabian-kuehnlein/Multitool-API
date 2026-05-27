@@ -2,7 +2,7 @@ using Multitool.Domain.Entities.Config;
 
 namespace Multitool.Domain.Interfaces;
 
-public interface IJwtTokenGenerator
+public interface IAdminKeyProvider
 {
-    string GenerateToken(User user);
+    string GetAdminKey();
 }
