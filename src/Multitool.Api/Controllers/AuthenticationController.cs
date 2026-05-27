@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Multitool.Api.Extensions;
 using Multitool.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 
 namespace Multitool.Api.Controllers;
 
@@ -25,6 +26,7 @@ public class AuthController(IAuthenticationService authenticationService) : Cont
     /// <summary>
     /// Logs in a user with the provided username and password and returns a JWT as session token if credentials are valid
     /// </summary>
+    [AllowAnonymous]
     [HttpPost("login")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
