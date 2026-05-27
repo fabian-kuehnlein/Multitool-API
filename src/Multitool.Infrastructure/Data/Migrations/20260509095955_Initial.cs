@@ -1,45 +1,81 @@
 ﻿using System;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace MultitoolApi.Migrations
+namespace Multitool.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class V11 : Migration
+    public partial class Initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
+                name: "categories",
+                columns: table => new
+                {
+                    categoryId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    categoryName = table.Column<string>(type: "text", nullable: false),
+                    color = table.Column<string>(type: "character varying(9)", maxLength: 9, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_categories", x => x.categoryId);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "custom_table",
                 columns: table => new
                 {
                     tableId = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
-                    tableName = table.Column<string>(type: "varchar(120)", maxLength: 120, nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    created_at = table.Column<DateTime>(type: "datetime(6)", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    tableName = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_custom_table", x => x.tableId);
-                })
-                .Annotation("MySql:CharSet", "utf8mb4");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "calendar_events",
+                columns: table => new
+                {
+                    eventId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    eventTitle = table.Column<string>(type: "text", nullable: false),
+                    eventNote = table.Column<string>(type: "text", nullable: true),
+                    startDateTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    endDateTime = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    isAllDay = table.Column<bool>(type: "boolean", nullable: false),
+                    categoryId = table.Column<int>(type: "integer", nullable: false),
+                    recurrenceRule = table.Column<string>(type: "text", nullable: true),
+                    recurrenceEnd = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_calendar_events", x => x.eventId);
+                    table.ForeignKey(
+                        name: "FK_calendar_events_categoryId",
+                        column: x => x.categoryId,
+                        principalTable: "categories",
+                        principalColumn: "categoryId",
+                        onDelete: ReferentialAction.Cascade);
+                });
 
             migrationBuilder.CreateTable(
                 name: "custom_column",
                 columns: table => new
                 {
                     ColumnId = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     TableId = table.Column<long>(type: "bigint", nullable: false),
-                    name = table.Column<string>(type: "varchar(120)", maxLength: 120, nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    data_type = table.Column<string>(type: "enum('string','int','decimal','date','bool')", nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
-                    col_order = table.Column<int>(type: "int", nullable: false)
+                    name = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
+                    data_type = table.Column<string>(type: "text", nullable: false),
+                    col_order = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -50,17 +86,17 @@ namespace MultitoolApi.Migrations
                         principalTable: "custom_table",
                         principalColumn: "tableId",
                         onDelete: ReferentialAction.Cascade);
-                })
-                .Annotation("MySql:CharSet", "utf8mb4");
+                });
 
             migrationBuilder.CreateTable(
                 name: "custom_row",
                 columns: table => new
                 {
                     RowId = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("MySql:ValueGenerationStrategy", MySqlValueGenerationStrategy.IdentityColumn),
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     TableId = table.Column<long>(type: "bigint", nullable: false),
-                    created_at = table.Column<DateTime>(type: "datetime(6)", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP")
+                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false, defaultValueSql: "CURRENT_TIMESTAMP"),
+                    RowOrder = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -71,8 +107,7 @@ namespace MultitoolApi.Migrations
                         principalTable: "custom_table",
                         principalColumn: "tableId",
                         onDelete: ReferentialAction.Cascade);
-                })
-                .Annotation("MySql:CharSet", "utf8mb4");
+                });
 
             migrationBuilder.CreateTable(
                 name: "custom_cell",
@@ -80,12 +115,11 @@ namespace MultitoolApi.Migrations
                 {
                     RowId = table.Column<long>(type: "bigint", nullable: false),
                     ColumnId = table.Column<long>(type: "bigint", nullable: false),
-                    val_string = table.Column<string>(type: "longtext", nullable: true)
-                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    val_string = table.Column<string>(type: "text", nullable: true),
                     val_int = table.Column<long>(type: "bigint", nullable: true),
-                    val_dec = table.Column<decimal>(type: "decimal(65,30)", nullable: true),
-                    val_date = table.Column<DateTime>(type: "datetime(6)", nullable: true),
-                    val_bool = table.Column<bool>(type: "tinyint(1)", nullable: true)
+                    val_dec = table.Column<decimal>(type: "numeric", nullable: true),
+                    val_date = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    val_bool = table.Column<bool>(type: "boolean", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -102,8 +136,12 @@ namespace MultitoolApi.Migrations
                         principalTable: "custom_row",
                         principalColumn: "RowId",
                         onDelete: ReferentialAction.Cascade);
-                })
-                .Annotation("MySql:CharSet", "utf8mb4");
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_calendar_events_categoryId",
+                table: "calendar_events",
+                column: "categoryId");
 
             migrationBuilder.CreateIndex(
                 name: "idx_cell_date",
@@ -135,7 +173,13 @@ namespace MultitoolApi.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
+                name: "calendar_events");
+
+            migrationBuilder.DropTable(
                 name: "custom_cell");
+
+            migrationBuilder.DropTable(
+                name: "categories");
 
             migrationBuilder.DropTable(
                 name: "custom_column");

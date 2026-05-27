@@ -2,12 +2,14 @@ using Microsoft.EntityFrameworkCore;
 using Multitool.Domain.Interfaces;
 using Multitool.Infrastructure.Data;
 using Multitool.Domain.Entities.Calendar;
-using Multitool.Domain.Exceptions;
 
 namespace Multitool.Infrastructure.Repositories;
 
 public class CalendarRepository(AppDbContext db) : ICalendarRepository
 {
+    public async Task<CalendarEvent?> GetByIdAsync(int id)
+        => await db.CalendarEvents.FirstOrDefaultAsync(e => e.Id == id);
+
     public async Task<List<CalendarEvent>> GetEventsByRangeAsync(DateTime start, DateTime end, string? categories)
     {
         List<int>? categoryIds = null;
@@ -41,11 +43,10 @@ public class CalendarRepository(AppDbContext db) : ICalendarRepository
         var results = await db.CalendarEvents
             .AsNoTracking()
             .Where(e =>
-                EF.Functions.Like(e.Title, pattern)
+                EF.Functions.ILike(e.Title, pattern)
                 ||
                 (
-                    EF.Functions.Like(e.Note, pattern)
-                    && e.Note != null
+                    e.Note != null && EF.Functions.ILike(e.Note, pattern)
                 ))
             .OrderBy(e => e.StartDateTime)
             .ToListAsync();
@@ -63,44 +64,22 @@ public class CalendarRepository(AppDbContext db) : ICalendarRepository
 
     public async Task UpdateEventAsync(CalendarEvent entity)
     {
-        var existing = await db.CalendarEvents
-                            .FirstOrDefaultAsync(e => e.Id == entity.Id);
-
-        if (existing is null)
-            throw new NotFoundException($"Event with Id {entity.Id} not found");
-
-        existing.Title          = entity.Title;
-        existing.Note           = entity.Note;
-        existing.StartDateTime  = entity.StartDateTime;
-        existing.EndDateTime    = entity.EndDateTime;
-        existing.IsAllDay       = entity.IsAllDay;
-        existing.CategoryId     = entity.CategoryId;
-        existing.RecurrenceRule = entity.RecurrenceRule;
-        existing.RecurrenceEnd  = entity.RecurrenceEnd;
-
+        db.CalendarEvents.Update(entity);
         await db.SaveChangesAsync();
     }
 
     public async Task DeleteEventAsync(int Id)
     {
-        var deleted = await db.CalendarEvents
+        await db.CalendarEvents
             .Where(e => e.Id == Id)
             .ExecuteDeleteAsync();
-
-        if (deleted == 0)
-            throw new NotFoundException($"Event with Id {Id} not found");
     }
 
     public async Task<List<Category>> GetCategoriesAsync()
     {
-        var categories = await db.Categories
+        return await db.Categories
             .AsNoTracking()
             .OrderBy(c => c.Id)
             .ToListAsync();
-
-        if (categories is null || categories.Count <= 0)
-            throw new NotFoundException("No categories found");
-
-        return categories;
     }
 }

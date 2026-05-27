@@ -1,4 +1,4 @@
-namespace MultitoolApi.WebApi.Models.CustomTable;
+namespace Multitool.Application.Models.CustomTable;
 
 public record CreateRowDto(
     Dictionary<long, object?> Cells
@@ -6,9 +6,4 @@ public record CreateRowDto(
 
 public record UpdateRowDto(
     Dictionary<long, object?> Cells
-);
-
-public record RowOrderUpdateDto(
-    int RowId,
-    int RowOrder
 );

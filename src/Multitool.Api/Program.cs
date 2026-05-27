@@ -1,9 +1,13 @@
+using System.Reflection;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using DotNetEnv;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using Multitool.Api.Exceptions;
 using Multitool.Api.Extensions;
 using Multitool.Application;
+using Multitool.Domain.Exceptions;
 using Multitool.Infrastructure;
 
 namespace Multitool.Api;
@@ -17,8 +21,6 @@ public class Program
 
     public static void RunStartup(string[] args)
     {
-        Env.Load();
-
         var builder = WebApplication.CreateBuilder(args);
 
         builder.Services.AddProblemDetails(configure =>
@@ -31,18 +33,24 @@ public class Program
 
         builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
+        var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
         builder.Services.AddApplication();
-        builder.Services.AddInfrastructure(builder.Configuration);
+        builder.Services.AddInfrastructure(connectionString!);
 
         builder.Services.AddCors(options =>
         {
-            options.AddPolicy("AllowAll",
-                builder =>
-                {
-                    builder.AllowAnyOrigin()
-                        .AllowAnyMethod()
-                        .AllowAnyHeader();
-                });
+            options.AddPolicy("AllowFrontendAndLocalhost", policy =>
+            {
+                policy.WithOrigins(
+                    "https://multitool-frontend-pi.vercel.app", // Prod Frontend URL
+                    "https://multitool-frontend-integration.vercel.app", // Integration Frontend URL
+                    "http://localhost:4200" // Angular local development on ng serve
+                )
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
+            });
         });
 
         builder.Services.AddControllers()
@@ -51,23 +59,77 @@ public class Program
                 new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
 
         builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen();
+
+        builder.Services.AddSwaggerGen(c =>
+        {
+            c.SwaggerDoc("v1", new OpenApiInfo { Title = "API", Version = "v1" });
+
+            c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+            {
+                Name = "Authorization",
+                Type = SecuritySchemeType.Http,
+                Scheme = "bearer",
+                BearerFormat = "JWT",
+                In = ParameterLocation.Header,
+                Description = "Gib hier deinen JWT ein"
+            });
+
+            c.AddSecurityRequirement(document => new OpenApiSecurityRequirement
+            {
+                [new OpenApiSecuritySchemeReference("Bearer", document)] = new List<string>()
+            });
+
+            var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+            var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFilename);
+
+            c.IncludeXmlComments(xmlPath);
+        });
+
         builder.Logging.ClearProviders();
         builder.Logging.AddConsole();
+
+        var jwtSettings = builder.Configuration.GetSection("Jwt");
+        var jwtKey = builder.Configuration["Jwt:Key"]
+            ?? throw new JwtMissingException("JWT key is missing.");
+
+        builder.Services
+            .AddAuthentication("Bearer")
+            .AddJwtBearer("Bearer", options =>
+            {
+                options.TokenValidationParameters = new()
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    ValidIssuer = jwtSettings["Issuer"],
+                    ValidAudience = jwtSettings["Audience"],
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+                };
+            });
 
         var app = builder.Build();
 
         app.UseExceptionHandler();
 
-        app.UseSwagger();
-        app.UseSwaggerUI();
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseSwagger();
+            app.UseSwaggerUI();
+        }
 
-        app.UseCors("AllowAll");
+        app.UseCors("AllowFrontendAndLocalhost");
 
-        app.MapControllers().RequireCors("AllowAll");
+        app.UseAuthentication();
+        app.UseAuthorization();
 
-        if (app.Environment.IsProduction())
+        app.MapControllers().RequireCors("AllowFrontendAndLocalhost");
+
+        // Apply migrations on startup in production, or in development if enabled via environment variable
+        if (app.Environment.IsProduction() || (app.Environment.IsDevelopment() && Environment.GetEnvironmentVariable("APPLY_MIGRATIONS") == "true"))
+        {
             app.ApplyMigrations();
+        }
 
         app.Run();
     }
