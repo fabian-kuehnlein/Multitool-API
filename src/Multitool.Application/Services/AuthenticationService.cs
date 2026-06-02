@@ -44,7 +44,6 @@ public class AuthenticationService(IUserRepository userRepository, IPasswordHash
             if (user.AccessFailedCount >= 5)
             {
                 user.LockoutEnd = DateTime.UtcNow.AddMinutes(15);
-                user.AccessFailedCount = 0;
             }
             await userRepository.UpdateAsync(user);
             throw new InvalidCredentialException("Invalid credentials");
