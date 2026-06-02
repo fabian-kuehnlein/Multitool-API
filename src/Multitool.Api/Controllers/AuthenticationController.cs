@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Multitool.Api.Extensions;
 using Multitool.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Multitool.Api.Controllers;
 
@@ -30,6 +31,7 @@ public class AuthController(IAuthenticationService authenticationService) : Cont
     [AllowAnonymous]
     [HttpPost("login")]
     [Produces("application/json")]
+    [EnableRateLimiting("login-limit")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]

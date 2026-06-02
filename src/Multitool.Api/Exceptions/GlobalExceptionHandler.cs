@@ -26,13 +26,13 @@ public sealed class GlobalExceptionHandler(IProblemDetailsService problemDetails
                 Type = "https://httpstatuses.com/401",
                 Title = "Unauthorized",
                 Status = StatusCodes.Status401Unauthorized,
-                Detail = exception.Message
+                Detail = "Authentication failed."
             },
 
             NotFoundException or KeyNotFoundException => new ProblemDetails
             {
                 Type = "https://httpstatuses.com/404",
-                Title = "Resource not found",
+                Title = "Not Found",
                 Status = StatusCodes.Status404NotFound,
                 Detail = exception.Message
             },
@@ -42,7 +42,7 @@ public sealed class GlobalExceptionHandler(IProblemDetailsService problemDetails
                 Type = "https://httpstatuses.com/409",
                 Title = "Conflict",
                 Status = StatusCodes.Status409Conflict,
-                Detail = exception.Message
+                Detail = "User already exists."
             },
 
             _ => new ProblemDetails

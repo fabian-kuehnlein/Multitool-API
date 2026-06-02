@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using System.Threading.RateLimiting;
 using Multitool.Api.Exceptions;
 using Multitool.Api.Extensions;
 using Multitool.Application;
@@ -108,6 +109,20 @@ public class Program
                 };
             });
 
+        builder.Services.AddRateLimiter(options =>
+        {
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            options.AddPolicy("login-limit", httpContext =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    partitionKey: httpContext.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+                    factory: _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 5,
+                        Window = TimeSpan.FromMinutes(1),
+                        QueueLimit = 0
+                    }));
+        });
+
         var app = builder.Build();
 
         app.UseExceptionHandler();
@@ -120,6 +135,7 @@ public class Program
 
         app.UseCors("AllowFrontendAndLocalhost");
 
+        app.UseRateLimiter();
         app.UseAuthentication();
         app.UseAuthorization();
 
