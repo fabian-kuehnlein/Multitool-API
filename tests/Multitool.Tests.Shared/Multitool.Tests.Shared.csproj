@@ -7,6 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Multitool.Api\Multitool.Api.csproj" />
+    <ProjectReference Include="..\..\src\Multitool.Application\Multitool.Application.csproj" />
     <ProjectReference Include="..\..\src\Multitool.Domain\Multitool.Domain.csproj" />
   </ItemGroup>
 </Project>

@@ -4,6 +4,7 @@ using Moq;
 using Multitool.Api.Controllers;
 using Multitool.Application.Interfaces;
 using Multitool.Domain.Entities.Calendar;
+using Multitool.Tests.Shared;
 
 namespace Multitool.Api.Tests;
 
