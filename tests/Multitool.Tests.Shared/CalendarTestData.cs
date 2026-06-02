@@ -1,6 +1,6 @@
 using Multitool.Domain.Entities.Calendar;
 
-namespace Multitool.Api.Tests;
+namespace Multitool.Tests.Shared;
 
 public class CalendarTestData
 {

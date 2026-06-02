@@ -1,7 +1,7 @@
 using FluentAssertions;
 using Mapster;
 using Moq;
-using Multitool.Api.Tests;
+using Multitool.Tests.Shared;
 using Multitool.Application.Mappings;
 using Multitool.Application.Services;
 using Multitool.Domain.Entities.Calendar;
