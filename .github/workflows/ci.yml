@@ -30,4 +30,7 @@ jobs:
 
       - name: Test Application
         run: dotnet test tests/Multitool.Application.Tests/Multitool.Application.Tests.csproj --configuration Release --no-build --verbosity normal
+
+      - name: Test Infrastructure
+        run: dotnet test tests/Multitool.Infrastructure.Tests/Multitool.Infrastructure.Tests.csproj --configuration Release --no-build --verbosity normal
       
