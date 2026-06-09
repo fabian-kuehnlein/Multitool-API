@@ -8,7 +8,7 @@ namespace Multitool.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class CustomTableController(ICustomTableService service) : ControllerBase
+public class CustomTableController(ICustomTableService customtableService) : ControllerBase
 {
     /// <summary>
     /// Returns all tables with name and id.
@@ -20,7 +20,7 @@ public class CustomTableController(ICustomTableService service) : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetTableList()
     {
-        var tables = await service.GetTableListAsync();
+        var tables = await customtableService.GetTableListAsync();
         return Ok(tables);
     }
 
@@ -35,7 +35,7 @@ public class CustomTableController(ICustomTableService service) : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetTable([FromRoute] long id)
     {
-        var table = await service.GetTableAsync(id);
+        var table = await customtableService.GetTableAsync(id);
         return Ok(table);
     }
 
@@ -50,7 +50,7 @@ public class CustomTableController(ICustomTableService service) : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> CreateTable([FromBody] CreateTableDto dto)
     {
-        var id = await service.CreateTableAsync(dto);
+        var id = await customtableService.CreateTableAsync(dto);
         return Ok(id);
     }
 
@@ -65,7 +65,7 @@ public class CustomTableController(ICustomTableService service) : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> UpdateTable([FromRoute] long id, [FromBody] UpdateTableDto dto)
     {
-        await service.UpdateTableAsync(id, dto);
+        await customtableService.UpdateTableAsync(id, dto);
         return NoContent();
     }
 
@@ -80,7 +80,7 @@ public class CustomTableController(ICustomTableService service) : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> DeleteTable([FromRoute] long id)
     {
-        await service.DeleteTableAsync(id);
+        await customtableService.DeleteTableAsync(id);
         return NoContent();
     }
 
@@ -94,7 +94,7 @@ public class CustomTableController(ICustomTableService service) : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> CreateColumn([FromRoute] long tableId)
     {
-        await service.CreateColumnAsync(tableId);
+        await customtableService.CreateColumnAsync(tableId);
         return NoContent();
     }
 
@@ -109,7 +109,7 @@ public class CustomTableController(ICustomTableService service) : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> UpdateColumn([FromRoute] long id, [FromBody] UpdateColumnDto dto)
     {
-        await service.UpdateColumnAsync(id, dto);
+        await customtableService.UpdateColumnAsync(id, dto);
         return NoContent();
     }
 
@@ -123,7 +123,7 @@ public class CustomTableController(ICustomTableService service) : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> UpdateColumnOrder([FromBody] List<UpdateColumnOrderDto> columns)
     {
-        await service.UpdateColumnOrderAsync(columns);
+        await customtableService.UpdateColumnOrderAsync(columns);
         return NoContent();
     }
 
@@ -137,7 +137,7 @@ public class CustomTableController(ICustomTableService service) : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> DeleteColumn([FromRoute] long tableId, [FromRoute] long columnId)
     {
-        await service.DeleteColumnAsync(tableId, columnId);
+        await customtableService.DeleteColumnAsync(tableId, columnId);
         return NoContent();
     }
 
@@ -151,7 +151,7 @@ public class CustomTableController(ICustomTableService service) : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> CreateRow([FromRoute] long tableId)
     {
-        await service.CreateRowAsync(tableId);
+        await customtableService.CreateRowAsync(tableId);
         return NoContent();
     }
 
@@ -165,7 +165,7 @@ public class CustomTableController(ICustomTableService service) : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> UpdateRowOrder([FromBody] List<RowOrderUpdateDto> rows)
     {
-        await service.UpdateRowOrderAsync(rows);
+        await customtableService.UpdateRowOrderAsync(rows);
         return NoContent();
     }
 
@@ -179,7 +179,7 @@ public class CustomTableController(ICustomTableService service) : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> DeleteRows([FromRoute] long tableId, [FromBody] List<long> rowIds)
     {
-        await service.DeleteRowsAsync(tableId, rowIds);
+        await customtableService.DeleteRowsAsync(tableId, rowIds);
         return NoContent();
     }
 
@@ -194,7 +194,7 @@ public class CustomTableController(ICustomTableService service) : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> SetCell([FromRoute] long rowId, [FromRoute] long columnId, [FromBody] object? newValue)
     {
-        await service.UpsertCellAsync(rowId, columnId, newValue);
+        await customtableService.UpsertCellAsync(rowId, columnId, newValue);
         return NoContent();
     }
 }

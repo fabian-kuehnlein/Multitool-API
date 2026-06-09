@@ -11,4 +11,5 @@ public interface ICalendarRepository
     Task UpdateEventAsync(CalendarEvent updateEvent);
     Task DeleteEventAsync(int Id);
     Task<List<Category>> GetCategoriesAsync();
+    Task<List<CalendarEvent>> GetEventsOlderThanAsync(DateTime date);
 }

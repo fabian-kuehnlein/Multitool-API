@@ -10,6 +10,8 @@ using Multitool.Api.Extensions;
 using Multitool.Application;
 using Multitool.Domain.Exceptions;
 using Multitool.Infrastructure;
+using Multitool.Api.BackgroundJobs;
+using Multitool.Api.Configuration;
 
 namespace Multitool.Api;
 
@@ -60,6 +62,9 @@ public class Program
                 new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
 
         builder.Services.AddEndpointsApiExplorer();
+
+        builder.Services.AddHostedService<CleanupPastEventsService>();
+        builder.Services.Configure<CronJobSettings>(builder.Configuration.GetSection("CronJobs"));
 
         builder.Services.AddSwaggerGen(c =>
         {
