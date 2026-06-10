@@ -18,4 +18,31 @@ public class TodoRepository(AppDbContext db) : ITodoRepository
             .ThenByDescending(t => t.CreationDateTime)
             .ToListAsync();
     }
+
+    public async Task<Todo?> GetByIdAsync(int id)
+    {
+        return await db.Todos.FindAsync(id);
+    }
+
+    public async Task AddAsync(Todo todo)
+    {
+        await db.Todos.AddAsync(todo);
+        await db.SaveChangesAsync();
+    }
+
+    public async Task UpdateAsync(Todo todo)
+    {
+        db.Todos.Update(todo);
+        await db.SaveChangesAsync();
+    }
+
+    public async Task DeleteAsync(int id)
+    {
+        var todo = await db.Todos.FindAsync(id);
+        if (todo != null)
+        {
+            db.Todos.Remove(todo);
+            await db.SaveChangesAsync();
+        }
+    }
 }
