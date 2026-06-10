@@ -22,6 +22,7 @@ public static class Setup
 
         services.AddScoped<ICalendarRepository, CalendarRepository>();
         services.AddScoped<ICustomTableRepository, CustomTableRepository>();
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
 
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(

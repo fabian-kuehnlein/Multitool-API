@@ -81,21 +81,6 @@ public class CalendarController(ICalendarService calendarService) : ControllerBa
     }
 
     /// <summary>
-    /// Returns a list of all available categories for calendar events
-    /// </summary>
-    [Authorize]
-    [HttpGet("categories")]
-    [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> GetCategories()
-    {     
-        var categories = await calendarService.GetCategoriesAsync();
-        return Ok(categories);
-    }
-
-    /// <summary>
     /// Returns a list of all holidays for a given year.
     /// Request to open source API: https://get.api-feiertage.de
     /// </summary>

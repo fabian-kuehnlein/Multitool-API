@@ -217,29 +217,6 @@ public class CalendarServiceTests
         _repositoryMock.Verify(r => r.DeleteEventAsync(It.IsAny<int>()), Times.Never);
     }
 
-    // GetCategoriesAsync
-
-    [Fact]
-    public async Task GetCategoriesAsync_ReturnsAllCategories()
-    {
-        var categories = new List<Category> { CalendarTestData.DefaultCategory };
-        _repositoryMock.Setup(r => r.GetCategoriesAsync()).ReturnsAsync(categories);
-
-        var result = await _sut.GetCategoriesAsync();
-
-        result.Should().BeEquivalentTo(categories);
-    }
-
-    [Fact]
-    public async Task GetCategoriesAsync_WhenNoCategoriesFound_ThrowsNotFoundException()
-    {
-        _repositoryMock.Setup(r => r.GetCategoriesAsync()).ReturnsAsync(new List<Category>());
-
-        var act = () => _sut.GetCategoriesAsync();
-
-        await act.Should().ThrowAsync<NotFoundException>();
-    }
-
     // GetHolidaysAsync
 
     [Fact]

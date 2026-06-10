@@ -19,6 +19,7 @@ public static class Setup
 
         services.AddScoped<ICalendarService, CalendarService>();
         services.AddScoped<ICustomTableService, CustomTableService>();
+        services.AddScoped<ICategoryService, CategoryService>();
 
         return services;
     }

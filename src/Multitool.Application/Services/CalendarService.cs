@@ -48,15 +48,6 @@ public class CalendarService(ICalendarRepository calendarRepository, ICalendarAp
 
         await calendarRepository.DeleteEventAsync(id);
     }
-    public async Task<List<Category>> GetCategoriesAsync()
-    {
-        var categories = await calendarRepository.GetCategoriesAsync();
-
-        if (categories is null || categories.Count <= 0)
-            throw new NotFoundException("No categories found");
-
-        return categories;
-    }
 
     public async Task<List<Holiday>> GetHolidaysAsync(string year)
         => await calendarApiClient.GetHolidaysAsync(year);

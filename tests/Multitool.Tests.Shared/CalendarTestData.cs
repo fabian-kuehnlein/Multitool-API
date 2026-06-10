@@ -1,4 +1,5 @@
 using Multitool.Domain.Entities.Calendar;
+using Multitool.Domain.Entities.Category;
 
 namespace Multitool.Tests.Shared;
 

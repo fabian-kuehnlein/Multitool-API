@@ -75,14 +75,6 @@ public class CalendarRepository(AppDbContext db) : ICalendarRepository
             .ExecuteDeleteAsync();
     }
 
-    public async Task<List<Category>> GetCategoriesAsync()
-    {
-        return await db.Categories
-            .AsNoTracking()
-            .OrderBy(c => c.Id)
-            .ToListAsync();
-    }
-
     public Task<List<CalendarEvent>> GetEventsOlderThanAsync(DateTime threshold)
     {
         return db.CalendarEvents

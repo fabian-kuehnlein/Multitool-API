@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Multitool.Domain.Entities.Calendar;
+using Multitool.Domain.Entities.Category;
 using Multitool.Infrastructure.Repositories;
 
 namespace Multitool.Infrastructure.Tests;

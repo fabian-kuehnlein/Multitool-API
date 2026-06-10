@@ -184,20 +184,6 @@ public class CalendarControllerTests
         _serviceMock.Verify(s => s.DeleteEventAsync(CalendarTestData.DefaultEvent.Id), Times.Once);
     }
 
-    // GET /api/calendar/categories
-
-    [Fact]
-    public async Task GetCategories_ReturnsOk_WithAllCategories()
-    {
-        var categories = new List<Category> { CalendarTestData.DefaultCategory };
-        _serviceMock.Setup(s => s.GetCategoriesAsync()).ReturnsAsync(categories);
-
-        var result = await _sut.GetCategories();
-
-        var ok = result.Should().BeOfType<OkObjectResult>().Subject;
-        ok.Value.Should().BeEquivalentTo(categories);
-    }
-
     // GET /api/calendar/holidays/{year}
 
     [Fact]
