@@ -18,8 +18,9 @@ public static class Setup
         services.AddScoped<IAuthenticationService, AuthenticationService>();
 
         services.AddScoped<ICalendarService, CalendarService>();
-        services.AddScoped<ICustomTableService, CustomTableService>();
         services.AddScoped<ICategoryService, CategoryService>();
+        services.AddScoped<ICustomTableService, CustomTableService>();
+        services.AddScoped<ITodoService, TodoService>();
 
         return services;
     }

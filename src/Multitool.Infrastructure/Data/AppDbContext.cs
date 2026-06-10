@@ -23,7 +23,7 @@ public class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.HasDefaultScheme("public");
+        modelBuilder.HasDefaultSchema("public");
 
         // ---------- CALENDAR ----------
         modelBuilder.Entity<CalendarEvent>(e =>
@@ -69,6 +69,7 @@ public class AppDbContext : DbContext
             e.Property(e => e.CategoryId).HasColumnName("category_id").IsRequired();
             e.Property(e => e.IsDone).HasColumnName("is_done").IsRequired();
             e.Property(e => e.Priority).HasColumnName("priority").IsRequired();
+            e.Property(e => e.DueDate).HasColumnName("due_date");
             e.Property(e => e.CreationDateTime).HasColumnName("creation_date_time").IsRequired();
 
             e.HasOne<Category>()

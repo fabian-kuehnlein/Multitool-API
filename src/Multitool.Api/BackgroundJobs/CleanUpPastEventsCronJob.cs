@@ -28,7 +28,7 @@ public class CleanupPastEventsService(
             using var scope = serviceProvider.CreateScope();
             var calendarService = scope.ServiceProvider.GetRequiredService<ICalendarService>();
 
-            await calendarService.DeletePastEventsAsync();
+            await calendarService.DeletePastEventsAsync(cronSettings.Value.CleanUpPastEventsMonths);
         }
     }
 }
