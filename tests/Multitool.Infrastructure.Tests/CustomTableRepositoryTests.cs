@@ -175,10 +175,10 @@ public class CustomTableRepositoryTests : RepositoryTestBase
         Context.CustomTables.Add(table);
         await Context.SaveChangesAsync();
 
-        await _sut.UpdateRowOrderAsync(new List<RowOrderUpdateDto> 
+        await _sut.UpdateRowOrderAsync(new Dictionary<long, int> 
         { 
-            new(r1.RowId, 1), 
-            new(r2.RowId, 0) 
+            { r1.RowId, 1 }, 
+            { r2.RowId, 0 } 
         });
 
         var dbR1 = await Context.CustomRows.FindAsync(r1.RowId);

@@ -5,6 +5,7 @@ using Multitool.Api.Controllers;
 using Multitool.Application.Interfaces;
 using Multitool.Domain.Entities.Calendar;
 using Multitool.Tests.Shared;
+using Multitool.Application.Models.Calendar;
 
 namespace Multitool.Api.Tests;
 
@@ -57,7 +58,7 @@ public class CalendarControllerTests
     [Fact]
     public async Task SearchEvents_WhenMatchesExist_ReturnsOkWithResults()
     {
-        var results = new List<EventSearchResponse> { new() { EventTitle = CalendarTestData.DefaultEvent.Title, StartDateTime = CalendarTestData.DefaultEvent.StartDateTime } };
+        var results = new List<EventSearchResponseDto> { new(1, CalendarTestData.DefaultEvent.Title, null, CalendarTestData.DefaultEvent.StartDateTime, null, null) };
         _serviceMock
             .Setup(s => s.SearchCalendarEventsAsync("Meeting"))
             .ReturnsAsync(results);

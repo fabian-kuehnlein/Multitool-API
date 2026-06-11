@@ -1,8 +1,9 @@
 using Mapster;
-using Multitool.Application.Models;
 using Multitool.Domain.Entities.Calendar;
 using Multitool.Domain.Entities.CustomTable;
 using Multitool.Application.Models.CustomTable;
+using Multitool.Application.Models.Calendar;
+using Multitool.Application.Models.Info;
 
 namespace Multitool.Application.Mappings;
 
@@ -10,7 +11,7 @@ public class MappingConfig : IRegister
 {
     public void Register(TypeAdapterConfig config)
     {
-        config.NewConfig<CalendarEvent, EventSearchResponse>()
+        config.NewConfig<CalendarEvent, EventSearchResponseDto>()
             .Map(dest => dest.EventId, src => src.Id)
             .Map(dest => dest.EventTitle, src => src.Title)
             .Map(dest => dest.EventNote, src => src.Note);

@@ -3,10 +3,8 @@ using Moq;
 using Multitool.Application.Models.CustomTable;
 using Multitool.Application.Services;
 using Multitool.Domain.Entities.CustomTable;
-using Multitool.Domain.Enums;
 using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
-using Multitool.Application.Models;
 using Multitool.Tests.Shared;
 
 namespace Multitool.Application.Tests;
@@ -225,7 +223,8 @@ public class CustomTableServiceTests
 
         await _sut.UpdateRowOrderAsync(list);
 
-        _repositoryMock.Verify(r => r.UpdateRowOrderAsync(list), Times.Once);
+        _repositoryMock.Verify(r => r.UpdateRowOrderAsync(It.Is<Dictionary<long, int>>(d => 
+            d.Count == 1 && d.ContainsKey(1) && d[1] == 0)), Times.Once);
     }
 
     [Fact]

@@ -1,6 +1,6 @@
 using Multitool.Domain.Enums;
 
-namespace Multitool.Application.Models;
+namespace Multitool.Application.Models.Info;
 
 public record ColumnInfo
 {

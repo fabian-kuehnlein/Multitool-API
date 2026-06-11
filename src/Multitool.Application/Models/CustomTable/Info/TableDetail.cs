@@ -1,4 +1,4 @@
-namespace Multitool.Application.Models;
+namespace Multitool.Application.Models.Info;
 
 public record TableDetail
 {

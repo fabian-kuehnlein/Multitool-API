@@ -1,19 +1,19 @@
 using Mapster;
 using Multitool.Application.Interfaces;
-using Multitool.Application.Models;
 using Multitool.Application.Models.CustomTable;
 using Multitool.Domain.Entities.CustomTable;
 using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
+using Multitool.Application.Models.Info;
 
 namespace Multitool.Application.Services;
 
 public class CustomTableService(ICustomTableRepository customtableRepository) : ICustomTableService
 {
-    public async Task<List<TableOverview>> GetTableListAsync()
+    public async Task<List<TableOverviewDto>> GetTableListAsync()
     {
         var list = await customtableRepository.GetTableListAsync();
-        return list.Adapt<List<TableOverview>>();
+        return list.Adapt<List<TableOverviewDto>>();
     }
 
     public async Task<TableDetail> GetTableAsync(long tableId)
@@ -106,7 +106,10 @@ public class CustomTableService(ICustomTableRepository customtableRepository) : 
     }
 
     public async Task UpdateRowOrderAsync(List<RowOrderUpdateDto> rows)
-        => await customtableRepository.UpdateRowOrderAsync(rows);
+    {
+        var rowOrders = rows.ToDictionary(r => r.RowId, r => r.RowOrder);
+        await customtableRepository.UpdateRowOrderAsync(rowOrders);
+    }
 
     public async Task DeleteRowsAsync(long tableId, List<long> rowIds)
     {

@@ -3,6 +3,7 @@ using Multitool.Application.Interfaces;
 using Multitool.Domain.Entities.Calendar;
 using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
+using Multitool.Application.Models.Calendar;
 
 namespace Multitool.Application.Services;
 
@@ -11,13 +12,13 @@ public class CalendarService(ICalendarRepository calendarRepository, ICalendarAp
     public async Task<List<CalendarEvent>> GetEventsByRangeAsync(DateTime start, DateTime end, string categories)
         => await calendarRepository.GetEventsByRangeAsync(start, end, categories);
 
-    public async Task<List<EventSearchResponse>> SearchCalendarEventsAsync(string searchString)
+    public async Task<List<EventSearchResponseDto>> SearchCalendarEventsAsync(string searchString)
     {
         var result = await calendarRepository.SearchCalendarEventsAsync(searchString);
-        return result.Adapt<List<EventSearchResponse>>();
+        return result.Adapt<List<EventSearchResponseDto>>();
     }
 
-    public async Task<long> InsertEventAsync(CreateCalendarEvent newEvent)
+    public async Task<long> InsertEventAsync(CreateCalendarEventDto newEvent)
         => await calendarRepository.InsertEventAsync(newEvent.Adapt<CalendarEvent>());
 
     public async Task UpdateEventAsync(CalendarEvent calendarEvent)

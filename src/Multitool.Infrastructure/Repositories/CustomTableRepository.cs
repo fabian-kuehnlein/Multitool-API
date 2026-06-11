@@ -2,7 +2,6 @@ using System.Data;
 using Microsoft.EntityFrameworkCore;
 using Multitool.Domain.Entities.CustomTable;
 using Multitool.Domain.Enums;
-using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
 using Multitool.Infrastructure.Data;
 
@@ -157,19 +156,18 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
         await db.SaveChangesAsync();
     }
 
-    public async Task UpdateRowOrderAsync(List<RowOrderUpdateDto> list)
+    public async Task UpdateRowOrderAsync(Dictionary<long, int> rowOrders)
     {
-        var ids = list.Select(r => r.RowId).ToList();
+        var ids = rowOrders.Keys.ToList();
 
         var rows = await db.CustomRows
             .Where(r => ids.Contains(r.RowId))
             .ToListAsync();
 
-        foreach (var item in list)
+        foreach (var row in rows)
         {
-            var row = rows.FirstOrDefault(r => r.RowId == item.RowId);
-            if (row != null)
-                row.RowOrder = item.RowOrder;
+            if (rowOrders.TryGetValue(row.RowId, out var newOrder))
+                row.RowOrder = newOrder;
         }
 
         await db.SaveChangesAsync();

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Multitool.Application.Interfaces;
 using Multitool.Domain.Entities.Calendar;
+using Multitool.Application.Models.Calendar;
 
 namespace Multitool.Api.Controllers;
 
@@ -46,7 +47,7 @@ public class CalendarController(ICalendarService calendarService) : ControllerBa
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> InsertEvent([FromBody] CreateCalendarEvent calendarEvent)
+    public async Task<IActionResult> InsertEvent([FromBody] CreateCalendarEventDto calendarEvent)
     {
         var id = await calendarService.InsertEventAsync(calendarEvent);
         return Ok(id);

@@ -1,6 +1,6 @@
-namespace Multitool.Application.Models;
+namespace Multitool.Application.Models.Info;
 
-public class RowInfo
+public record RowInfo
 {
     public long RowId { get; init; }
     public Dictionary<long, object?> Cells { get; init; } = new();

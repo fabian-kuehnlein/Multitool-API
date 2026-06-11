@@ -22,7 +22,7 @@ public class CustomTableControllerTests
     [Fact]
     public async Task GetTableList_WhenTablesExist_ReturnsOkWithList()
     {
-        var list = new List<TableOverview> { CustomTableTestData.DefaultTableOverview };
+        var list = new List<TableOverviewDto> { CustomTableTestData.DefaultTableOverview };
         _serviceMock.Setup(s => s.GetTableListAsync()).ReturnsAsync(list);
 
         var result = await _sut.GetTableList();
@@ -127,7 +127,7 @@ public class CustomTableControllerTests
     [Fact]
     public async Task UpdateRowOrder_WhenRowsAreValid_ReturnsNoContent()
     {
-        var list = new List<Multitool.Domain.Entities.CustomTable.RowOrderUpdateDto> { new(1, 0) };
+        var list = new List<RowOrderUpdateDto> { new(1, 0) };
 
         var result = await _sut.UpdateRowOrder(list);
 

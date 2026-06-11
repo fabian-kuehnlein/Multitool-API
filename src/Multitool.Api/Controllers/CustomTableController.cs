@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Multitool.Application.Interfaces;
 using Multitool.Application.Models.CustomTable;
-using Multitool.Domain.Entities.CustomTable;
 
 namespace Multitool.Api.Controllers;
 
