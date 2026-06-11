@@ -20,7 +20,7 @@ public class CategoryControllerTests
     }
 
     [Fact]
-    public async Task GetCategories_ReturnsOk_WithAllCategories()
+    public async Task GetCategories_WhenCategoriesExist_ReturnsOkWithCategories()
     {
         var categories = new List<Category> { CalendarTestData.DefaultCategory };
         _serviceMock.Setup(s => s.GetCategoriesAsync()).ReturnsAsync(categories);

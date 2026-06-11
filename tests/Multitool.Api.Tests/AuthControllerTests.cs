@@ -2,7 +2,6 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Multitool.Api.Controllers;
-using Multitool.Api.Extensions;
 using Multitool.Application.Interfaces;
 using Multitool.Tests.Shared;
 
@@ -20,7 +19,7 @@ public class AuthControllerTests
     }
 
     [Fact]
-    public async Task Register_ReturnsOk()
+    public async Task Register_WhenRequestIsValid_ReturnsOk()
     {
         var request = AuthTestData.DefaultRegisterRequest;
         const string adminKey = AuthTestData.ValidAdminKey;
@@ -32,7 +31,7 @@ public class AuthControllerTests
     }
 
     [Fact]
-    public async Task Login_ReturnsOk_WithToken()
+    public async Task Login_WhenCredentialsAreValid_ReturnsOkWithToken()
     {
         var request = AuthTestData.DefaultLoginRequest;
         _serviceMock.Setup(s => s.LoginAsync(request.Username, request.Password)).ReturnsAsync("token-123");
