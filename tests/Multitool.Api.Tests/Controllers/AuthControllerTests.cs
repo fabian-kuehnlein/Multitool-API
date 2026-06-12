@@ -18,6 +18,8 @@ public class AuthControllerTests
         _sut = new AuthController(_serviceMock.Object);
     }
 
+    // POST api/Auth/register
+
     [Fact]
     public async Task Register_WhenRequestIsValid_ReturnsOk()
     {
@@ -29,6 +31,8 @@ public class AuthControllerTests
         result.Should().BeOfType<OkObjectResult>();
         _serviceMock.Verify(s => s.RegisterAsync(request.Username, request.Password, adminKey), Times.Once);
     }
+
+    // POST api/Auth/login
 
     [Fact]
     public async Task Login_WhenCredentialsAreValid_ReturnsOkWithToken()

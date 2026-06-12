@@ -20,6 +20,8 @@ public class CalendarControllerTests
         _sut = new CalendarController(_serviceMock.Object);
     }
 
+    // GET /api/Calendar/events
+
     [Fact]
     public async Task GetEventsByRange_WhenEventsExist_ReturnsOkWithEvents()
     {
@@ -55,6 +57,8 @@ public class CalendarControllerTests
             string.Empty), Times.Once);
     }
 
+    // GET /api/Calendar/events/search
+
     [Fact]
     public async Task SearchEvents_WhenMatchesExist_ReturnsOkWithResults()
     {
@@ -69,7 +73,7 @@ public class CalendarControllerTests
         ok.Value.Should().BeEquivalentTo(results);
     }
 
-    // POST /api/calendar/events
+    // POST /api/Calendar/events
 
     [Fact]
     public async Task InsertEvent_WhenEventIsValid_ReturnsOkWithId()
@@ -85,7 +89,7 @@ public class CalendarControllerTests
         ok.Value.Should().Be(expectedId);
     }
 
-    // PUT /api/calendar/events
+    // PUT /api/Calendar/events
 
     [Fact]
     public async Task UpdateEvent_WhenUpdateSucceeds_ReturnsNoContent()
@@ -99,7 +103,7 @@ public class CalendarControllerTests
         result.Should().BeOfType<NoContentResult>();
     }
 
-    // DELETE /api/calendar/events/{id}
+    // DELETE /api/Calendar/events/{id}
 
     [Fact]
     public async Task DeleteEvent_WhenDeletionSucceeds_ReturnsNoContent()
@@ -113,7 +117,7 @@ public class CalendarControllerTests
         result.Should().BeOfType<NoContentResult>();
     }
 
-    // GET /api/calendar/holidays/{year}
+    // GET /api/Calendar/holidays/{year}
 
     [Fact]
     public async Task GetHolidays_WhenHolidaysExist_ReturnsOkWithHolidays()

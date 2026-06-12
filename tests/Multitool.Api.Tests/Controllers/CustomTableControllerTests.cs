@@ -19,6 +19,8 @@ public class CustomTableControllerTests
         _sut = new CustomTableController(_serviceMock.Object);
     }
 
+    // GET api/CustomTable/tables
+
     [Fact]
     public async Task GetTableList_WhenTablesExist_ReturnsOkWithList()
     {
@@ -30,6 +32,8 @@ public class CustomTableControllerTests
         var ok = result.Should().BeOfType<OkObjectResult>().Subject;
         ok.Value.Should().BeEquivalentTo(list);
     }
+
+    // GET api/CustomTable/tables/{id}
 
     [Fact]
     public async Task GetTable_WhenTableExists_ReturnsOkWithDetail()
@@ -43,6 +47,8 @@ public class CustomTableControllerTests
         ok.Value.Should().BeEquivalentTo(detail);
     }
 
+    // POST api/CustomTable/tables
+
     [Fact]
     public async Task CreateTable_WhenDtoIsValid_ReturnsOkWithId()
     {
@@ -55,6 +61,8 @@ public class CustomTableControllerTests
         ok.Value.Should().Be(1L);
     }
 
+    // PUT api/CustomTable/tables/{id}
+
     [Fact]
     public async Task UpdateTable_WhenTableExists_ReturnsNoContent()
     {
@@ -66,6 +74,8 @@ public class CustomTableControllerTests
         _serviceMock.Verify(s => s.UpdateTableAsync(1, dto), Times.Once);
     }
 
+    // DELETE api/CustomTable/tables/{id}
+
     [Fact]
     public async Task DeleteTable_WhenTableExists_ReturnsNoContent()
     {
@@ -75,6 +85,8 @@ public class CustomTableControllerTests
         _serviceMock.Verify(s => s.DeleteTableAsync(1), Times.Once);
     }
 
+    // POST api/CustomTable/tables/{tableId}/columns
+
     [Fact]
     public async Task CreateColumn_WhenTableExists_ReturnsNoContent()
     {
@@ -83,6 +95,8 @@ public class CustomTableControllerTests
         result.Should().BeOfType<NoContentResult>();
         _serviceMock.Verify(s => s.CreateColumnAsync(1), Times.Once);
     }
+
+    // PUT api/CustomTable/columns/{id}
 
     [Fact]
     public async Task UpdateColumn_WhenColumnExists_ReturnsNoContent()
@@ -95,6 +109,8 @@ public class CustomTableControllerTests
         _serviceMock.Verify(s => s.UpdateColumnAsync(1, dto), Times.Once);
     }
 
+    // PUT api/CustomTable/columns/order
+
     [Fact]
     public async Task UpdateColumnOrder_WhenColumnsAreValid_ReturnsNoContent()
     {
@@ -106,6 +122,8 @@ public class CustomTableControllerTests
         _serviceMock.Verify(s => s.UpdateColumnOrderAsync(list), Times.Once);
     }
 
+    // DELETE api/CustomTable/tables/{tableId}/columns/{columnId}
+
     [Fact]
     public async Task DeleteColumn_WhenColumnExists_ReturnsNoContent()
     {
@@ -115,6 +133,8 @@ public class CustomTableControllerTests
         _serviceMock.Verify(s => s.DeleteColumnAsync(1, 2), Times.Once);
     }
 
+    // POST api/CustomTable/tables/{tableId}/rows
+
     [Fact]
     public async Task CreateRow_WhenTableExists_ReturnsNoContent()
     {
@@ -123,6 +143,8 @@ public class CustomTableControllerTests
         result.Should().BeOfType<NoContentResult>();
         _serviceMock.Verify(s => s.CreateRowAsync(1), Times.Once);
     }
+
+    // PUT api/CustomTable/rows/order
 
     [Fact]
     public async Task UpdateRowOrder_WhenRowsAreValid_ReturnsNoContent()
@@ -135,6 +157,8 @@ public class CustomTableControllerTests
         _serviceMock.Verify(s => s.UpdateRowOrderAsync(list), Times.Once);
     }
 
+    // DELETE api/CustomTable/tables/{tableId}/rows
+
     [Fact]
     public async Task DeleteRows_WhenRowsExist_ReturnsNoContent()
     {
@@ -145,6 +169,8 @@ public class CustomTableControllerTests
         result.Should().BeOfType<NoContentResult>();
         _serviceMock.Verify(s => s.DeleteRowsAsync(1, ids), Times.Once);
     }
+
+    // PUT api/CustomTable/rows/{rowId}/cells/{columnId}
 
     [Fact]
     public async Task SetCell_WhenCellIsValid_ReturnsNoContent()

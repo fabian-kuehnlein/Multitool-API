@@ -19,6 +19,8 @@ public class TodoControllerTests
         _sut = new TodoController(_serviceMock.Object);
     }
 
+    // GET api/Todo
+
     [Fact]
     public async Task GetTodos_WhenTodosExist_ReturnsOkWithTodos()
     {
@@ -30,6 +32,8 @@ public class TodoControllerTests
         var ok = result.Should().BeOfType<OkObjectResult>().Subject;
         ok.Value.Should().BeEquivalentTo(todos);
     }
+
+    // POST api/Todo
 
     [Fact]
     public async Task CreateTodo_WhenDtoIsValid_ReturnsCreatedAtAction()
@@ -45,6 +49,8 @@ public class TodoControllerTests
         created.ActionName.Should().Be(nameof(_sut.GetTodos));
     }
 
+    // PUT api/Todo/{id}
+
     [Fact]
     public async Task UpdateTodo_WhenTodoExists_ReturnsNoContent()
     {
@@ -56,16 +62,7 @@ public class TodoControllerTests
         result.Should().BeOfType<NoContentResult>();
     }
 
-    [Fact]
-    public async Task ToggleTodo_WhenTodoExists_ReturnsNoContent()
-    {
-        _serviceMock.Setup(s => s.ToggleDoneAsync(TodoTestData.DefaultTodo.Id))
-            .Returns(Task.CompletedTask);
-
-        var result = await _sut.ToggleTodo(TodoTestData.DefaultTodo.Id);
-
-        result.Should().BeOfType<NoContentResult>();
-    }
+    // DELETE api/Todo/{id}
 
     [Fact]
     public async Task DeleteTodo_WhenTodoExists_ReturnsNoContent()
@@ -74,6 +71,19 @@ public class TodoControllerTests
             .Returns(Task.CompletedTask);
 
         var result = await _sut.DeleteTodo(TodoTestData.DefaultTodo.Id);
+
+        result.Should().BeOfType<NoContentResult>();
+    }
+
+    // PATCH api/Todo/{id}/toggle
+
+    [Fact]
+    public async Task ToggleTodo_WhenTodoExists_ReturnsNoContent()
+    {
+        _serviceMock.Setup(s => s.ToggleDoneAsync(TodoTestData.DefaultTodo.Id))
+            .Returns(Task.CompletedTask);
+
+        var result = await _sut.ToggleTodo(TodoTestData.DefaultTodo.Id);
 
         result.Should().BeOfType<NoContentResult>();
     }

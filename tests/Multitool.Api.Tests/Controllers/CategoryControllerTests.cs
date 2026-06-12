@@ -19,6 +19,8 @@ public class CategoryControllerTests
         _sut = new CategoryController(_serviceMock.Object);
     }
 
+    // GET api/Category/categories
+
     [Fact]
     public async Task GetCategories_WhenCategoriesExist_ReturnsOkWithCategories()
     {

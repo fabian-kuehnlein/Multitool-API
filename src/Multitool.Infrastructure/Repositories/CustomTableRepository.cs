@@ -1,4 +1,5 @@
 using System.Data;
+using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using Multitool.Domain.Entities.CustomTable;
 using Multitool.Domain.Enums;
@@ -202,15 +203,15 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
                 cell.ValString = value?.ToString();
                 break;
 
-            case CustomDataType.Int when long.TryParse(value?.ToString(), out var i):
+            case CustomDataType.Int when long.TryParse(value?.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var i):
                 cell.ValInt = i;
                 break;
 
-            case CustomDataType.Decimal when decimal.TryParse(value?.ToString(), out var d):
+            case CustomDataType.Decimal when decimal.TryParse(value?.ToString(), NumberStyles.Number, CultureInfo.InvariantCulture, out var d):
                 cell.ValDec = d;
                 break;
 
-            case CustomDataType.Date when DateTime.TryParse(value?.ToString(), out var dt):
+            case CustomDataType.Date when DateTime.TryParse(value?.ToString(), CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt):
                 cell.ValDate = dt;
                 break;
 
