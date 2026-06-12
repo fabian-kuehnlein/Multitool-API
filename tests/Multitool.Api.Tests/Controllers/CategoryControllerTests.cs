@@ -6,7 +6,7 @@ using Multitool.Application.Interfaces;
 using Multitool.Domain.Entities.Category;
 using Multitool.Tests.Shared;
 
-namespace Multitool.Api.Tests;
+namespace Multitool.Api.Tests.Controllers;
 
 public class CategoryControllerTests
 {

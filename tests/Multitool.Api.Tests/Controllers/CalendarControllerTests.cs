@@ -7,7 +7,7 @@ using Multitool.Domain.Entities.Calendar;
 using Multitool.Tests.Shared;
 using Multitool.Application.Models.Calendar;
 
-namespace Multitool.Api.Tests;
+namespace Multitool.Api.Tests.Controllers;
 
 public class CalendarControllerTests
 {

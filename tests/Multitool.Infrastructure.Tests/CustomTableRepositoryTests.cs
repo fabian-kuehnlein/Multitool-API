@@ -15,21 +15,28 @@ public class CustomTableRepositoryTests : RepositoryTestBase
         _sut = new CustomTableRepository(Context);
     }
 
-    [Fact]
-    public async Task CreateTableAsync_AddsTableToDatabase()
-    {
-        var table = new Table { Name = "Test Table" };
-        
-        var id = await _sut.CreateTableAsync(table);
+    // GetTableListAsync
 
-        id.Should().BeGreaterThan(0);
-        var dbTable = await Context.CustomTables.FindAsync(id);
-        dbTable.Should().NotBeNull();
-        dbTable!.Name.Should().Be("Test Table");
+    [Fact]
+    public async Task GetTableListAsync_WhenTablesExist_ReturnsAllTablesSortedByName()
+    {
+        Context.CustomTables.AddRange(
+            new Table { Name = "B" },
+            new Table { Name = "A" }
+        );
+        await Context.SaveChangesAsync();
+
+        var result = await _sut.GetTableListAsync();
+
+        result.Should().HaveCount(2);
+        result[0].Name.Should().Be("A");
+        result[1].Name.Should().Be("B");
     }
 
+    // GetTableAsync
+
     [Fact]
-    public async Task GetTableAsync_ReturnsTableWithColumnsAndRows()
+    public async Task GetTableAsync_WhenTableExists_ReturnsTableWithColumnsAndRows()
     {
         var table = new Table { Name = "Complex Table" };
         table.Columns.Add(new Column { Name = "Col 1", DataType = CustomDataType.String, ColOrder = 0 });
@@ -44,6 +51,84 @@ public class CustomTableRepositoryTests : RepositoryTestBase
         result.Columns.Should().HaveCount(1);
         result.Rows.Should().HaveCount(1);
     }
+
+    [Fact]
+    public async Task GetTableAsync_WhenTableDoesNotExist_ReturnsNull()
+    {
+        var result = await _sut.GetTableAsync(999);
+
+        result.Should().BeNull();
+    }
+
+    // CreateTableAsync
+
+    [Fact]
+    public async Task CreateTableAsync_WhenTableIsValid_AddsTableToDatabase()
+    {
+        var table = new Table { Name = "Test Table" };
+        
+        var id = await _sut.CreateTableAsync(table);
+
+        id.Should().BeGreaterThan(0);
+        var dbTable = await Context.CustomTables.FindAsync(id);
+        dbTable.Should().NotBeNull();
+        dbTable!.Name.Should().Be("Test Table");
+    }
+
+    // UpdateTableAsync
+
+    [Fact]
+    public async Task UpdateTableAsync_WhenTableExists_UpdatesName()
+    {
+        var table = new Table { Name = "Old" };
+        Context.CustomTables.Add(table);
+        await Context.SaveChangesAsync();
+
+        table.Name = "New";
+        await _sut.UpdateTableAsync(table);
+
+        var dbTable = await Context.CustomTables.FindAsync(table.TableId);
+        dbTable!.Name.Should().Be("New");
+    }
+
+    // DeleteTableAsync
+
+    [Fact]
+    public async Task DeleteTableAsync_WhenTableExists_RemovesTableAndRelatedData()
+    {
+        var table = new Table { Name = "To Delete" };
+        var col = new Column { Name = "Col", DataType = CustomDataType.String, ColOrder = 0 };
+        table.Columns.Add(col);
+        Context.CustomTables.Add(table);
+        await Context.SaveChangesAsync();
+        Context.ChangeTracker.Clear();
+
+        await _sut.DeleteTableAsync(table.TableId);
+
+        var dbTable = await Context.CustomTables.FindAsync(table.TableId);
+        dbTable.Should().BeNull();
+        var dbCol = await Context.CustomColumns.FindAsync(col.ColumnId);
+        dbCol.Should().BeNull();
+    }
+
+    // CreateColumnAsync
+
+    [Fact]
+    public async Task CreateColumnAsync_WhenColumnsExist_AddsColumnWithNextOrder()
+    {
+        var table = new Table { Name = "Table" };
+        table.Columns.Add(new Column { Name = "Col 0", DataType = CustomDataType.String, ColOrder = 0 });
+        Context.CustomTables.Add(table);
+        await Context.SaveChangesAsync();
+
+        await _sut.CreateColumnAsync(table.TableId);
+
+        var dbCols = await Context.CustomColumns.Where(c => c.TableId == table.TableId).ToListAsync();
+        dbCols.Should().HaveCount(2);
+        dbCols.Should().Contain(c => c.Name == "Neue Spalte" && c.ColOrder == 1);
+    }
+
+    // UpdateColumnAsync
 
     [Fact]
     public async Task UpdateColumnAsync_WhenTypeChanged_DeletesCells()
@@ -67,71 +152,10 @@ public class CustomTableRepositoryTests : RepositoryTestBase
         dbCells.Should().BeEmpty();
     }
 
-    [Fact]
-    public async Task GetTableListAsync_ReturnsAllTablesSortedByName()
-    {
-        Context.CustomTables.AddRange(
-            new Table { Name = "B" },
-            new Table { Name = "A" }
-        );
-        await Context.SaveChangesAsync();
-
-        var result = await _sut.GetTableListAsync();
-
-        result.Should().HaveCount(2);
-        result[0].Name.Should().Be("A");
-        result[1].Name.Should().Be("B");
-    }
+    // UpdateColumnOrderAsync
 
     [Fact]
-    public async Task UpdateTableAsync_UpdatesName()
-    {
-        var table = new Table { Name = "Old" };
-        Context.CustomTables.Add(table);
-        await Context.SaveChangesAsync();
-
-        table.Name = "New";
-        await _sut.UpdateTableAsync(table);
-
-        var dbTable = await Context.CustomTables.FindAsync(table.TableId);
-        dbTable!.Name.Should().Be("New");
-    }
-
-    [Fact]
-    public async Task DeleteTableAsync_RemovesTableAndRelatedData()
-    {
-        var table = new Table { Name = "To Delete" };
-        var col = new Column { Name = "Col", DataType = CustomDataType.String, ColOrder = 0 };
-        table.Columns.Add(col);
-        Context.CustomTables.Add(table);
-        await Context.SaveChangesAsync();
-        Context.ChangeTracker.Clear();
-
-        await _sut.DeleteTableAsync(table.TableId);
-
-        var dbTable = await Context.CustomTables.FindAsync(table.TableId);
-        dbTable.Should().BeNull();
-        var dbCol = await Context.CustomColumns.FindAsync(col.ColumnId);
-        dbCol.Should().BeNull();
-    }
-
-    [Fact]
-    public async Task CreateColumnAsync_AddsColumnWithNextOrder()
-    {
-        var table = new Table { Name = "Table" };
-        table.Columns.Add(new Column { Name = "Col 0", DataType = CustomDataType.String, ColOrder = 0 });
-        Context.CustomTables.Add(table);
-        await Context.SaveChangesAsync();
-
-        await _sut.CreateColumnAsync(table.TableId);
-
-        var dbCols = await Context.CustomColumns.Where(c => c.TableId == table.TableId).ToListAsync();
-        dbCols.Should().HaveCount(2);
-        dbCols.Should().Contain(c => c.Name == "Neue Spalte" && c.ColOrder == 1);
-    }
-
-    [Fact]
-    public async Task UpdateColumnOrderAsync_UpdatesOrders()
+    public async Task UpdateColumnOrderAsync_WhenColumnsExist_UpdatesOrders()
     {
         var table = new Table { Name = "Table" };
         var c1 = new Column { Name = "C1", DataType = CustomDataType.String, ColOrder = 0 };
@@ -150,8 +174,28 @@ public class CustomTableRepositoryTests : RepositoryTestBase
         dbC2!.ColOrder.Should().Be(0);
     }
 
+    // DeleteColumnAsync
+
     [Fact]
-    public async Task CreateRowAsync_AddsRowWithNextOrder()
+    public async Task DeleteColumnAsync_WhenColumnExists_RemovesColumn()
+    {
+        var table = new Table { Name = "Table" };
+        var col = new Column { Name = "Col", DataType = CustomDataType.String, ColOrder = 0 };
+        table.Columns.Add(col);
+        Context.CustomTables.Add(table);
+        await Context.SaveChangesAsync();
+        Context.ChangeTracker.Clear();
+
+        await _sut.DeleteColumnAsync(col.ColumnId);
+
+        var dbCol = await Context.CustomColumns.FindAsync(col.ColumnId);
+        dbCol.Should().BeNull();
+    }
+
+    // CreateRowAsync
+
+    [Fact]
+    public async Task CreateRowAsync_WhenRowsExist_AddsRowWithNextOrder()
     {
         var table = new Table { Name = "Table" };
         table.Rows.Add(new Row { RowOrder = 0 });
@@ -165,8 +209,10 @@ public class CustomTableRepositoryTests : RepositoryTestBase
         dbRows.Should().Contain(r => r.RowOrder == 1);
     }
 
+    // UpdateRowOrderAsync
+
     [Fact]
-    public async Task UpdateRowOrderAsync_UpdatesOrders()
+    public async Task UpdateRowOrderAsync_WhenRowsExist_UpdatesOrders()
     {
         var table = new Table { Name = "Table" };
         var r1 = new Row { RowOrder = 0 };
@@ -187,8 +233,10 @@ public class CustomTableRepositoryTests : RepositoryTestBase
         dbR2!.RowOrder.Should().Be(0);
     }
 
+    // DeleteRowsAsync
+
     [Fact]
-    public async Task DeleteRowsAsync_RemovesSpecificRows()
+    public async Task DeleteRowsAsync_WhenRowIdsProvided_RemovesSpecificRows()
     {
         var table = new Table { Name = "Table" };
         var r1 = new Row { RowOrder = 0 };
@@ -204,19 +252,10 @@ public class CustomTableRepositoryTests : RepositoryTestBase
         dbRows[0].RowId.Should().Be(r2.RowId);
     }
 
-    [Fact]
-    public async Task TableExistsAsync_ReturnsCorrectResult()
-    {
-        var table = new Table { Name = "Table" };
-        Context.CustomTables.Add(table);
-        await Context.SaveChangesAsync();
-
-        (await _sut.TableExistsAsync(table.TableId)).Should().BeTrue();
-        (await _sut.TableExistsAsync(999)).Should().BeFalse();
-    }
+    // UpsertCellAsync
 
     [Fact]
-    public async Task UpsertCellAsync_UpdatesExistingCell()
+    public async Task UpsertCellAsync_WhenCellExists_UpdatesValue()
     {
         var table = new Table { Name = "Table" };
         var col = new Column { Name = "Col", DataType = CustomDataType.String, ColOrder = 0 };
@@ -234,20 +273,123 @@ public class CustomTableRepositoryTests : RepositoryTestBase
     }
 
     [Fact]
-    public async Task DeleteColumnAsync_RemovesColumn()
+    public async Task UpsertCellAsync_WhenCellDoesNotExist_CreatesNewCell()
     {
         var table = new Table { Name = "Table" };
         var col = new Column { Name = "Col", DataType = CustomDataType.String, ColOrder = 0 };
         table.Columns.Add(col);
+        var row = new Row { RowOrder = 0 };
+        table.Rows.Add(row);
         Context.CustomTables.Add(table);
         await Context.SaveChangesAsync();
-        Context.ChangeTracker.Clear();
 
-        await _sut.DeleteColumnAsync(col.ColumnId);
+        await _sut.UpsertCellAsync(row.RowId, col.ColumnId, CustomDataType.String, "First Value");
 
-        var dbCol = await Context.CustomColumns.FindAsync(col.ColumnId);
-        dbCol.Should().BeNull();
+        var dbCell = await Context.CustomCells.FindAsync(row.RowId, col.ColumnId);
+        dbCell.Should().NotBeNull();
+        dbCell!.ValString.Should().Be("First Value");
     }
+
+    [Theory]
+    [InlineData(CustomDataType.Int, "42")]
+    [InlineData(CustomDataType.Decimal, "3.14")]
+    [InlineData(CustomDataType.Bool, "true")]
+    public async Task UpsertCellAsync_WhenValueMatchesDataType_StoresParsedValue(CustomDataType dataType, string value)
+    {
+        var table = new Table { Name = "Table" };
+        var col = new Column { Name = "Col", DataType = dataType, ColOrder = 0 };
+        table.Columns.Add(col);
+        var row = new Row { RowOrder = 0 };
+        table.Rows.Add(row);
+        Context.CustomTables.Add(table);
+        await Context.SaveChangesAsync();
+
+        await _sut.UpsertCellAsync(row.RowId, col.ColumnId, dataType, value);
+
+        var dbCell = await Context.CustomCells.FindAsync(row.RowId, col.ColumnId);
+        dbCell.Should().NotBeNull();
+
+        switch (dataType)
+        {
+            case CustomDataType.Int:
+                dbCell!.ValInt.Should().Be(42);
+                break;
+            case CustomDataType.Decimal:
+                dbCell!.ValDec.Should().Be(3.14m);
+                break;
+            case CustomDataType.Bool:
+                dbCell!.ValBool.Should().BeTrue();
+                break;
+        }
+    }
+
+    [Fact]
+    public async Task UpsertCellAsync_WhenDateValueIsValid_StoresDate()
+    {
+        var table = new Table { Name = "Table" };
+        var col = new Column { Name = "Col", DataType = CustomDataType.Date, ColOrder = 0 };
+        table.Columns.Add(col);
+        var row = new Row { RowOrder = 0 };
+        table.Rows.Add(row);
+        Context.CustomTables.Add(table);
+        await Context.SaveChangesAsync();
+
+        await _sut.UpsertCellAsync(row.RowId, col.ColumnId, CustomDataType.Date, "2026-06-12");
+
+        var dbCell = await Context.CustomCells.FindAsync(row.RowId, col.ColumnId);
+        dbCell!.ValDate.Should().Be(new DateTime(2026, 6, 12));
+    }
+
+    [Fact]
+    public async Task UpsertCellAsync_WhenValueDoesNotMatchDataType_ThrowsArgumentException()
+    {
+        var table = new Table { Name = "Table" };
+        var col = new Column { Name = "Col", DataType = CustomDataType.Int, ColOrder = 0 };
+        table.Columns.Add(col);
+        var row = new Row { RowOrder = 0 };
+        table.Rows.Add(row);
+        Context.CustomTables.Add(table);
+        await Context.SaveChangesAsync();
+
+        var act = () => _sut.UpsertCellAsync(row.RowId, col.ColumnId, CustomDataType.Int, "not-a-number");
+
+        await act.Should().ThrowAsync<ArgumentException>();
+    }
+
+    [Fact]
+    public async Task UpsertCellAsync_WhenChangingDataType_ClearsOtherValueFields()
+    {
+        var table = new Table { Name = "Table" };
+        var col = new Column { Name = "Col", DataType = CustomDataType.Int, ColOrder = 0 };
+        table.Columns.Add(col);
+        var row = new Row { RowOrder = 0 };
+        table.Rows.Add(row);
+        Context.CustomTables.Add(table);
+        await Context.SaveChangesAsync();
+
+        await _sut.UpsertCellAsync(row.RowId, col.ColumnId, CustomDataType.Int, "10");
+
+        await _sut.UpsertCellAsync(row.RowId, col.ColumnId, CustomDataType.String, "Now a string");
+
+        var dbCell = await Context.CustomCells.FindAsync(row.RowId, col.ColumnId);
+        dbCell!.ValInt.Should().BeNull();
+        dbCell.ValString.Should().Be("Now a string");
+    }
+
+    // TableExistsAsync
+
+    [Fact]
+    public async Task TableExistsAsync_ReturnsCorrectResult()
+    {
+        var table = new Table { Name = "Table" };
+        Context.CustomTables.Add(table);
+        await Context.SaveChangesAsync();
+
+        (await _sut.TableExistsAsync(table.TableId)).Should().BeTrue();
+        (await _sut.TableExistsAsync(999)).Should().BeFalse();
+    }
+
+    // GetExistingRowIdsAsync
 
     [Fact]
     public async Task GetExistingRowIdsAsync_ReturnsOnlyRowsThatExistInTable()

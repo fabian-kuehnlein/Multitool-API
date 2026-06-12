@@ -1,3 +1,4 @@
+using FluentAssertions;
 using Moq;
 using Multitool.Application.Interfaces;
 using Multitool.Application.Models;
@@ -5,138 +6,188 @@ using Multitool.Application.Services;
 using Multitool.Domain.Entities.Todo;
 using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
+using Multitool.Tests.Shared;
 using Xunit;
 
 namespace Multitool.Application.Tests;
 
 public class TodoServiceTests
 {
-    private readonly Mock<ITodoRepository> _repositoryMock = new();
-    private readonly ITodoService _sut;
+    private readonly Mock<ITodoRepository> _repositoryMock;
+    private readonly TodoService _sut;
 
     public TodoServiceTests()
     {
+        _repositoryMock = new Mock<ITodoRepository>();
         _sut = new TodoService(_repositoryMock.Object);
     }
 
-    [Fact]
-    public async Task GetAllTodosAsync_ShouldReturnTodos()
-    {
-        // Arrange
-        var todos = new List<Todo> { new() { Id = 1, Title = "Test", CategoryId = 1, IsDone = false } };
-        _repositoryMock.Setup(x => x.GetAllAsync()).ReturnsAsync(todos);
+    // GetAllTodosAsync
 
-        // Act
+    [Fact]
+    public async Task GetAllTodosAsync_WhenTodosExist_ReturnsTodos()
+    {
+        var todos = new List<Todo> { TodoTestData.DefaultTodo };
+        _repositoryMock.Setup(r => r.GetAllAsync()).ReturnsAsync(todos);
+
         var result = await _sut.GetAllTodosAsync();
 
-        // Assert
-        Assert.Equal(todos, result);
+        result.Should().BeEquivalentTo(todos);
+    }
+
+    // GetTodoByIdAsync
+
+    [Fact]
+    public async Task GetTodoByIdAsync_WhenTodoExists_ReturnsTodo()
+    {
+        _repositoryMock.Setup(r => r.GetByIdAsync(TodoTestData.DefaultTodo.Id))
+            .ReturnsAsync(TodoTestData.DefaultTodo);
+
+        var result = await _sut.GetTodoByIdAsync(TodoTestData.DefaultTodo.Id);
+
+        result.Should().BeEquivalentTo(TodoTestData.DefaultTodo);
     }
 
     [Fact]
-    public async Task GetTodoByIdAsync_ShouldReturnTodo()
+    public async Task GetTodoByIdAsync_WhenTodoDoesNotExist_ReturnsNull()
     {
-        // Arrange
-        var todo = new Todo { Id = 1, Title = "Test", CategoryId = 1, IsDone = false };
-        _repositoryMock.Setup(x => x.GetByIdAsync(1)).ReturnsAsync(todo);
+        _repositoryMock.Setup(r => r.GetByIdAsync(It.IsAny<int>())).ReturnsAsync((Todo?)null);
 
-        // Act
-        var result = await _sut.GetTodoByIdAsync(1);
+        var result = await _sut.GetTodoByIdAsync(99);
 
-        // Assert
-        Assert.Equal(todo, result);
+        result.Should().BeNull();
     }
 
-    [Fact]
-    public async Task CreateTodoAsync_ShouldSetIsDoneToFalseAndCreationDate()
-    {
-        // Arrange
-        var dto = new CreateTodoDto("Test", "Desc", 1, 0, null);
+    // CreateTodoAsync
 
-        // Act
+    [Fact]
+    public async Task CreateTodoAsync_WhenDtoIsValid_ReturnsMappedTodo()
+    {
+        var dto = TodoTestData.DefaultCreateTodoDto;
+
         var result = await _sut.CreateTodoAsync(dto);
 
-        // Assert
-        Assert.False(result.IsDone);
-        Assert.NotEqual(default, result.CreationDateTime);
-        _repositoryMock.Verify(x => x.AddAsync(It.IsAny<Todo>()), Times.Once);
+        result.Title.Should().Be(dto.Title);
+        result.Description.Should().Be(dto.Description);
+        result.CategoryId.Should().Be(dto.CategoryId);
+        result.Priority.Should().Be(dto.Priority);
+        result.DueDate.Should().Be(dto.DueDate);
     }
 
     [Fact]
-    public async Task UpdateTodoAsync_ShouldUpdateFields_WhenTodoExists()
+    public async Task CreateTodoAsync_WhenDtoIsValid_SetsDoneToFalse()
     {
-        // Arrange
-        var existingTodo = new Todo { Id = 1, Title = "Old", CategoryId = 1, IsDone = true };
-        var updateDto = new UpdateTodoDto("New", "Desc", 2, 5, DateTime.MaxValue);
-        
-        _repositoryMock.Setup(x => x.GetByIdAsync(1)).ReturnsAsync(existingTodo);
+        var result = await _sut.CreateTodoAsync(TodoTestData.DefaultCreateTodoDto);
 
-        // Act
-        await _sut.UpdateTodoAsync(1, updateDto);
-
-        // Assert
-        Assert.Equal("New", existingTodo.Title);
-        Assert.Equal("Desc", existingTodo.Description);
-        Assert.Equal(2, existingTodo.CategoryId);
-        Assert.Equal(5, existingTodo.Priority);
-        Assert.Equal(DateTime.MaxValue, existingTodo.DueDate);
-        Assert.True(existingTodo.IsDone); // Should NOT be updated
-        _repositoryMock.Verify(x => x.UpdateAsync(existingTodo), Times.Once);
+        result.IsDone.Should().BeFalse();
     }
 
     [Fact]
-    public async Task UpdateTodoAsync_ShouldThrowNotFound_WhenTodoDoesNotExist()
+    public async Task CreateTodoAsync_WhenDtoIsValid_SetsCreationDateTimeToUtcNow()
     {
-        // Arrange
-        _repositoryMock.Setup(x => x.GetByIdAsync(It.IsAny<int>())).ReturnsAsync((Todo?)null);
-        var updateDto = new UpdateTodoDto("New", "Desc", 2, 5, DateTime.MaxValue);
+        var before = DateTime.UtcNow;
 
-        // Act & Assert
-        await Assert.ThrowsAsync<NotFoundException>(() => _sut.UpdateTodoAsync(1, updateDto));
+        var result = await _sut.CreateTodoAsync(TodoTestData.DefaultCreateTodoDto);
+
+        result.CreationDateTime.Should().BeOnOrAfter(before).And.BeOnOrBefore(DateTime.UtcNow);
     }
 
     [Fact]
-    public async Task ToggleDoneAsync_ShouldToggleStatus()
+    public async Task CreateTodoAsync_WhenDtoIsValid_CallsRepositoryAdd()
     {
-        // Arrange
-        var todo = new Todo { Id = 1, Title = "Test", CategoryId = 1, IsDone = false };
-        _repositoryMock.Setup(x => x.GetByIdAsync(1)).ReturnsAsync(todo);
+        await _sut.CreateTodoAsync(TodoTestData.DefaultCreateTodoDto);
 
-        // Act
-        await _sut.ToggleDoneAsync(1);
+        _repositoryMock.Verify(r => r.AddAsync(It.Is<Todo>(t =>
+            t.Title == TodoTestData.DefaultCreateTodoDto.Title)), Times.Once);
+    }
 
-        // Assert
-        Assert.True(todo.IsDone);
-        _repositoryMock.Verify(x => x.UpdateAsync(todo), Times.Once);
+    // UpdateTodoAsync
 
-        // Act again
-        await _sut.ToggleDoneAsync(1);
+    [Fact]
+    public async Task UpdateTodoAsync_WhenTodoExists_UpdatesAllFields()
+    {
+        var dto = TodoTestData.DefaultUpdateTodoDto;
+        _repositoryMock.Setup(r => r.GetByIdAsync(TodoTestData.DefaultTodo.Id))
+            .ReturnsAsync(TodoTestData.DefaultTodo);
 
-        // Assert
-        Assert.False(todo.IsDone);
+        await _sut.UpdateTodoAsync(TodoTestData.DefaultTodo.Id, dto);
+
+        _repositoryMock.Verify(r => r.UpdateAsync(It.Is<Todo>(t =>
+            t.Title == dto.Title &&
+            t.Description == dto.Description &&
+            t.CategoryId == dto.CategoryId &&
+            t.Priority == dto.Priority &&
+            t.DueDate == dto.DueDate)), Times.Once);
     }
 
     [Fact]
-    public async Task DeleteTodoAsync_ShouldCallRepository_WhenTodoExists()
+    public async Task UpdateTodoAsync_WhenTodoDoesNotExist_ThrowsNotFoundException()
     {
-        // Arrange
-        var todo = new Todo { Id = 1, Title = "Test", CategoryId = 1, IsDone = false };
-        _repositoryMock.Setup(x => x.GetByIdAsync(1)).ReturnsAsync(todo);
+        _repositoryMock.Setup(r => r.GetByIdAsync(It.IsAny<int>())).ReturnsAsync((Todo?)null);
 
-        // Act
-        await _sut.DeleteTodoAsync(1);
+        Func<Task> act = async () => await _sut.UpdateTodoAsync(99, TodoTestData.DefaultUpdateTodoDto);
 
-        // Assert
-        _repositoryMock.Verify(x => x.DeleteAsync(1), Times.Once);
+        await act.Should().ThrowAsync<NotFoundException>()
+            .WithMessage("*99*");
+    }
+
+    // ToggleDoneAsync
+
+    [Fact]
+    public async Task ToggleDoneAsync_WhenTodoIsFalse_SetsIsDoneToTrue()
+    {
+        var todo = TodoTestData.DefaultTodo;
+        _repositoryMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(todo);
+
+        await _sut.ToggleDoneAsync(todo.Id);
+
+        _repositoryMock.Verify(r => r.UpdateAsync(It.Is<Todo>(t => t.IsDone == true)), Times.Once);
     }
 
     [Fact]
-    public async Task DeleteTodoAsync_ShouldThrowNotFound_WhenTodoDoesNotExist()
+    public async Task ToggleDoneAsync_WhenTodoIsTrue_SetsIsDoneToFalse()
     {
-        // Arrange
-        _repositoryMock.Setup(x => x.GetByIdAsync(It.IsAny<int>())).ReturnsAsync((Todo?)null);
+        var todo = TodoTestData.DefaultTodo;
+        todo.IsDone = true;
+        _repositoryMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(todo);
 
-        // Act & Assert
-        await Assert.ThrowsAsync<NotFoundException>(() => _sut.DeleteTodoAsync(1));
+        await _sut.ToggleDoneAsync(todo.Id);
+
+        _repositoryMock.Verify(r => r.UpdateAsync(It.Is<Todo>(t => t.IsDone == false)), Times.Once);
+    }
+
+    [Fact]
+    public async Task ToggleDoneAsync_WhenTodoDoesNotExist_ThrowsNotFoundException()
+    {
+        _repositoryMock.Setup(r => r.GetByIdAsync(It.IsAny<int>())).ReturnsAsync((Todo?)null);
+
+        Func<Task> act = async () => await _sut.ToggleDoneAsync(99);
+
+        await act.Should().ThrowAsync<NotFoundException>()
+            .WithMessage("*99*");
+    }
+
+    // DeleteTodoAsync
+
+    [Fact]
+    public async Task DeleteTodoAsync_WhenTodoExists_CallsRepositoryDelete()
+    {
+        _repositoryMock.Setup(r => r.GetByIdAsync(TodoTestData.DefaultTodo.Id))
+            .ReturnsAsync(TodoTestData.DefaultTodo);
+
+        await _sut.DeleteTodoAsync(TodoTestData.DefaultTodo.Id);
+
+        _repositoryMock.Verify(r => r.DeleteAsync(TodoTestData.DefaultTodo.Id), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeleteTodoAsync_WhenTodoDoesNotExist_ThrowsNotFoundException()
+    {
+        _repositoryMock.Setup(r => r.GetByIdAsync(It.IsAny<int>())).ReturnsAsync((Todo?)null);
+
+        Func<Task> act = async () => await _sut.DeleteTodoAsync(99);
+
+        await act.Should().ThrowAsync<NotFoundException>()
+            .WithMessage("*99*");
     }
 }

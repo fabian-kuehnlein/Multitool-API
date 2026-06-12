@@ -6,7 +6,7 @@ using Multitool.Application.Interfaces;
 using Multitool.Application.Models.CustomTable;
 using Multitool.Tests.Shared;
 
-namespace Multitool.Api.Tests;
+namespace Multitool.Api.Tests.Controllers;
 
 public class CustomTableControllerTests
 {

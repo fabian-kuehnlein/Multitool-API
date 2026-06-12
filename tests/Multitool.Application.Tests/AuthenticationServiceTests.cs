@@ -141,4 +141,30 @@ public class AuthenticationServiceTests
         user.LockoutEnd.Value.Should().BeAfter(DateTime.UtcNow);
         _userRepositoryMock.Verify(r => r.UpdateAsync(It.Is<User>(u => u.AccessFailedCount == 5)), Times.Once);
     }
+
+    [Fact]
+    public async Task LoginAsync_WhenUserDoesNotExist_ThrowsInvalidCredentialException()
+    {
+        _userRepositoryMock.Setup(r => r.GetByUsernameAsync(It.IsAny<string>()))
+            .ReturnsAsync((User?)null);
+
+        var act = () => _sut.LoginAsync("unknown", "pass");
+
+        await act.Should().ThrowAsync<InvalidCredentialException>();
+    }
+
+    [Fact]
+    public async Task LoginAsync_After5Failures_LockoutEndsInApproximately15Minutes()
+    {
+        var user = new User { Id = 1, Username = "lockout-user", PasswordHash = "hash", AccessFailedCount = 4 };
+
+        _userRepositoryMock.Setup(r => r.GetByUsernameAsync(user.Username)).ReturnsAsync(user);
+        _hasherMock.Setup(h => h.Verify(It.IsAny<string>(), user.PasswordHash)).Returns(false);
+
+        var before = DateTime.UtcNow.AddMinutes(15);
+        var act = () => _sut.LoginAsync(user.Username, "wrong");
+        await act.Should().ThrowAsync<InvalidCredentialException>();
+
+        user.LockoutEnd.Should().BeCloseTo(before, precision: TimeSpan.FromSeconds(5));
+    }
 }

@@ -38,16 +38,15 @@ public class CalendarRepository(AppDbContext db) : ICalendarRepository
 
     public async Task<List<CalendarEvent>> SearchCalendarEventsAsync(string searchString)
     {
-        var pattern = $"%{searchString.Trim()}%";
+        var pattern = searchString.Trim().ToLower();
 
         var results = await db.CalendarEvents
             .AsNoTracking()
             .Where(e =>
-                EF.Functions.ILike(e.Title, pattern)
+                e.Title.ToLower().Contains(pattern)
                 ||
                 (
-                    e.Note != null && EF.Functions.ILike(e.Note, pattern)
-                ))
+                    e.Note != null && e.Note.ToLower().Contains(pattern)))
             .OrderBy(e => e.StartDateTime)
             .ToListAsync();
 

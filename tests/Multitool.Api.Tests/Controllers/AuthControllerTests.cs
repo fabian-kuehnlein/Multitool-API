@@ -5,7 +5,7 @@ using Multitool.Api.Controllers;
 using Multitool.Application.Interfaces;
 using Multitool.Tests.Shared;
 
-namespace Multitool.Api.Tests;
+namespace Multitool.Api.Tests.Controllers;
 
 public class AuthControllerTests
 {

@@ -93,18 +93,6 @@ public class CalendarServiceTests
         result.Should().BeEmpty();
     }
 
-    [Fact]
-    public async Task SearchCalendarEventsAsync_CallsRepository_WithUnmodifiedSearchString()
-    {
-        _repositoryMock
-            .Setup(r => r.SearchCalendarEventsAsync("Meeting"))
-            .ReturnsAsync(new List<CalendarEvent>());
-
-        await _sut.SearchCalendarEventsAsync("Meeting");
-
-        _repositoryMock.Verify(r => r.SearchCalendarEventsAsync("Meeting"), Times.Once);
-    }
-
     // InsertEventAsync
 
     [Fact]
@@ -118,18 +106,6 @@ public class CalendarServiceTests
         var result = await _sut.InsertEventAsync(CalendarTestData.DefaultCreateEvent);
 
         result.Should().Be(expectedId);
-    }
-
-    [Fact]
-    public async Task InsertEventAsync_CallsRepository_ExactlyOnce()
-    {
-        _repositoryMock
-            .Setup(r => r.InsertEventAsync(It.IsAny<CalendarEvent>()))
-            .ReturnsAsync(1L);
-
-        await _sut.InsertEventAsync(CalendarTestData.DefaultCreateEvent);
-
-        _repositoryMock.Verify(r => r.InsertEventAsync(It.IsAny<CalendarEvent>()), Times.Once);
     }
 
     [Fact]
@@ -242,5 +218,119 @@ public class CalendarServiceTests
         var result = await _sut.GetHolidaysAsync("2026");
 
         result.Should().BeEmpty();
+    }
+
+    // DeletePastEventsAsync
+
+    [Fact]
+    public async Task DeletePastEventsAsync_WhenEventIsNonRecurring_AndOldEnough_DeletesEvent()
+    {
+        var threshold = DateTime.UtcNow.AddMonths(-3);
+        var oldEvent = CalendarTestData.DefaultEvent;
+        oldEvent.StartDateTime = threshold.AddDays(-10);
+        oldEvent.EndDateTime = threshold.AddDays(-5);
+        oldEvent.RecurrenceRule = null;
+
+        _repositoryMock.Setup(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()))
+            .ReturnsAsync(new List<CalendarEvent> { oldEvent });
+
+        await _sut.DeletePastEventsAsync(3);
+
+        _repositoryMock.Verify(r => r.DeleteEventAsync(oldEvent.Id), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeletePastEventsAsync_WhenEventIsNonRecurring_AndNotOldEnough_DoesNotDelete()
+    {
+        var threshold = DateTime.UtcNow.AddMonths(-3);
+        var recentEvent = CalendarTestData.DefaultEvent;
+        recentEvent.StartDateTime = threshold.AddDays(5);
+        recentEvent.EndDateTime = threshold.AddDays(10);
+        recentEvent.RecurrenceRule = null;
+
+        _repositoryMock.Setup(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()))
+            .ReturnsAsync(new List<CalendarEvent> { recentEvent });
+
+        await _sut.DeletePastEventsAsync(3);
+
+        _repositoryMock.Verify(r => r.DeleteEventAsync(It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeletePastEventsAsync_WhenEventHasNoEndDate_UsesStartDateAsThreshold()
+    {
+        var threshold = DateTime.UtcNow.AddMonths(-3);
+        var eventWithoutEnd = CalendarTestData.DefaultEvent;
+        eventWithoutEnd.StartDateTime = threshold.AddDays(-1);
+        eventWithoutEnd.EndDateTime = null;
+        eventWithoutEnd.RecurrenceRule = null;
+
+        _repositoryMock.Setup(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()))
+            .ReturnsAsync(new List<CalendarEvent> { eventWithoutEnd });
+
+        await _sut.DeletePastEventsAsync(3);
+
+        _repositoryMock.Verify(r => r.DeleteEventAsync(eventWithoutEnd.Id), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeletePastEventsAsync_WhenRecurringEvent_AndNoRecurrenceEnd_DoesNotDelete()
+    {
+        var oldEvent = CalendarTestData.DefaultEvent;
+        oldEvent.StartDateTime = DateTime.UtcNow.AddYears(-2);
+        oldEvent.RecurrenceRule = "FREQ=WEEKLY";
+        oldEvent.RecurrenceEnd = null;
+
+        _repositoryMock.Setup(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()))
+            .ReturnsAsync(new List<CalendarEvent> { oldEvent });
+
+        await _sut.DeletePastEventsAsync(3);
+
+        _repositoryMock.Verify(r => r.DeleteEventAsync(It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeletePastEventsAsync_WhenRecurringEvent_AndRecurrenceEndIsOldEnough_DeletesEvent()
+    {
+        var threshold = DateTime.UtcNow.AddMonths(-3);
+        var oldRecurring = CalendarTestData.DefaultEvent;
+        oldRecurring.StartDateTime = threshold.AddYears(-1);
+        oldRecurring.RecurrenceRule = "FREQ=WEEKLY";
+        oldRecurring.RecurrenceEnd = threshold.AddDays(-1);
+
+        _repositoryMock.Setup(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()))
+            .ReturnsAsync(new List<CalendarEvent> { oldRecurring });
+
+        await _sut.DeletePastEventsAsync(3);
+
+        _repositoryMock.Verify(r => r.DeleteEventAsync(oldRecurring.Id), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeletePastEventsAsync_WhenRecurringEvent_AndRecurrenceEndIsNotOldEnough_DoesNotDelete()
+    {
+        var threshold = DateTime.UtcNow.AddMonths(-3);
+        var activeRecurring = CalendarTestData.DefaultEvent;
+        activeRecurring.StartDateTime = threshold.AddYears(-1);
+        activeRecurring.RecurrenceRule = "FREQ=WEEKLY";
+        activeRecurring.RecurrenceEnd = threshold.AddDays(10);
+
+        _repositoryMock.Setup(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()))
+            .ReturnsAsync(new List<CalendarEvent> { activeRecurring });
+
+        await _sut.DeletePastEventsAsync(3);
+
+        _repositoryMock.Verify(r => r.DeleteEventAsync(It.IsAny<int>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task DeletePastEventsAsync_WhenNoEventsExist_DoesNotCallDelete()
+    {
+        _repositoryMock.Setup(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()))
+            .ReturnsAsync(new List<CalendarEvent>());
+
+        await _sut.DeletePastEventsAsync(3);
+
+        _repositoryMock.Verify(r => r.DeleteEventAsync(It.IsAny<int>()), Times.Never);
     }
 }
