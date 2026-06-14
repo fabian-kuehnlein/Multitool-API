@@ -46,8 +46,8 @@ public class Program
             options.AddPolicy("AllowFrontendAndLocalhost", policy =>
             {
                 policy.WithOrigins(
-                    "https://multitool-frontend-pi.vercel.app", // Prod Frontend URL
-                    "https://multitool-frontend-integration.vercel.app", // Integration Frontend URL
+                    "https://multitool-frontend.netlify.app/", // Prod Frontend URL
+                    "https://multitool-frontend-integration.netlify.app", // Integration Frontend URL
                     "http://localhost:4200" // Angular local development on ng serve
                 )
                 .AllowAnyHeader()
