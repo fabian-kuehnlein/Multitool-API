@@ -6,7 +6,7 @@ namespace Multitool.Tests.Shared;
 
 public static class TodoTestData
 {
-    public static readonly Todo DefaultTodo = new()
+    public static Todo DefaultTodo => new()
     {
         Id = 1,
         Title = "Test Todo",
