@@ -17,7 +17,8 @@ namespace Multitool.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.7")
+                .HasDefaultSchema("public")
+                .HasAnnotation("ProductVersion", "10.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -70,10 +71,10 @@ namespace Multitool.Infrastructure.Migrations
                     b.HasIndex("CategoryId")
                         .HasDatabaseName("ix_calendar_events_category_id");
 
-                    b.ToTable("calendar_events", (string)null);
+                    b.ToTable("calendar_events", "public");
                 });
 
-            modelBuilder.Entity("Multitool.Domain.Entities.Calendar.Category", b =>
+            modelBuilder.Entity("Multitool.Domain.Entities.Category.Category", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -96,7 +97,7 @@ namespace Multitool.Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("pk_categories");
 
-                    b.ToTable("categories", (string)null);
+                    b.ToTable("categories", "public");
                 });
 
             modelBuilder.Entity("Multitool.Domain.Entities.Config.User", b =>
@@ -129,7 +130,7 @@ namespace Multitool.Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("pk_users");
 
-                    b.ToTable("users");
+                    b.ToTable("users", "public");
                 });
 
             modelBuilder.Entity("Multitool.Domain.Entities.CustomTable.Cell", b =>
@@ -163,7 +164,7 @@ namespace Multitool.Infrastructure.Migrations
                         .HasColumnName("val_string");
 
                     b.HasKey("RowId", "ColumnId")
-                        .HasName("pk_custom_cells");
+                        .HasName("pk_cells");
 
                     b.HasIndex("ColumnId", "ValDate")
                         .HasDatabaseName("idx_cell_date");
@@ -174,7 +175,7 @@ namespace Multitool.Infrastructure.Migrations
                     b.HasIndex("ColumnId", "ValInt")
                         .HasDatabaseName("idx_cell_int");
 
-                    b.ToTable("custom_cells", (string)null);
+                    b.ToTable("cells", "custom");
                 });
 
             modelBuilder.Entity("Multitool.Domain.Entities.CustomTable.Column", b =>
@@ -206,12 +207,12 @@ namespace Multitool.Infrastructure.Migrations
                         .HasColumnName("table_id");
 
                     b.HasKey("ColumnId")
-                        .HasName("pk_custom_columns");
+                        .HasName("pk_columns");
 
                     b.HasIndex("TableId")
-                        .HasDatabaseName("ix_custom_columns_table_id");
+                        .HasDatabaseName("ix_columns_table_id");
 
-                    b.ToTable("custom_columns", (string)null);
+                    b.ToTable("columns", "custom");
                 });
 
             modelBuilder.Entity("Multitool.Domain.Entities.CustomTable.Row", b =>
@@ -236,12 +237,12 @@ namespace Multitool.Infrastructure.Migrations
                         .HasColumnName("table_id");
 
                     b.HasKey("RowId")
-                        .HasName("pk_custom_rows");
+                        .HasName("pk_rows");
 
                     b.HasIndex("TableId")
-                        .HasDatabaseName("ix_custom_rows_table_id");
+                        .HasDatabaseName("ix_rows_table_id");
 
-                    b.ToTable("custom_rows", (string)null);
+                    b.ToTable("rows", "custom");
                 });
 
             modelBuilder.Entity("Multitool.Domain.Entities.CustomTable.Table", b =>
@@ -264,14 +265,65 @@ namespace Multitool.Infrastructure.Migrations
                         .HasColumnName("table_name");
 
                     b.HasKey("TableId")
-                        .HasName("pk_custom_tables");
+                        .HasName("pk_tables");
 
-                    b.ToTable("custom_tables", (string)null);
+                    b.ToTable("tables", "custom");
+                });
+
+            modelBuilder.Entity("Multitool.Domain.Entities.Todo.Todo", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("todo_id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("integer")
+                        .HasColumnName("category_id");
+
+                    b.Property<DateTime?>("CompletedDateTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("completed_date_time");
+
+                    b.Property<DateTime>("CreationDateTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("creation_date_time");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("todo_description");
+
+                    b.Property<DateTime?>("DueDate")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("due_date");
+
+                    b.Property<bool>("IsDone")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_done");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("integer")
+                        .HasColumnName("priority");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("todo_title");
+
+                    b.HasKey("Id")
+                        .HasName("pk_todos");
+
+                    b.HasIndex("CategoryId")
+                        .HasDatabaseName("ix_todos_category_id");
+
+                    b.ToTable("todos", "public");
                 });
 
             modelBuilder.Entity("Multitool.Domain.Entities.Calendar.CalendarEvent", b =>
                 {
-                    b.HasOne("Multitool.Domain.Entities.Calendar.Category", null)
+                    b.HasOne("Multitool.Domain.Entities.Category.Category", null)
                         .WithMany()
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -322,6 +374,16 @@ namespace Multitool.Infrastructure.Migrations
                         .HasConstraintName("fk_custom_rows_table_id");
 
                     b.Navigation("Table");
+                });
+
+            modelBuilder.Entity("Multitool.Domain.Entities.Todo.Todo", b =>
+                {
+                    b.HasOne("Multitool.Domain.Entities.Category.Category", null)
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_todos_category_id");
                 });
 
             modelBuilder.Entity("Multitool.Domain.Entities.CustomTable.Row", b =>

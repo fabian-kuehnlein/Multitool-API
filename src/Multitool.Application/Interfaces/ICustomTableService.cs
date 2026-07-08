@@ -1,12 +1,11 @@
-using Multitool.Application.Models;
 using Multitool.Application.Models.CustomTable;
-using Multitool.Domain.Entities.CustomTable;
+using Multitool.Application.Models.Info;
 
 namespace Multitool.Application.Interfaces;
 
 public interface ICustomTableService
 {
-    Task<List<TableOverview>> GetTableListAsync();
+    Task<List<TableOverviewDto>> GetTableListAsync();
     Task<TableDetail> GetTableAsync(long tableId);
     Task<long> CreateTableAsync(CreateTableDto dto);
     Task UpdateTableAsync(long tableId, UpdateTableDto dto);

@@ -3,10 +3,8 @@ using Moq;
 using Multitool.Application.Models.CustomTable;
 using Multitool.Application.Services;
 using Multitool.Domain.Entities.CustomTable;
-using Multitool.Domain.Enums;
 using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
-using Multitool.Application.Models;
 using Multitool.Tests.Shared;
 
 namespace Multitool.Application.Tests;
@@ -23,7 +21,7 @@ public class CustomTableServiceTests
     }
 
     [Fact]
-    public async Task GetTableListAsync_ReturnsMappedOverviews()
+    public async Task GetTableListAsync_WhenTablesExist_ReturnsMappedOverviews()
     {
         var tables = new List<Table> { CustomTableTestData.DefaultTable };
         _repositoryMock.Setup(r => r.GetTableListAsync()).ReturnsAsync(tables);
@@ -56,7 +54,7 @@ public class CustomTableServiceTests
     }
 
     [Fact]
-    public async Task CreateTableAsync_CallsRepository_WithCorrectData()
+    public async Task CreateTableAsync_WhenDtoIsValid_ReturnsIdAndCreatesTableWithColumn()
     {
         var dto = CustomTableTestData.DefaultCreateTableDto;
         _repositoryMock.Setup(r => r.CreateTableAsync(It.IsAny<Table>())).ReturnsAsync(10L);
@@ -102,6 +100,18 @@ public class CustomTableServiceTests
         existing.Name.Should().Be(dto.Name);
         existing.DataType.Should().Be(dto.DataType);
         _repositoryMock.Verify(r => r.UpdateColumnAsync(existing, true), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpdateColumnAsync_WhenDataTypeUnchanged_PassesTypeChangedFalse()
+    {
+        var existing = CustomTableTestData.DefaultColumn;
+        var dto = CustomTableTestData.DefaultUpdateColumnDto with { DataType = existing.DataType };
+        _repositoryMock.Setup(r => r.GetColumnAsync(existing.ColumnId)).ReturnsAsync(existing);
+
+        await _sut.UpdateColumnAsync(existing.ColumnId, dto);
+
+        _repositoryMock.Verify(r => r.UpdateColumnAsync(existing, false), Times.Once);
     }
 
     [Fact]
@@ -177,7 +187,7 @@ public class CustomTableServiceTests
     }
 
     [Fact]
-    public async Task UpdateColumnOrderAsync_CallsRepository()
+    public async Task UpdateColumnOrderAsync_WhenColumnsProvided_CallsRepositoryWithMappedColumns()
     {
         var list = new List<UpdateColumnOrderDto> { new(1, 0) };
 
@@ -219,13 +229,27 @@ public class CustomTableServiceTests
     }
 
     [Fact]
-    public async Task UpdateRowOrderAsync_CallsRepository()
+    public async Task UpdateRowOrderAsync_WhenRowsProvided_CallsRepositoryWithRowOrderDictionary()
     {
         var list = new List<RowOrderUpdateDto> { new(1, 0) };
 
         await _sut.UpdateRowOrderAsync(list);
 
-        _repositoryMock.Verify(r => r.UpdateRowOrderAsync(list), Times.Once);
+        _repositoryMock.Verify(r => r.UpdateRowOrderAsync(It.Is<Dictionary<long, int>>(d => 
+            d.Count == 1 && d.ContainsKey(1) && d[1] == 0)), Times.Once);
+    }
+
+    [Fact]
+    public async Task UpsertCellAsync_WhenRowAndColumnExist_CallsRepositoryWithColumnDataType()
+    {
+        var row = CustomTableTestData.DefaultRow;
+        var column = CustomTableTestData.DefaultColumn;
+        _repositoryMock.Setup(r => r.GetRowAsync(row.RowId)).ReturnsAsync(row);
+        _repositoryMock.Setup(r => r.GetColumnAsync(column.ColumnId)).ReturnsAsync(column);
+
+        await _sut.UpsertCellAsync(row.RowId, column.ColumnId, "val");
+
+        _repositoryMock.Verify(r => r.UpsertCellAsync(row.RowId, column.ColumnId, column.DataType, "val"), Times.Once);
     }
 
     [Fact]

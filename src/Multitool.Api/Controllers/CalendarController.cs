@@ -3,12 +3,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Multitool.Application.Interfaces;
 using Multitool.Domain.Entities.Calendar;
+using Multitool.Application.Models.Calendar;
 
 namespace Multitool.Api.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-public class CalendarController(ICalendarService service) : ControllerBase
+public class CalendarController(ICalendarService calendarService) : ControllerBase
 {
     /// <summary>
     /// Gets calendar events within a specified date range.
@@ -20,7 +21,7 @@ public class CalendarController(ICalendarService service) : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetEventsByRange([FromQuery] DateTime startDate, [FromQuery] DateTime endDate, [FromQuery] string? categories)
     {
-        var events = await service.GetEventsByRangeAsync(startDate, endDate, categories ?? string.Empty);
+        var events = await calendarService.GetEventsByRangeAsync(startDate, endDate, categories ?? string.Empty);
         return Ok(events);
     }
 
@@ -34,7 +35,7 @@ public class CalendarController(ICalendarService service) : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> SearchEvents([FromQuery][Required] string searchString)
     {
-        var events = await service.SearchCalendarEventsAsync(searchString);
+        var events = await calendarService.SearchCalendarEventsAsync(searchString);
         return Ok(events);
     }
 
@@ -46,9 +47,9 @@ public class CalendarController(ICalendarService service) : ControllerBase
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> InsertEvent([FromBody] CreateCalendarEvent calendarEvent)
+    public async Task<IActionResult> InsertEvent([FromBody] CreateCalendarEventDto calendarEvent)
     {
-        var id = await service.InsertEventAsync(calendarEvent);
+        var id = await calendarService.InsertEventAsync(calendarEvent);
         return Ok(id);
     }
 
@@ -62,7 +63,7 @@ public class CalendarController(ICalendarService service) : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> UpdateEvent([FromBody] CalendarEvent calendarEvent)
     {
-        await service.UpdateEventAsync(calendarEvent);
+        await calendarService.UpdateEventAsync(calendarEvent);
         return NoContent();
     }
 
@@ -76,23 +77,8 @@ public class CalendarController(ICalendarService service) : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> DeleteEvent([FromRoute] int id)
     {
-        await service.DeleteEventAsync(id);
+        await calendarService.DeleteEventAsync(id);
         return NoContent();
-    }
-
-    /// <summary>
-    /// Returns a list of all available categories for calendar events
-    /// </summary>
-    [Authorize]
-    [HttpGet("categories")]
-    [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> GetCategories()
-    {     
-        var categories = await service.GetCategoriesAsync();
-        return Ok(categories);
     }
 
     /// <summary>
@@ -106,7 +92,7 @@ public class CalendarController(ICalendarService service) : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetHolidays([FromRoute]string year)
     {
-        var result = await service.GetHolidaysAsync(year);
+        var result = await calendarService.GetHolidaysAsync(year);
         return Ok(result);
     }
 }

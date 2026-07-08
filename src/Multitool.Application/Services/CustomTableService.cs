@@ -1,24 +1,24 @@
 using Mapster;
 using Multitool.Application.Interfaces;
-using Multitool.Application.Models;
 using Multitool.Application.Models.CustomTable;
 using Multitool.Domain.Entities.CustomTable;
 using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
+using Multitool.Application.Models.Info;
 
 namespace Multitool.Application.Services;
 
-public class CustomTableService(ICustomTableRepository repository) : ICustomTableService
+public class CustomTableService(ICustomTableRepository customtableRepository) : ICustomTableService
 {
-    public async Task<List<TableOverview>> GetTableListAsync()
+    public async Task<List<TableOverviewDto>> GetTableListAsync()
     {
-        var list = await repository.GetTableListAsync();
-        return list.Adapt<List<TableOverview>>();
+        var list = await customtableRepository.GetTableListAsync();
+        return list.Adapt<List<TableOverviewDto>>();
     }
 
     public async Task<TableDetail> GetTableAsync(long tableId)
     {
-        var table = await repository.GetTableAsync(tableId);
+        var table = await customtableRepository.GetTableAsync(tableId);
 
         if (table == null)
             throw new NotFoundException($"Table with Id {tableId} not found");
@@ -31,44 +31,44 @@ public class CustomTableService(ICustomTableRepository repository) : ICustomTabl
         var table = dto.Adapt<Table>();
         table.Columns.Add(dto.Column.Adapt<Column>());
 
-        return await repository.CreateTableAsync(table);
+        return await customtableRepository.CreateTableAsync(table);
     }
 
     public async Task UpdateTableAsync(long tableId, UpdateTableDto dto)
     {
-        var existing = await repository.GetTableRawAsync(tableId);
+        var existing = await customtableRepository.GetTableRawAsync(tableId);
 
         if (existing == null)
             throw new NotFoundException($"Table with Id {tableId} not found");
 
         existing.Name = dto.Name;
 
-        await repository.UpdateTableAsync(existing);
+        await customtableRepository.UpdateTableAsync(existing);
     }
 
     public async Task DeleteTableAsync(long tableId)
     {
-        var exists = await repository.TableExistsAsync(tableId);
+        var exists = await customtableRepository.TableExistsAsync(tableId);
 
         if (!exists)
             throw new NotFoundException($"Table with Id {tableId} not found");
 
-        await repository.DeleteTableAsync(tableId);
+        await customtableRepository.DeleteTableAsync(tableId);
     }
 
     public async Task CreateColumnAsync(long tableId)
     {
-        var exists = await repository.TableExistsAsync(tableId);
+        var exists = await customtableRepository.TableExistsAsync(tableId);
 
         if (!exists)
             throw new NotFoundException($"Table with Id {tableId} not found");
 
-        await repository.CreateColumnAsync(tableId);
+        await customtableRepository.CreateColumnAsync(tableId);
     }
 
     public async Task UpdateColumnAsync(long columnId, UpdateColumnDto dto)
     {
-        var existing = await repository.GetColumnAsync(columnId);
+        var existing = await customtableRepository.GetColumnAsync(columnId);
 
         if (existing == null)
             throw new NotFoundException($"Column with Id {columnId} not found");
@@ -79,56 +79,59 @@ public class CustomTableService(ICustomTableRepository repository) : ICustomTabl
         existing.DataType = dto.DataType;
         existing.ColOrder = dto.ColOrder;
 
-        await repository.UpdateColumnAsync(existing, typeChanged);
+        await customtableRepository.UpdateColumnAsync(existing, typeChanged);
     }
 
     public async Task UpdateColumnOrderAsync(List<UpdateColumnOrderDto> columns)
-        => await repository.UpdateColumnOrderAsync(columns.Adapt<List<Column>>());
+        => await customtableRepository.UpdateColumnOrderAsync(columns.Adapt<List<Column>>());
 
     public async Task DeleteColumnAsync(long tableId, long columnId)
     {
-        var column = await repository.GetColumnAsync(columnId);
+        var column = await customtableRepository.GetColumnAsync(columnId);
 
         if (column == null || column.TableId != tableId)
             throw new NotFoundException($"Column with Id {columnId} not found in table {tableId}");
 
-        await repository.DeleteColumnAsync(columnId);
+        await customtableRepository.DeleteColumnAsync(columnId);
     }
 
     public async Task CreateRowAsync(long tableId)
     {
-        var exists = await repository.TableExistsAsync(tableId);
+        var exists = await customtableRepository.TableExistsAsync(tableId);
 
         if (!exists)
             throw new NotFoundException($"Table with Id {tableId} not found");
 
-        await repository.CreateRowAsync(tableId);
+        await customtableRepository.CreateRowAsync(tableId);
     }
 
     public async Task UpdateRowOrderAsync(List<RowOrderUpdateDto> rows)
-        => await repository.UpdateRowOrderAsync(rows);
+    {
+        var rowOrders = rows.ToDictionary(r => r.RowId, r => r.RowOrder);
+        await customtableRepository.UpdateRowOrderAsync(rowOrders);
+    }
 
     public async Task DeleteRowsAsync(long tableId, List<long> rowIds)
     {
-        var existingIds = await repository.GetExistingRowIdsAsync(tableId, rowIds);
+        var existingIds = await customtableRepository.GetExistingRowIdsAsync(tableId, rowIds);
         var missing = rowIds.Except(existingIds).ToList();
 
         if (missing.Count > 0)
             throw new NotFoundException($"Rows not found in table {tableId}: {string.Join(", ", missing)}");
 
-        await repository.DeleteRowsAsync(tableId, rowIds);
+        await customtableRepository.DeleteRowsAsync(tableId, rowIds);
     }
 
     public async Task UpsertCellAsync(long rowId, long columnId, object? newValue)
     {
-        var row = await repository.GetRowAsync(rowId);
+        var row = await customtableRepository.GetRowAsync(rowId);
         if (row == null)
             throw new NotFoundException($"Row with Id {rowId} not found");
 
-        var column = await repository.GetColumnAsync(columnId);
+        var column = await customtableRepository.GetColumnAsync(columnId);
         if (column == null)
             throw new NotFoundException($"Column with Id {columnId} not found");
 
-        await repository.UpsertCellAsync(rowId, columnId, column.DataType, newValue);
+        await customtableRepository.UpsertCellAsync(rowId, columnId, column.DataType, newValue);
     }
 }

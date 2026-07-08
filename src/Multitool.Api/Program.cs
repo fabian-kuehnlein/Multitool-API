@@ -10,6 +10,8 @@ using Multitool.Api.Extensions;
 using Multitool.Application;
 using Multitool.Domain.Exceptions;
 using Multitool.Infrastructure;
+using Multitool.Api.BackgroundJobs;
+using Multitool.Api.Configuration;
 
 namespace Multitool.Api;
 
@@ -44,8 +46,8 @@ public class Program
             options.AddPolicy("AllowFrontendAndLocalhost", policy =>
             {
                 policy.WithOrigins(
-                    "https://multitool-frontend-pi.vercel.app", // Prod Frontend URL
-                    "https://multitool-frontend-integration.vercel.app", // Integration Frontend URL
+                    "https://multitool-frontend.netlify.app/", // Prod Frontend URL
+                    "https://multitool-frontend-integration.netlify.app", // Integration Frontend URL
                     "http://localhost:4200" // Angular local development on ng serve
                 )
                 .AllowAnyHeader()
@@ -60,6 +62,9 @@ public class Program
                 new JsonStringEnumConverter(JsonNamingPolicy.CamelCase)));
 
         builder.Services.AddEndpointsApiExplorer();
+
+        builder.Services.AddHostedService<CleanupPastEventsService>();
+        builder.Services.Configure<CronJobSettings>(builder.Configuration.GetSection("CronJobs"));
 
         builder.Services.AddSwaggerGen(c =>
         {

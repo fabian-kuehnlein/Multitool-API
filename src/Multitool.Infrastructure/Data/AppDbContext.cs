@@ -1,8 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Multitool.Domain.Entities.Calendar;
+using Multitool.Domain.Entities.Category;
 using Multitool.Domain.Entities.Config;
 using Multitool.Domain.Entities.CustomTable;
+using Multitool.Domain.Entities.Todo;
 
 namespace Multitool.Infrastructure.Data;
 
@@ -13,6 +15,7 @@ public class AppDbContext : DbContext
     public DbSet<User> Users { get; set; }
     public DbSet<CalendarEvent> CalendarEvents { get; set; }
     public DbSet<Category> Categories { get; set; }
+    public DbSet<Todo> Todos { get; set; }
     public DbSet<Table> CustomTables { get; set; }
     public DbSet<Column> CustomColumns { get; set; }
     public DbSet<Row> CustomRows { get; set; }
@@ -20,6 +23,8 @@ public class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.HasDefaultSchema("public");
+
         // ---------- CALENDAR ----------
         modelBuilder.Entity<CalendarEvent>(e =>
         {
@@ -52,10 +57,32 @@ public class AppDbContext : DbContext
             e.Property(c => c.Color).HasMaxLength(9).IsRequired();
         });
 
+        // ---------- TODO ----------
+        modelBuilder.Entity<Todo>(e =>
+        {
+            e.ToTable("todos");
+            e.HasKey(e => e.Id);
+
+            e.Property(e => e.Id).HasColumnName("todo_id").ValueGeneratedOnAdd();
+            e.Property(e => e.Title).HasColumnName("todo_title").IsRequired();
+            e.Property(e => e.Description).HasColumnName("todo_description");
+            e.Property(e => e.CategoryId).HasColumnName("category_id").IsRequired();
+            e.Property(e => e.IsDone).HasColumnName("is_done").IsRequired();
+            e.Property(e => e.Priority).HasColumnName("priority").IsRequired();
+            e.Property(e => e.DueDate).HasColumnName("due_date");
+            e.Property(e => e.CreationDateTime).HasColumnName("creation_date_time").IsRequired();
+            e.Property(e => e.CompletedDateTime).HasColumnName("completed_date_time");
+
+            e.HasOne<Category>()
+                .WithMany()
+                .HasForeignKey(e => e.CategoryId)
+                .HasConstraintName("fk_todos_category_id");
+        });
+
         // ---------- CUSTOM TABLE ----------
         modelBuilder.Entity<Table>(e =>
         {
-            e.ToTable("custom_tables");
+            e.ToTable("tables", "custom");
             e.HasKey(t => t.TableId);
 
             e.Property(t => t.TableId).HasColumnName("table_id").ValueGeneratedOnAdd();
@@ -64,7 +91,7 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<Column>(e =>
         {
-            e.ToTable("custom_columns");
+            e.ToTable("columns", "custom");
             e.HasKey(c => c.ColumnId);
 
             e.Property(c => c.ColumnId).HasColumnName("column_id").ValueGeneratedOnAdd();
@@ -81,7 +108,7 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<Row>(e =>
         {
-            e.ToTable("custom_rows");
+            e.ToTable("rows", "custom");
             e.HasKey(r => r.RowId);
 
             e.Property(r => r.RowId).HasColumnName("row_id");
@@ -95,7 +122,7 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<Cell>(e =>
         {
-            e.ToTable("custom_cells");
+            e.ToTable("cells", "custom");
             e.HasKey(c => new { c.RowId, c.ColumnId });
 
             e.HasOne(c => c.Row)
@@ -131,10 +158,6 @@ public class AppDbContext : DbContext
 
             foreach (var key in entity.GetKeys())
                 key.SetName(ToSnakeCase(key.GetName() ?? ""));
-
-            // ❌ Foreign Keys NICHT automatisch umbenennen
-            // foreach (var key in entity.GetForeignKeys())
-            //     key.SetConstraintName(ToSnakeCase(key.GetConstraintName() ?? ""));
 
             foreach (var index in entity.GetIndexes())
                 index.SetDatabaseName(ToSnakeCase(index.GetDatabaseName() ?? ""));

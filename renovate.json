@@ -1,0 +1,20 @@
+{
+  "extends": ["config:base"],
+  "schedule": ["before 5am on the first day of the month"],
+  "dependencyDashboard": true,
+
+  "packageRules": [
+    {
+      "groupName": "Monthly .NET Dependency Updates",
+      "matchManagers": ["nuget"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": false
+    },
+    {
+      "groupName": "Major .NET Updates",
+      "matchManagers": ["nuget"],
+      "matchUpdateTypes": ["major"],
+      "automerge": false
+    }
+  ]
+}

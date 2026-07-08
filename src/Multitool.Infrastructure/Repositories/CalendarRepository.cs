@@ -38,16 +38,15 @@ public class CalendarRepository(AppDbContext db) : ICalendarRepository
 
     public async Task<List<CalendarEvent>> SearchCalendarEventsAsync(string searchString)
     {
-        var pattern = $"%{searchString.Trim()}%";
+        var pattern = searchString.Trim().ToLower();
 
         var results = await db.CalendarEvents
             .AsNoTracking()
             .Where(e =>
-                EF.Functions.ILike(e.Title, pattern)
+                e.Title.ToLower().Contains(pattern)
                 ||
                 (
-                    e.Note != null && EF.Functions.ILike(e.Note, pattern)
-                ))
+                    e.Note != null && e.Note.ToLower().Contains(pattern)))
             .OrderBy(e => e.StartDateTime)
             .ToListAsync();
 
@@ -75,11 +74,19 @@ public class CalendarRepository(AppDbContext db) : ICalendarRepository
             .ExecuteDeleteAsync();
     }
 
-    public async Task<List<Category>> GetCategoriesAsync()
+    public Task<List<CalendarEvent>> GetEventsOlderThanAsync(DateTime threshold)
     {
-        return await db.Categories
-            .AsNoTracking()
-            .OrderBy(c => c.Id)
+        return db.CalendarEvents
+            .Where(e =>
+                // Non-recurring events that ended before the threshold
+                (string.IsNullOrWhiteSpace(e.RecurrenceRule)&&
+                    ((e.EndDateTime ?? e.StartDateTime) < threshold))
+                ||
+                // Recurring events with a recurrence that end before the threshold
+                (!string.IsNullOrWhiteSpace(e.RecurrenceRule) &&
+                    e.RecurrenceEnd != null &&
+                    e.RecurrenceEnd < threshold)
+            )
             .ToListAsync();
     }
 }

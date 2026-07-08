@@ -2,6 +2,7 @@ using System.Text.Json;
 using Multitool.Domain.Entities.Calendar;
 using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
+using Multitool.Infrastructure.ApiClients.Models;
 
 namespace Multitool.Infrastructure.ApiClients;
 

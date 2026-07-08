@@ -1,8 +1,8 @@
 using System.Data;
+using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using Multitool.Domain.Entities.CustomTable;
 using Multitool.Domain.Enums;
-using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
 using Multitool.Infrastructure.Data;
 
@@ -157,19 +157,18 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
         await db.SaveChangesAsync();
     }
 
-    public async Task UpdateRowOrderAsync(List<RowOrderUpdateDto> list)
+    public async Task UpdateRowOrderAsync(Dictionary<long, int> rowOrders)
     {
-        var ids = list.Select(r => r.RowId).ToList();
+        var ids = rowOrders.Keys.ToList();
 
         var rows = await db.CustomRows
             .Where(r => ids.Contains(r.RowId))
             .ToListAsync();
 
-        foreach (var item in list)
+        foreach (var row in rows)
         {
-            var row = rows.FirstOrDefault(r => r.RowId == item.RowId);
-            if (row != null)
-                row.RowOrder = item.RowOrder;
+            if (rowOrders.TryGetValue(row.RowId, out var newOrder))
+                row.RowOrder = newOrder;
         }
 
         await db.SaveChangesAsync();
@@ -204,15 +203,15 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
                 cell.ValString = value?.ToString();
                 break;
 
-            case CustomDataType.Int when long.TryParse(value?.ToString(), out var i):
+            case CustomDataType.Int when long.TryParse(value?.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out var i):
                 cell.ValInt = i;
                 break;
 
-            case CustomDataType.Decimal when decimal.TryParse(value?.ToString(), out var d):
+            case CustomDataType.Decimal when decimal.TryParse(value?.ToString(), NumberStyles.Number, CultureInfo.InvariantCulture, out var d):
                 cell.ValDec = d;
                 break;
 
-            case CustomDataType.Date when DateTime.TryParse(value?.ToString(), out var dt):
+            case CustomDataType.Date when DateTime.TryParse(value?.ToString(), CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt):
                 cell.ValDate = dt;
                 break;
 

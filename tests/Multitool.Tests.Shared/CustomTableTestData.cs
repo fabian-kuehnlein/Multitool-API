@@ -1,7 +1,7 @@
 using Multitool.Application.Models.CustomTable;
 using Multitool.Domain.Entities.CustomTable;
 using Multitool.Domain.Enums;
-using Multitool.Application.Models;
+using Multitool.Application.Models.Info;
 
 namespace Multitool.Tests.Shared;
 
@@ -31,7 +31,7 @@ public static class CustomTableTestData
         CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
     };
 
-    public static TableOverview DefaultTableOverview => new(1, "Test Table");
+    public static TableOverviewDto DefaultTableOverview => new(1, "Test Table");
 
     public static TableDetail DefaultTableDetail => new()
     {
