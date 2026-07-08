@@ -7,10 +7,34 @@ using Multitool.Application.Models.Calendar;
 
 namespace Multitool.Application.Services;
 
-public class CalendarService(ICalendarRepository calendarRepository, ICalendarApiClient calendarApiClient) : ICalendarService
+public class CalendarService(ICalendarRepository calendarRepository, ITodoRepository todoRepository, ICalendarApiClient calendarApiClient) : ICalendarService
 {
-    public async Task<List<CalendarEvent>> GetEventsByRangeAsync(DateTime start, DateTime end, string categories)
-        => await calendarRepository.GetEventsByRangeAsync(start, end, categories);
+    public async Task<List<CalendarEventDto>> GetEventsByRangeAsync(DateTime start, DateTime end, string categories)
+    {   
+        var events = await calendarRepository.GetEventsByRangeAsync(start, end, categories);
+
+        var eventDtos = events.Adapt<List<CalendarEventDto>>();
+
+        var todos = await todoRepository.GetTodosWithDueDateInRangeAsync(start, end);
+
+        var todoEvents = todos.Select(t => new CalendarEventDto
+        {
+            Id = $"todo-{t.Id}",
+            Title = t.Title,
+            Note = t.Description,
+            StartDateTime = t.DueDate!.Value,
+            EndDateTime = t.DueDate.Value.Date.AddDays(1),
+            IsAllDay = true,
+            CategoryId = t.CategoryId,
+            RecurrenceRule = null,
+            RecurrenceEnd = null,
+            IsTodo = true
+        }).ToList();
+
+        eventDtos.AddRange(todoEvents);
+
+        return eventDtos;
+    }
 
     public async Task<List<EventSearchResponseDto>> SearchCalendarEventsAsync(string searchString)
     {

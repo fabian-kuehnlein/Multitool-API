@@ -9,4 +9,5 @@ public interface ITodoRepository
     Task AddAsync(Todo todo);
     Task UpdateAsync(Todo todo);
     Task DeleteAsync(int id);
+    Task<List<Todo>> GetTodosWithDueDateInRangeAsync(DateTime start, DateTime end);
 }

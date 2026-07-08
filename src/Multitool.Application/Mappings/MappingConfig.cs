@@ -16,6 +16,10 @@ public class MappingConfig : IRegister
             .Map(dest => dest.EventTitle, src => src.Title)
             .Map(dest => dest.EventNote, src => src.Note);
 
+        config.NewConfig<CalendarEvent, CalendarEventDto>()
+            .Map(dest => dest.Id, src => src.Id.ToString())
+            .Map(dest => dest.IsTodo, src => false);
+
         // -----------------------------------------------------------------
 
         config.NewConfig<Row, RowInfo>()

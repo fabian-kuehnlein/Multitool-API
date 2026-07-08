@@ -21,11 +21,11 @@ public class CalendarControllerTests
     }
 
     // GET /api/Calendar/events
-
+    
     [Fact]
     public async Task GetEventsByRange_WhenEventsExist_ReturnsOkWithEvents()
     {
-        var events = new List<CalendarEvent> { CalendarTestData.DefaultEvent };
+        var events = new List<CalendarEventDto> { CalendarTestData.DefaultEventDto };
         _serviceMock
             .Setup(s => s.GetEventsByRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<string>()))
             .ReturnsAsync(events);
@@ -44,7 +44,7 @@ public class CalendarControllerTests
     {
         _serviceMock
             .Setup(s => s.GetEventsByRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>(), string.Empty))
-            .ReturnsAsync(new List<CalendarEvent>());
+            .ReturnsAsync(new List<CalendarEventDto>());
 
         await _sut.GetEventsByRange(
             CalendarTestData.DefaultEvent.StartDateTime,

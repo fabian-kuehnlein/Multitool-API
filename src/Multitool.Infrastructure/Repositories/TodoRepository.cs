@@ -45,4 +45,12 @@ public class TodoRepository(AppDbContext db) : ITodoRepository
             await db.SaveChangesAsync();
         }
     }
+
+    public async Task<List<Todo>> GetTodosWithDueDateInRangeAsync(DateTime start, DateTime end)
+        => await db.Todos
+            .Where(t => t.DueDate != null &&
+                        t.DueDate >= start &&
+                        t.DueDate <= end &&
+                        t.IsDone == false)
+            .ToListAsync();
 }

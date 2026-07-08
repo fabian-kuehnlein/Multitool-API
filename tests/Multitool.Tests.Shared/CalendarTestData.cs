@@ -17,6 +17,17 @@ public class CalendarTestData
         CategoryId = 1
     };
 
+    public static readonly CalendarEventDto DefaultEventDto = new()
+    {
+        Id = DefaultEvent.Id.ToString(),
+        Title = DefaultEvent.Title,
+        StartDateTime = DefaultEvent.StartDateTime,
+        EndDateTime = DefaultEvent.EndDateTime,
+        IsAllDay = DefaultEvent.IsAllDay,
+        CategoryId = DefaultEvent.CategoryId,
+        IsTodo = false
+    };
+
     public static readonly CreateCalendarEventDto DefaultCreateEvent = new(
         "Team Meeting",
         "Besprechung Projekt Updates",
