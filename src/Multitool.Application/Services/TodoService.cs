@@ -61,6 +61,8 @@ public class TodoService(ITodoRepository todoRepository) : ITodoService
         }
 
         todo.IsDone = !todo.IsDone;
+        todo.CompletedDateTime = todo.IsDone ? DateTime.UtcNow : null;
+
         await todoRepository.UpdateAsync(todo);
     }
 

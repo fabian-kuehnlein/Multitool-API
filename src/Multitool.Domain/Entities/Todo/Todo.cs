@@ -10,4 +10,5 @@ public class Todo
     public int Priority { get; set; }
     public DateTime? DueDate { get; set; }
     public DateTime CreationDateTime { get; set; }
+    public DateTime? CompletedDateTime  { get; set; }
 }

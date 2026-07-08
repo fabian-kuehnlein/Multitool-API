@@ -71,6 +71,7 @@ public class AppDbContext : DbContext
             e.Property(e => e.Priority).HasColumnName("priority").IsRequired();
             e.Property(e => e.DueDate).HasColumnName("due_date");
             e.Property(e => e.CreationDateTime).HasColumnName("creation_date_time").IsRequired();
+            e.Property(e => e.CompletedDateTime).HasColumnName("completed_date_time");
 
             e.HasOne<Category>()
                 .WithMany()
