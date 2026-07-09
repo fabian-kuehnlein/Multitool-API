@@ -29,7 +29,7 @@ public class MappingConfig : IRegister
             ));
 
         config.NewConfig<CreateTableDto, Table>()
-            .Map(dest => dest.CreatedAt, src => DateTime.UtcNow);
+            .Map(dest => dest.CreatedAt, src => DateTime.Now);
     }
 
     private static object? CellValue(Cell cell) =>

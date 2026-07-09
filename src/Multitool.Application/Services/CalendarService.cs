@@ -79,7 +79,7 @@ public class CalendarService(ICalendarRepository calendarRepository, ITodoReposi
 
     public async Task DeletePastEventsAsync(int months)
     {
-        var now = DateTime.UtcNow;
+        var now = DateTime.Now;
         var threshold = now.AddMonths(-months);
 
         var events = await calendarRepository.GetEventsOlderThanAsync(threshold);

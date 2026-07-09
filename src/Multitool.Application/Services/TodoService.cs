@@ -28,7 +28,7 @@ public class TodoService(ITodoRepository todoRepository) : ITodoService
             Priority = createTodoDto.Priority,
             DueDate = createTodoDto.DueDate,
             IsDone = false,
-            CreationDateTime = DateTime.UtcNow
+            CreationDateTime = DateTime.Now
         };
 
         await todoRepository.AddAsync(todo);
@@ -61,7 +61,7 @@ public class TodoService(ITodoRepository todoRepository) : ITodoService
         }
 
         todo.IsDone = !todo.IsDone;
-        todo.CompletedDateTime = todo.IsDone ? DateTime.UtcNow : null;
+        todo.CompletedDateTime = todo.IsDone ? DateTime.Now : null;
 
         await todoRepository.UpdateAsync(todo);
     }

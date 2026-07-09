@@ -149,7 +149,7 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
         var row = new Row
         {
             TableId   = tableId,
-            CreatedAt = DateTime.UtcNow,
+            CreatedAt = DateTime.Now,
             RowOrder  = maxOrder + 1
         };
 

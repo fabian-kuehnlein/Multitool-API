@@ -85,11 +85,11 @@ public class TodoServiceTests
     [Fact]
     public async Task CreateTodoAsync_WhenDtoIsValid_SetsCreationDateTimeToUtcNow()
     {
-        var before = DateTime.UtcNow;
+        var before = DateTime.Now;
 
         var result = await _sut.CreateTodoAsync(TodoTestData.DefaultCreateTodoDto);
 
-        result.CreationDateTime.Should().BeOnOrAfter(before).And.BeOnOrBefore(DateTime.UtcNow);
+        result.CreationDateTime.Should().BeOnOrAfter(before).And.BeOnOrBefore(DateTime.Now);
     }
 
     [Fact]
