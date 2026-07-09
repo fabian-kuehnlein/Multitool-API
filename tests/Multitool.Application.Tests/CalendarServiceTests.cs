@@ -172,7 +172,7 @@ public class CalendarServiceTests
         {
             Id = CalendarTestData.DefaultEvent.Id,
             Title = "Old Title",
-            StartDateTime = DateTime.Now,
+            StartDateTime = DateTime.UtcNow,
             IsAllDay = false,
             CategoryId = 1
         };

@@ -163,10 +163,10 @@ public class AppDbContext : DbContext
                 index.SetDatabaseName(ToSnakeCase(index.GetDatabaseName() ?? ""));
         }
 
-        // ---------- UTC CONVERTER ----------
-        var utcConverter = new ValueConverter<DateTime, DateTime>(
-            v => v.Kind == DateTimeKind.Unspecified ? DateTime.SpecifyKind(v, DateTimeKind.Utc) : v.ToUniversalTime(),
-            v => v.Kind == DateTimeKind.Unspecified ? DateTime.SpecifyKind(v, DateTimeKind.Utc) : v.ToUniversalTime()
+        // ---------- WALL-CLOCK CONVERTER ----------
+        var wallClockConverter = new ValueConverter<DateTime, DateTime>(
+            v => DateTime.SpecifyKind(v, DateTimeKind.Unspecified),
+            v => DateTime.SpecifyKind(v, DateTimeKind.Unspecified)
         );
 
         foreach (var entityType in modelBuilder.Model.GetEntityTypes())
@@ -175,7 +175,8 @@ public class AppDbContext : DbContext
             {
                 if (property.ClrType == typeof(DateTime) || property.ClrType == typeof(DateTime?))
                 {
-                    property.SetValueConverter(utcConverter);
+                    property.SetValueConverter(wallClockConverter);
+                    property.SetColumnType("timestamp without time zone");
                 }
             }
         }
