@@ -78,9 +78,8 @@ public class CalendarService(ICalendarRepository calendarRepository, ITodoReposi
         => await calendarApiClient.GetHolidaysAsync(year);
 
     public async Task DeletePastEventsAsync(int months)
-    {
-        var now = DateTime.Now;
-        var threshold = now.AddMonths(-months);
+    { 
+        var threshold = DateTime.Now.AddMonths(-months);
 
         var events = await calendarRepository.GetEventsOlderThanAsync(threshold);
 

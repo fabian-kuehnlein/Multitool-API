@@ -76,4 +76,16 @@ public class TodoService(ITodoRepository todoRepository) : ITodoService
 
         await todoRepository.DeleteAsync(id);
     }
+
+    public async Task DeletePastTodosAsync(int days)
+    {
+        var threshold = DateTime.Now.AddDays(-days);
+
+        var todos = await todoRepository.GetTodosOlderThanAsync(threshold);
+
+        foreach (var todo in todos)
+        {
+            await todoRepository.DeleteAsync(todo.Id);
+        }
+    }
 }

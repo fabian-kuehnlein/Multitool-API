@@ -63,7 +63,8 @@ public class Program
 
         builder.Services.AddEndpointsApiExplorer();
 
-        builder.Services.AddHostedService<CleanupPastEventsService>();
+        builder.Services.AddHostedService<CleanupPastEventsCronJob>();
+        builder.Services.AddHostedService<CleanupPastTodosCronJob>();
         builder.Services.Configure<CronJobSettings>(builder.Configuration.GetSection("CronJobs"));
 
         builder.Services.AddSwaggerGen(c =>
