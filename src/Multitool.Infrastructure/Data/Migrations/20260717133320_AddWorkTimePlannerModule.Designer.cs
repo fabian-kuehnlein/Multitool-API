@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Multitool.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260717115357_AddWorkTimePlannerModule")]
+    [Migration("20260717133320_AddWorkTimePlannerModule")]
     partial class AddWorkTimePlannerModule
     {
         /// <inheritdoc />

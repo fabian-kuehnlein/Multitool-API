@@ -147,8 +147,7 @@ public class Program
 
         app.MapControllers().RequireCors("AllowFrontendAndLocalhost");
 
-        // Apply migrations on startup in production, or in development if enabled via environment variable
-        if (app.Environment.IsProduction() || (app.Environment.IsDevelopment() && Environment.GetEnvironmentVariable("APPLY_MIGRATIONS") == "true"))
+        if (app.Environment.IsProduction())
         {
             app.ApplyMigrations();
         }

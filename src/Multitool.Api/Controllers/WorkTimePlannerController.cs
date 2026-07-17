@@ -70,13 +70,9 @@ public class WorkTimePlannerController(IWorkTimePlannerService service) : Contro
     [HttpGet("weeksummary")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetWeekSummary([FromQuery] int year, [FromQuery] int weekNumber)
     {
         var summary = await service.GetWeekSummaryAsync(year, weekNumber);
-        if (summary is null)
-            return NotFound();
-
         return Ok(summary);
     }
 
