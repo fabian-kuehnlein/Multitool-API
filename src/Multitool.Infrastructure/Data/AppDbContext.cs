@@ -163,13 +163,6 @@ public class AppDbContext : DbContext
             e.Property(e => e.IsHomeOffice).HasColumnName("is_home_office").IsRequired();
             e.Property(e => e.Status).HasConversion<string>().HasColumnName("status").IsRequired();
             e.Property(e => e.IsLocked).HasColumnName("is_locked").IsRequired();
-
-            e.Property(w => w.Warnings)
-                .HasConversion(
-                    v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
-                    v => System.Text.Json.JsonSerializer.Deserialize<List<string>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new List<string>()
-                )
-                .HasColumnName("warnings");
         });
 
         modelBuilder.Entity<WeekSummary>(e =>

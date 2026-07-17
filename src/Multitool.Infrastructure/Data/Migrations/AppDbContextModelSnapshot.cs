@@ -394,11 +394,6 @@ namespace Multitool.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("status");
 
-                    b.Property<string>("Warnings")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("warnings");
-
                     b.Property<int>("WorkMinutes")
                         .HasColumnType("integer")
                         .HasColumnName("work_minutes");

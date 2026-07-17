@@ -24,7 +24,7 @@ public class WorkTimePlannerService(
     public async Task<WorkDay> CreateWorkDayAsync(WorkDay workDay)
     {
         var settings = await GetOrCreateSettingsAsync();
-        await CalculateWorkDayAsync(workDay, settings);
+        CalculateWorkDayAsync(workDay, settings);
         await workDayRepository.AddAsync(workDay);
         return workDay;
     }
@@ -47,7 +47,7 @@ public class WorkTimePlannerService(
         existing.Status = workDay.Status;
         existing.IsLocked = workDay.IsLocked;
 
-        await CalculateWorkDayAsync(existing, settings);
+        CalculateWorkDayAsync(existing, settings);
         await workDayRepository.UpdateAsync(existing);
     }
 
@@ -148,10 +148,8 @@ public class WorkTimePlannerService(
         return settings;
     }
 
-    private async Task CalculateWorkDayAsync(WorkDay workDay, WorkTimeSettings settings)
+    private static void CalculateWorkDayAsync(WorkDay workDay, WorkTimeSettings settings)
     {
-        workDay.Warnings.Clear();
-
         if (workDay.Status == DayStatus.Holiday || workDay.Status == DayStatus.Vacation || workDay.Status == DayStatus.Sick)
         {
             workDay.WorkMinutes = 0;
@@ -169,31 +167,6 @@ public class WorkTimePlannerService(
         var totalMinutes = (int)(workDay.EndTime.Value.ToTimeSpan() - workDay.StartTime.Value.ToTimeSpan()).TotalMinutes;
         workDay.WorkMinutes = Math.Max(0, totalMinutes - workDay.BreakMinutes);
         workDay.OvertimeMinutes = workDay.WorkMinutes - settings.DailyTargetMinutes;
-
-        if (workDay.WorkMinutes > 6 * 60 && workDay.BreakMinutes < settings.BreakRule6h)
-        {
-            workDay.Warnings.Add($"PauseTooShort: Pause zu kurz: {workDay.BreakMinutes} Min. (mindestens {settings.BreakRule6h} Min. bei >6h Arbeit)");
-        }
-
-        if (workDay.WorkMinutes > 9 * 60 && workDay.BreakMinutes < settings.BreakRule9h)
-        {
-            workDay.Warnings.Add($"PauseTooShort: Pause zu kurz: {workDay.BreakMinutes} Min. (mindestens {settings.BreakRule9h} Min. bei >9h Arbeit)");
-        }
-
-        if (workDay.WorkMinutes > 10 * 60)
-        {
-            workDay.Warnings.Add($"Over10Hours: Arbeitszeit über 10 Stunden: {workDay.WorkMinutes / 60}h {workDay.WorkMinutes % 60}min");
-        }
-
-        var weekStart = ISOWeek.ToDateTime(workDay.Date.Year, ISOWeek.GetWeekOfYear(workDay.Date), DayOfWeek.Monday);
-        var weekEnd = weekStart.AddDays(7);
-        var weekDays = await workDayRepository.GetByDateRangeAsync(weekStart, weekEnd);
-        var totalWeekMinutes = weekDays.Sum(w => w.WorkMinutes);
-
-        if (totalWeekMinutes > 48 * 60)
-        {
-            workDay.Warnings.Add("Over48HoursWeek: Wöchentliche Arbeitszeit über 48 Stunden");
-        }
     }
 
     private static (int Year, int WeekNumber) GetPreviousWeek(int year, int weekNumber)

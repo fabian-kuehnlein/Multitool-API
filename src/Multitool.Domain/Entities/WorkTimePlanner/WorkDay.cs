@@ -12,5 +12,4 @@ public class WorkDay
     public bool IsHomeOffice { get; set; }
     public required DayStatus Status { get; set; }
     public bool IsLocked { get; set; }
-    public List<string> Warnings { get; set; } = new();
 }

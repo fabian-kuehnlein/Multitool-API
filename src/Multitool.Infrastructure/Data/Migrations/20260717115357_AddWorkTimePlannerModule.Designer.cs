@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Multitool.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260714182248_Add_WorkTimePlanner_Module")]
-    partial class Add_WorkTimePlanner_Module
+    [Migration("20260717115357_AddWorkTimePlannerModule")]
+    partial class AddWorkTimePlannerModule
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -396,11 +396,6 @@ namespace Multitool.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("status");
-
-                    b.Property<string>("Warnings")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("warnings");
 
                     b.Property<int>("WorkMinutes")
                         .HasColumnType("integer")
