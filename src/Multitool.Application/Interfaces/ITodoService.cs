@@ -11,4 +11,5 @@ public interface ITodoService
     Task UpdateTodoAsync(int id, UpdateTodoDto updateTodoDto);
     Task ToggleDoneAsync(int id);
     Task DeleteTodoAsync(int id);
+    Task DeletePastTodosAsync(int days);
 }

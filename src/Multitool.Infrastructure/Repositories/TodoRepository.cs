@@ -53,4 +53,9 @@ public class TodoRepository(AppDbContext db) : ITodoRepository
                         t.DueDate <= end &&
                         t.IsDone == false)
             .ToListAsync();
+
+    public async Task<List<Todo>> GetTodosOlderThanAsync(DateTime date)
+        => await db.Todos
+            .Where(t => t.CompletedDateTime < date)
+            .ToListAsync();
 }

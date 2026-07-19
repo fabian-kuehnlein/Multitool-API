@@ -5,6 +5,7 @@ using Multitool.Domain.Entities.Category;
 using Multitool.Domain.Entities.Config;
 using Multitool.Domain.Entities.CustomTable;
 using Multitool.Domain.Entities.Todo;
+using Multitool.Domain.Entities.WorkTimePlanner;
 
 namespace Multitool.Infrastructure.Data;
 
@@ -20,6 +21,10 @@ public class AppDbContext : DbContext
     public DbSet<Column> CustomColumns { get; set; }
     public DbSet<Row> CustomRows { get; set; }
     public DbSet<Cell> CustomCells { get; set; }
+
+    public DbSet<WorkDay> WorkDays { get; set; }
+    public DbSet<WeekSummary> WeekSummaries { get; set; }
+    public DbSet<WorkTimeSettings> WorkTimeSettings { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -140,6 +145,49 @@ public class AppDbContext : DbContext
             e.HasIndex(c => new { c.ColumnId, c.ValInt }).HasDatabaseName("idx_cell_int");
             e.HasIndex(c => new { c.ColumnId, c.ValDec }).HasDatabaseName("idx_cell_dec");
             e.HasIndex(c => new { c.ColumnId, c.ValDate }).HasDatabaseName("idx_cell_date");
+        });
+
+        // ---------- WORK TIME PLANNER ----------
+        modelBuilder.Entity<WorkDay>(e =>
+        {
+            e.ToTable("work_days", "worktime");
+            e.HasKey(e => e.Id);
+
+            e.Property(e => e.Id).HasColumnName("work_day_id").ValueGeneratedOnAdd();
+            e.Property(e => e.Date).HasColumnName("date").IsRequired();
+            e.Property(e => e.StartTime).HasColumnName("start_time");
+            e.Property(e => e.EndTime).HasColumnName("end_time");
+            e.Property(e => e.BreakMinutes).HasColumnName("break_minutes").IsRequired();
+            e.Property(e => e.WorkMinutes).HasColumnName("work_minutes").IsRequired();
+            e.Property(e => e.OvertimeMinutes).HasColumnName("overtime_minutes").IsRequired();
+            e.Property(e => e.IsHomeOffice).HasColumnName("is_home_office").IsRequired();
+            e.Property(e => e.Status).HasConversion<string>().HasColumnName("status").IsRequired();
+            e.Property(e => e.IsLocked).HasColumnName("is_locked").IsRequired();
+        });
+
+        modelBuilder.Entity<WeekSummary>(e =>
+        {
+            e.ToTable("week_summaries", "worktime");
+            e.HasKey(e => e.Id);
+
+            e.Property(e => e.Id).HasColumnName("week_summary_id").ValueGeneratedOnAdd();
+            e.Property(e => e.Year).HasColumnName("year").IsRequired();
+            e.Property(e => e.WeekNumber).HasColumnName("week_number").IsRequired();
+            e.Property(e => e.TotalOvertime).HasColumnName("total_overtime").IsRequired();
+
+            e.HasIndex(e => new { e.Year, e.WeekNumber }).IsUnique().HasDatabaseName("ix_week_summaries_year_week");
+        });
+
+        modelBuilder.Entity<WorkTimeSettings>(e =>
+        {
+            e.ToTable("work_time_settings", "worktime");
+            e.HasKey(e => e.Id);
+
+            e.Property(e => e.Id).HasColumnName("settings_id").ValueGeneratedOnAdd();
+            e.Property(e => e.DailyTargetMinutes).HasColumnName("daily_target_minutes").IsRequired();
+            e.Property(e => e.BreakRule6h).HasColumnName("break_rule_6h").IsRequired();
+            e.Property(e => e.BreakRule9h).HasColumnName("break_rule_9h").IsRequired();
+            e.Property(e => e.HomeOfficeLimit).HasColumnName("home_office_limit").IsRequired();
         });
 
         // ---------- GLOBAL SNAKE CASE ----------

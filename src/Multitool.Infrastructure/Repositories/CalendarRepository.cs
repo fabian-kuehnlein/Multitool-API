@@ -74,18 +74,18 @@ public class CalendarRepository(AppDbContext db) : ICalendarRepository
             .ExecuteDeleteAsync();
     }
 
-    public Task<List<CalendarEvent>> GetEventsOlderThanAsync(DateTime threshold)
+    public Task<List<CalendarEvent>> GetEventsOlderThanAsync(DateTime date)
     {
         return db.CalendarEvents
             .Where(e =>
                 // Non-recurring events that ended before the threshold
                 (string.IsNullOrWhiteSpace(e.RecurrenceRule)&&
-                    ((e.EndDateTime ?? e.StartDateTime) < threshold))
+                    ((e.EndDateTime ?? e.StartDateTime) < date))
                 ||
                 // Recurring events with a recurrence that end before the threshold
                 (!string.IsNullOrWhiteSpace(e.RecurrenceRule) &&
                     e.RecurrenceEnd != null &&
-                    e.RecurrenceEnd < threshold)
+                    e.RecurrenceEnd < date)
             )
             .ToListAsync();
     }

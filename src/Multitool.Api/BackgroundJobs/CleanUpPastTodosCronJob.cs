@@ -5,11 +5,11 @@ using Multitool.Application.Interfaces;
 
 namespace Multitool.Api.BackgroundJobs;
 
-public class CleanupPastEventsCronJob(
+public class CleanupPastTodosCronJob(
     IServiceProvider serviceProvider,
     IOptions<CronJobSettings> cronSettings) : BackgroundService
 {
-    private readonly CronExpression cron = CronExpression.Parse(cronSettings.Value.CleanUpPastEvents);
+    private readonly CronExpression cron = CronExpression.Parse(cronSettings.Value.CleanUpPastTodos);
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -26,9 +26,9 @@ public class CleanupPastEventsCronJob(
             }
 
             using var scope = serviceProvider.CreateScope();
-            var calendarService = scope.ServiceProvider.GetRequiredService<ICalendarService>();
+            var todoService = scope.ServiceProvider.GetRequiredService<ITodoService>();
 
-            await calendarService.DeletePastEventsAsync(cronSettings.Value.CleanUpPastEventsMonths);
+            await todoService.DeletePastTodosAsync(cronSettings.Value.CleanUpPastTodosDays);
         }
     }
 }

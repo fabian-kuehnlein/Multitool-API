@@ -63,7 +63,8 @@ public class Program
 
         builder.Services.AddEndpointsApiExplorer();
 
-        builder.Services.AddHostedService<CleanupPastEventsService>();
+        builder.Services.AddHostedService<CleanupPastEventsCronJob>();
+        builder.Services.AddHostedService<CleanupPastTodosCronJob>();
         builder.Services.Configure<CronJobSettings>(builder.Configuration.GetSection("CronJobs"));
 
         builder.Services.AddSwaggerGen(c =>
@@ -146,8 +147,7 @@ public class Program
 
         app.MapControllers().RequireCors("AllowFrontendAndLocalhost");
 
-        // Apply migrations on startup in production, or in development if enabled via environment variable
-        if (app.Environment.IsProduction() || (app.Environment.IsDevelopment() && Environment.GetEnvironmentVariable("APPLY_MIGRATIONS") == "true"))
+        if (app.Environment.IsProduction())
         {
             app.ApplyMigrations();
         }
