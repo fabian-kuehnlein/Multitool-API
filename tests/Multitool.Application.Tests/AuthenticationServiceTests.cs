@@ -27,9 +27,12 @@ public class AuthenticationServiceTests
         _sut = new AuthenticationService(_userRepositoryMock.Object, _hasherMock.Object, _jwtMock.Object, _keyProviderMock.Object);
     }
 
+    // RegisterAsync
+
     [Fact]
     public async Task RegisterAsync_WithValidAdminKey_AndNewUser_AddsUser()
     {
+        // Arrange
         var user = AuthTestData.DefaultUser;
         var request = AuthTestData.DefaultRegisterRequest;
         const string adminKey = AuthTestData.ValidAdminKey;
@@ -38,36 +41,47 @@ public class AuthenticationServiceTests
         _userRepositoryMock.Setup(r => r.GetByUsernameAsync(request.Username)).ReturnsAsync((User?)null);
         _hasherMock.Setup(h => h.Hash(request.Password)).Returns(user.PasswordHash);
 
+        // Act
         await _sut.RegisterAsync(request.Username, request.Password, adminKey);
 
+        // Assert
         _userRepositoryMock.Verify(r => r.AddAsync(It.Is<User>(u => u.Username == request.Username && u.PasswordHash == user.PasswordHash)), Times.Once);
     }
 
     [Fact]
     public async Task RegisterAsync_WithInvalidAdminKey_ThrowsInvalidCredentialException()
     {
+        // Arrange
         _keyProviderMock.Setup(p => p.GetAdminKey()).Returns(AuthTestData.ValidAdminKey);
 
+        // Act
         var act = () => _sut.RegisterAsync("user", "pass", "wrong-key");
 
+        // Assert
         await act.Should().ThrowAsync<InvalidCredentialException>();
     }
 
     [Fact]
     public async Task RegisterAsync_WhenUserAlreadyExists_ThrowsUserAlreadyExistsException()
     {
+        // Arrange
         const string adminKey = AuthTestData.ValidAdminKey;
         _keyProviderMock.Setup(p => p.GetAdminKey()).Returns(adminKey);
         _userRepositoryMock.Setup(r => r.GetByUsernameAsync("existing")).ReturnsAsync(new User());
 
+        // Act
         var act = () => _sut.RegisterAsync("existing", "pass", adminKey);
 
+        // Assert
         await act.Should().ThrowAsync<UserAlreadyExistsException>();
     }
+
+    // LoginAsync
 
     [Fact]
     public async Task LoginAsync_WithValidCredentials_ReturnsToken_AndResetsLockout()
     {
+        // Arrange
         var user = AuthTestData.DefaultUser;
         user.AccessFailedCount = 3;
         user.LockoutEnd = DateTime.UtcNow.AddMinutes(-5); // In the past
@@ -77,8 +91,10 @@ public class AuthenticationServiceTests
         _hasherMock.Setup(h => h.Verify(request.Password, user.PasswordHash)).Returns(true);
         _jwtMock.Setup(j => j.GenerateToken(user)).Returns("token-123");
 
+        // Act
         var result = await _sut.LoginAsync(request.Username, request.Password);
 
+        // Assert
         result.Should().Be("token-123");
         user.AccessFailedCount.Should().Be(0);
         user.LockoutEnd.Should().BeNull();
@@ -88,14 +104,17 @@ public class AuthenticationServiceTests
     [Fact]
     public async Task LoginAsync_WhenLockedOut_ThrowsInvalidCredentialException()
     {
+        // Arrange
         var user = AuthTestData.DefaultUser;
         user.LockoutEnd = DateTime.UtcNow.AddMinutes(10);
         var request = AuthTestData.DefaultLoginRequest;
 
         _userRepositoryMock.Setup(r => r.GetByUsernameAsync(request.Username)).ReturnsAsync(user);
 
+        // Act
         var act = () => _sut.LoginAsync(request.Username, request.Password);
 
+        // Assert
         await act.Should().ThrowAsync<InvalidCredentialException>();
         _hasherMock.Verify(h => h.Verify(It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
@@ -103,6 +122,7 @@ public class AuthenticationServiceTests
     [Fact]
     public async Task LoginAsync_WithInvalidCredentials_IncrementsFailureCount()
     {
+        // Arrange
         var user = AuthTestData.DefaultUser;
         user.AccessFailedCount = 0;
         var request = AuthTestData.DefaultLoginRequest;
@@ -110,8 +130,10 @@ public class AuthenticationServiceTests
         _userRepositoryMock.Setup(r => r.GetByUsernameAsync(request.Username)).ReturnsAsync(user);
         _hasherMock.Setup(h => h.Verify(request.Password, user.PasswordHash)).Returns(false);
 
+        // Act
         var act = () => _sut.LoginAsync(request.Username, request.Password);
 
+        // Assert
         await act.Should().ThrowAsync<InvalidCredentialException>();
         user.AccessFailedCount.Should().Be(1);
         _userRepositoryMock.Verify(r => r.UpdateAsync(user), Times.Once);
@@ -120,6 +142,7 @@ public class AuthenticationServiceTests
     [Fact]
     public async Task LoginAsync_After5Failures_SetsLockoutEnd()
     {
+        // Arrange
         var user = new User 
         { 
             Id = 1, 
@@ -132,8 +155,10 @@ public class AuthenticationServiceTests
         _userRepositoryMock.Setup(r => r.GetByUsernameAsync(user.Username)).ReturnsAsync(user);
         _hasherMock.Setup(h => h.Verify(request.Password, user.PasswordHash)).Returns(false);
 
+        // Act
         var act = () => _sut.LoginAsync(user.Username, request.Password);
 
+        // Assert
         await act.Should().ThrowAsync<InvalidCredentialException>();
         
         user.AccessFailedCount.Should().Be(5);
@@ -145,26 +170,32 @@ public class AuthenticationServiceTests
     [Fact]
     public async Task LoginAsync_WhenUserDoesNotExist_ThrowsInvalidCredentialException()
     {
+        // Arrange
         _userRepositoryMock.Setup(r => r.GetByUsernameAsync(It.IsAny<string>()))
             .ReturnsAsync((User?)null);
 
+        // Act
         var act = () => _sut.LoginAsync("unknown", "pass");
 
+        // Assert
         await act.Should().ThrowAsync<InvalidCredentialException>();
     }
 
     [Fact]
     public async Task LoginAsync_After5Failures_LockoutEndsInApproximately15Minutes()
     {
+        // Arrange
         var user = new User { Id = 1, Username = "lockout-user", PasswordHash = "hash", AccessFailedCount = 4 };
 
         _userRepositoryMock.Setup(r => r.GetByUsernameAsync(user.Username)).ReturnsAsync(user);
         _hasherMock.Setup(h => h.Verify(It.IsAny<string>(), user.PasswordHash)).Returns(false);
 
+        // Act
         var before = DateTime.UtcNow.AddMinutes(15);
         var act = () => _sut.LoginAsync(user.Username, "wrong");
         await act.Should().ThrowAsync<InvalidCredentialException>();
 
+        // Assert
         user.LockoutEnd.Should().BeCloseTo(before, precision: TimeSpan.FromSeconds(5));
     }
 }

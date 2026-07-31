@@ -19,24 +19,32 @@ public class CategoryServiceTests
         _sut = new CategoryService(_repositoryMock.Object);
     }
 
+    // GetCategoriesAsync
+
     [Fact]
-    public async Task GetCategoriesAsync_ReturnsAllCategories()
+    public async Task GetCategoriesAsync_WhenCategoriesExist_ReturnsAllCategories()
     {
+        // Arrange
         var categories = new List<Category> { CalendarTestData.DefaultCategory };
         _repositoryMock.Setup(r => r.GetCategoriesAsync()).ReturnsAsync(categories);
 
+        // Act
         var result = await _sut.GetCategoriesAsync();
 
+        // Assert
         result.Should().BeEquivalentTo(categories);
     }
 
     [Fact]
     public async Task GetCategoriesAsync_WhenNoCategoriesFound_ThrowsNotFoundException()
     {
+        // Arrange
         _repositoryMock.Setup(r => r.GetCategoriesAsync()).ReturnsAsync(new List<Category>());
 
+        // Act
         var act = () => _sut.GetCategoriesAsync();
 
+        // Assert
         await act.Should().ThrowAsync<NotFoundException>().WithMessage("No categories found");
     }
 }

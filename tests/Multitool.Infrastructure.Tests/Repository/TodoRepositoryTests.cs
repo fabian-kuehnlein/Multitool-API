@@ -23,8 +23,10 @@ public class TodoRepositoryTests : RepositoryTestBase
         _categoryId = category.Id;
     }
 
+    // GetAllAsync
+
     [Fact]
-    public async Task GetAllAsync_ShouldReturnSortedTodos()
+    public async Task GetAllAsync_WhenTodosExist_ReturnsSortedTodos()
     {
         // Arrange
         var t1 = new Todo { Title = "A", CategoryId = _categoryId, IsDone = true, CreationDateTime = DateTime.UtcNow.AddMinutes(-10) };
@@ -43,8 +45,10 @@ public class TodoRepositoryTests : RepositoryTestBase
         Assert.True(result[2].IsDone); // t1 (done is last)
     }
 
+    // GetByIdAsync
+
     [Fact]
-    public async Task GetByIdAsync_ShouldReturnTodo()
+    public async Task GetByIdAsync_WhenTodoExists_ReturnsTodo()
     {
         // Arrange
         var todo = new Todo { Title = "Test", CategoryId = _categoryId, IsDone = false };
@@ -59,8 +63,10 @@ public class TodoRepositoryTests : RepositoryTestBase
         Assert.Equal(todo.Id, result.Id);
     }
 
+    // AddAsync
+
     [Fact]
-    public async Task AddAsync_ShouldAddTodo()
+    public async Task AddAsync_WhenTodoIsValid_AddsTodo()
     {
         // Arrange
         var todo = new Todo { Title = "New", CategoryId = _categoryId, IsDone = false };
@@ -74,8 +80,10 @@ public class TodoRepositoryTests : RepositoryTestBase
         Assert.Equal("New", savedTodo.Title);
     }
 
+    // UpdateAsync
+
     [Fact]
-    public async Task UpdateAsync_ShouldUpdateTodo()
+    public async Task UpdateAsync_WhenTodoExists_UpdatesTodo()
     {
         // Arrange
         var todo = new Todo { Title = "Old", CategoryId = _categoryId, IsDone = false };
@@ -93,8 +101,10 @@ public class TodoRepositoryTests : RepositoryTestBase
         Assert.Equal("Updated", updatedTodo!.Title);
     }
 
+    // DeleteAsync
+
     [Fact]
-    public async Task DeleteAsync_ShouldRemoveTodo()
+    public async Task DeleteAsync_WhenTodoExists_RemovesTodo()
     {
         // Arrange
         var todo = new Todo { Title = "To Delete", CategoryId = _categoryId, IsDone = false };

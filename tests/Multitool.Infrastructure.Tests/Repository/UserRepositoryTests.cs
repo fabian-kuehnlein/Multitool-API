@@ -14,27 +14,37 @@ public class UserRepositoryTests : RepositoryTestBase
         _sut = new UserRepository(Context);
     }
 
+    // AddAsync
+
     [Fact]
-    public async Task AddAsync_AddsUser()
+    public async Task AddAsync_WhenUserIsValid_AddsUserToDatabase()
     {
+        // Arrange
         var user = new User { Username = "test", PasswordHash = "hash" };
-        
+
+        // Act
         await _sut.AddAsync(user);
 
+        // Assert
         var dbUser = await Context.Users.FirstOrDefaultAsync(u => u.Username == "test");
         dbUser.Should().NotBeNull();
         dbUser!.PasswordHash.Should().Be("hash");
     }
 
+    // GetByUsernameAsync
+
     [Fact]
-    public async Task GetByUsernameAsync_ReturnsCorrectUser()
+    public async Task GetByUsernameAsync_WhenUserExists_ReturnsUser()
     {
+        // Arrange
         var user = new User { Username = "findme", PasswordHash = "hash" };
         Context.Users.Add(user);
         await Context.SaveChangesAsync();
 
+        // Act
         var result = await _sut.GetByUsernameAsync("findme");
 
+        // Assert
         result.Should().NotBeNull();
         result!.Username.Should().Be("findme");
     }

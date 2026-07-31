@@ -13,6 +13,8 @@ public class TodoControllerTests
     private readonly Mock<ITodoService> _serviceMock;
     private readonly TodoController _sut;
 
+    private static readonly int DefaultTodoId = TodoTestData.DefaultTodo.Id;
+
     public TodoControllerTests()
     {
         _serviceMock = new Mock<ITodoService>();
@@ -24,11 +26,14 @@ public class TodoControllerTests
     [Fact]
     public async Task GetTodos_WhenTodosExist_ReturnsOkWithTodos()
     {
+        // Arrange
         var todos = new List<Todo> { TodoTestData.DefaultTodo };
         _serviceMock.Setup(s => s.GetAllTodosAsync()).ReturnsAsync(todos);
 
+        // Act
         var result = await _sut.GetTodos();
 
+        // Assert
         var ok = result.Should().BeOfType<OkObjectResult>().Subject;
         ok.Value.Should().BeEquivalentTo(todos);
     }
@@ -38,14 +43,19 @@ public class TodoControllerTests
     [Fact]
     public async Task CreateTodo_WhenDtoIsValid_ReturnsCreatedAtAction()
     {
+        // Arrange
+        var dto = TodoTestData.DefaultCreateTodoDto;
+        var createdTodo = TodoTestData.DefaultTodo;
         _serviceMock
-            .Setup(s => s.CreateTodoAsync(TodoTestData.DefaultCreateTodoDto))
-            .ReturnsAsync(TodoTestData.DefaultTodo);
+            .Setup(s => s.CreateTodoAsync(dto))
+            .ReturnsAsync(createdTodo);
 
-        var result = await _sut.CreateTodo(TodoTestData.DefaultCreateTodoDto);
+        // Act
+        var result = await _sut.CreateTodo(dto);
 
+        // Assert
         var created = result.Should().BeOfType<CreatedAtActionResult>().Subject;
-        created.Value.Should().BeEquivalentTo(TodoTestData.DefaultTodo);
+        created.Value.Should().BeEquivalentTo(createdTodo);
         created.ActionName.Should().Be(nameof(_sut.GetTodos));
     }
 
@@ -54,11 +64,15 @@ public class TodoControllerTests
     [Fact]
     public async Task UpdateTodo_WhenTodoExists_ReturnsNoContent()
     {
-        _serviceMock.Setup(s => s.UpdateTodoAsync(TodoTestData.DefaultTodo.Id, TodoTestData.DefaultUpdateTodoDto))
+        // Arrange
+        var dto = TodoTestData.DefaultUpdateTodoDto;
+        _serviceMock.Setup(s => s.UpdateTodoAsync(DefaultTodoId, dto))
             .Returns(Task.CompletedTask);
 
-        var result = await _sut.UpdateTodo(TodoTestData.DefaultTodo.Id, TodoTestData.DefaultUpdateTodoDto);
+        // Act
+        var result = await _sut.UpdateTodo(DefaultTodoId, dto);
 
+        // Assert
         result.Should().BeOfType<NoContentResult>();
     }
 
@@ -67,11 +81,14 @@ public class TodoControllerTests
     [Fact]
     public async Task DeleteTodo_WhenTodoExists_ReturnsNoContent()
     {
-        _serviceMock.Setup(s => s.DeleteTodoAsync(TodoTestData.DefaultTodo.Id))
+        // Arrange
+        _serviceMock.Setup(s => s.DeleteTodoAsync(DefaultTodoId))
             .Returns(Task.CompletedTask);
 
-        var result = await _sut.DeleteTodo(TodoTestData.DefaultTodo.Id);
+        // Act
+        var result = await _sut.DeleteTodo(DefaultTodoId);
 
+        // Assert
         result.Should().BeOfType<NoContentResult>();
     }
 
@@ -80,11 +97,14 @@ public class TodoControllerTests
     [Fact]
     public async Task ToggleTodo_WhenTodoExists_ReturnsNoContent()
     {
-        _serviceMock.Setup(s => s.ToggleDoneAsync(TodoTestData.DefaultTodo.Id))
+        // Arrange
+        _serviceMock.Setup(s => s.ToggleDoneAsync(DefaultTodoId))
             .Returns(Task.CompletedTask);
 
-        var result = await _sut.ToggleTodo(TodoTestData.DefaultTodo.Id);
+        // Act
+        var result = await _sut.ToggleTodo(DefaultTodoId);
 
+        // Assert
         result.Should().BeOfType<NoContentResult>();
     }
 }

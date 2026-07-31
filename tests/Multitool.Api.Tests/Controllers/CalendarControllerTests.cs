@@ -14,27 +14,30 @@ public class CalendarControllerTests
     private readonly Mock<ICalendarService> _serviceMock;
     private readonly CalendarController _sut;
 
+    private static readonly DateTime Start = CalendarTestData.DefaultEvent.StartDateTime;
+    private static readonly DateTime End = CalendarTestData.DefaultEvent.EndDateTime!.Value;
+
     public CalendarControllerTests()
     {
         _serviceMock = new Mock<ICalendarService>();
         _sut = new CalendarController(_serviceMock.Object);
     }
 
-    // GET /api/Calendar/events
-    
+    // GET api/Calendar/events
+
     [Fact]
     public async Task GetEventsByRange_WhenEventsExist_ReturnsOkWithEvents()
     {
+        // Arrange
         var events = new List<CalendarEventDto> { CalendarTestData.DefaultEventDto };
         _serviceMock
             .Setup(s => s.GetEventsByRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<string>()))
             .ReturnsAsync(events);
 
-        var result = await _sut.GetEventsByRange(
-            CalendarTestData.DefaultEvent.StartDateTime,
-            CalendarTestData.DefaultEvent.EndDateTime!.Value,
-            null);
+        // Act
+        var result = await _sut.GetEventsByRange(Start, End, null);
 
+        // Assert
         var ok = result.Should().BeOfType<OkObjectResult>().Subject;
         ok.Value.Should().BeEquivalentTo(events);
     }
@@ -42,91 +45,107 @@ public class CalendarControllerTests
     [Fact]
     public async Task GetEventsByRange_WhenCategoriesIsNull_PassesEmptyStringToService()
     {
+        // Arrange
         _serviceMock
             .Setup(s => s.GetEventsByRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>(), string.Empty))
             .ReturnsAsync(new List<CalendarEventDto>());
 
-        await _sut.GetEventsByRange(
-            CalendarTestData.DefaultEvent.StartDateTime,
-            CalendarTestData.DefaultEvent.EndDateTime!.Value,
-            null);
+        // Act
+        await _sut.GetEventsByRange(Start, End, null);
 
-        _serviceMock.Verify(s => s.GetEventsByRangeAsync(
-            CalendarTestData.DefaultEvent.StartDateTime,
-            CalendarTestData.DefaultEvent.EndDateTime!.Value,
-            string.Empty), Times.Once);
+        // Assert
+        _serviceMock.Verify(s => s.GetEventsByRangeAsync(Start, End, string.Empty), Times.Once);
     }
 
-    // GET /api/Calendar/events/search
+    // GET api/Calendar/events/search
 
     [Fact]
     public async Task SearchEvents_WhenMatchesExist_ReturnsOkWithResults()
     {
-        var results = new List<EventSearchResponseDto> { new(1, CalendarTestData.DefaultEvent.Title, null, CalendarTestData.DefaultEvent.StartDateTime, null, null) };
+        // Arrange
+        var results = new List<EventSearchResponseDto> { new(1, CalendarTestData.DefaultEvent.Title, null, Start, null, null) };
         _serviceMock
             .Setup(s => s.SearchCalendarEventsAsync("Meeting"))
             .ReturnsAsync(results);
 
+        // Act
         var result = await _sut.SearchEvents("Meeting");
 
+        // Assert
         var ok = result.Should().BeOfType<OkObjectResult>().Subject;
         ok.Value.Should().BeEquivalentTo(results);
     }
 
-    // POST /api/Calendar/events
+    // POST api/Calendar/events
 
     [Fact]
     public async Task InsertEvent_WhenEventIsValid_ReturnsOkWithId()
     {
+        // Arrange
+        var createEvent = CalendarTestData.DefaultCreateEvent;
         const long expectedId = 2;
         _serviceMock
-            .Setup(s => s.InsertEventAsync(CalendarTestData.DefaultCreateEvent))
+            .Setup(s => s.InsertEventAsync(createEvent))
             .ReturnsAsync(expectedId);
 
-        var result = await _sut.InsertEvent(CalendarTestData.DefaultCreateEvent);
+        // Act
+        var result = await _sut.InsertEvent(createEvent);
 
+        // Assert
         var ok = result.Should().BeOfType<OkObjectResult>().Subject;
         ok.Value.Should().Be(expectedId);
     }
 
-    // PUT /api/Calendar/events
+    // PUT api/Calendar/events
 
     [Fact]
     public async Task UpdateEvent_WhenUpdateSucceeds_ReturnsNoContent()
     {
+        // Arrange
+        var calendarEvent = CalendarTestData.DefaultEvent;
         _serviceMock
-            .Setup(s => s.UpdateEventAsync(CalendarTestData.DefaultEvent))
+            .Setup(s => s.UpdateEventAsync(calendarEvent))
             .Returns(Task.CompletedTask);
 
-        var result = await _sut.UpdateEvent(CalendarTestData.DefaultEvent);
+        // Act
+        var result = await _sut.UpdateEvent(calendarEvent);
 
+        // Assert
         result.Should().BeOfType<NoContentResult>();
     }
 
-    // DELETE /api/Calendar/events/{id}
+    // DELETE api/Calendar/events/{id}
 
     [Fact]
     public async Task DeleteEvent_WhenDeletionSucceeds_ReturnsNoContent()
     {
+        // Arrange
+        var eventId = CalendarTestData.DefaultEvent.Id;
         _serviceMock
-            .Setup(s => s.DeleteEventAsync(It.IsAny<int>()))
+            .Setup(s => s.DeleteEventAsync(eventId))
             .Returns(Task.CompletedTask);
 
-        var result = await _sut.DeleteEvent(CalendarTestData.DefaultEvent.Id);
+        // Act
+        var result = await _sut.DeleteEvent(eventId);
 
+        // Assert
         result.Should().BeOfType<NoContentResult>();
     }
 
-    // GET /api/Calendar/holidays/{year}
+    // GET api/Calendar/holidays/{year}
 
     [Fact]
     public async Task GetHolidays_WhenHolidaysExist_ReturnsOkWithHolidays()
     {
+        // Arrange
         var holidays = new List<Holiday> { CalendarTestData.DefaultHoliday };
-        _serviceMock.Setup(s => s.GetHolidaysAsync("2026")).ReturnsAsync(holidays);
+        const string year = "2026";
+        _serviceMock.Setup(s => s.GetHolidaysAsync(year)).ReturnsAsync(holidays);
 
-        var result = await _sut.GetHolidays("2026");
+        // Act
+        var result = await _sut.GetHolidays(year);
 
+        // Assert
         var ok = result.Should().BeOfType<OkObjectResult>().Subject;
         ok.Value.Should().BeEquivalentTo(holidays);
     }

@@ -27,6 +27,8 @@ public class GlobalExceptionHandlerTests
 
     private static DefaultHttpContext CreateHttpContext() => new();
 
+    // TryHandleAsync
+
     [Theory]
     [InlineData(typeof(ArgumentException), StatusCodes.Status400BadRequest)]
     [InlineData(typeof(InvalidOperationException), StatusCodes.Status400BadRequest)]
@@ -35,23 +37,29 @@ public class GlobalExceptionHandlerTests
     [InlineData(typeof(KeyNotFoundException), StatusCodes.Status404NotFound)]
     [InlineData(typeof(UserAlreadyExistsException), StatusCodes.Status409Conflict)]
     [InlineData(typeof(Exception), StatusCodes.Status500InternalServerError)]
-    public async Task TryHandleAsync_SetsCorrectStatusCode(Type exceptionType, int expectedStatus)
+    public async Task TryHandleAsync_WhenExceptionOccurs_SetsCorrectStatusCode(Type exceptionType, int expectedStatus)
     {
+        // Arrange
         var exception = (Exception)Activator.CreateInstance(exceptionType, "error")!;
         var httpContext = CreateHttpContext();
 
+        // Act
         await _sut.TryHandleAsync(httpContext, exception, CancellationToken.None);
 
+        // Assert
         httpContext.Response.StatusCode.Should().Be(expectedStatus);
     }
 
     [Fact]
-    public async Task TryHandleAsync_AlwaysReturnsTrue()
+    public async Task TryHandleAsync_WhenExceptionOccurs_ReturnsTrue()
     {
+        // Arrange
         var httpContext = CreateHttpContext();
 
+        // Act
         var result = await _sut.TryHandleAsync(httpContext, new Exception(), CancellationToken.None);
 
+        // Assert
         result.Should().BeTrue();
     }
 }

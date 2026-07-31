@@ -24,11 +24,14 @@ public class CategoryControllerTests
     [Fact]
     public async Task GetCategories_WhenCategoriesExist_ReturnsOkWithCategories()
     {
+        // Arrange
         var categories = new List<Category> { CalendarTestData.DefaultCategory };
         _serviceMock.Setup(s => s.GetCategoriesAsync()).ReturnsAsync(categories);
 
+        // Act
         var result = await _sut.GetCategories();
 
+        // Assert
         var ok = result.Should().BeOfType<OkObjectResult>().Subject;
         ok.Value.Should().BeEquivalentTo(categories);
     }
