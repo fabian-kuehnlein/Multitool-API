@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Mvc;
-using Multitool.Api.Extensions;
 using Microsoft.AspNetCore.Authorization;
 
 namespace Multitool.Api.Controllers;
@@ -8,8 +7,14 @@ namespace Multitool.Api.Controllers;
 [Route("api/[controller]")]
 public class StatusController() : ControllerBase
 {
+    /// <summary>
+    /// Returns the liveness status of the API.
+    /// </summary>
     [HttpGet("live")]
     [AllowAnonymous]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public IActionResult Live() =>
         Ok(new { status = "alive", timestamp = DateTime.UtcNow });
 }

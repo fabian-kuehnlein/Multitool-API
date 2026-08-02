@@ -4,9 +4,9 @@ using Multitool.Application.Models.Calendar;
 
 namespace Multitool.Tests.Shared;
 
-public class CalendarTestData
+public static class CalendarTestData
 {
-    public static readonly CalendarEvent DefaultEvent = new()
+    public static CalendarEvent DefaultEvent => new()
     {
         Id = 1,
         Title = "Team Meeting",
@@ -17,7 +17,7 @@ public class CalendarTestData
         CategoryId = 1
     };
 
-    public static readonly CalendarEventDto DefaultEventDto = new()
+    public static CalendarEventDto DefaultEventDto => new()
     {
         Id = DefaultEvent.Id.ToString(),
         Title = DefaultEvent.Title,
@@ -28,7 +28,7 @@ public class CalendarTestData
         IsTodo = false
     };
 
-    public static readonly CreateCalendarEventDto DefaultCreateEvent = new(
+    public static CreateCalendarEventDto DefaultCreateEvent => new(
         "Team Meeting",
         "Besprechung Projekt Updates",
         new DateTime(2026, 6, 1, 9, 0, 0),
@@ -39,7 +39,7 @@ public class CalendarTestData
         null
     );
 
-    public static readonly Category DefaultCategory = new() { Id = 1, Name = "Arbeit", Color = "#FF0000" };
+    public static Category DefaultCategory => new() { Id = 1, Name = "Arbeit", Color = "#FF0000" };
 
-    public static readonly Holiday DefaultHoliday = new() { Name = "Neujahr", Date = new DateTime(2026, 1, 1)};
+    public static Holiday DefaultHoliday => new() { Name = "Neujahr", Date = new DateTime(2026, 1, 1) };
 }

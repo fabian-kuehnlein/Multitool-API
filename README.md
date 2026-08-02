@@ -6,6 +6,7 @@ The application follows a **Clean Architecture** pattern and currently provides 
 - **Calendar** with recurring event support.
 - **Custom Table Builder** for user-defined data structures.
 - **Todo List** for task management.
+- **Work Time Planner** for tracking work days, overtime and home office usage.
 
 ---
 
@@ -44,14 +45,25 @@ The application follows a **Clean Architecture** pattern and currently provides 
 - Toggle task completion status
 - Request validation for task creation and updates
 
+### Work Time Planner
+- Create, read, update and delete individual **work days**, including start/end time, break minutes and home office flag
+- Automatic calculation of **worked minutes** and **overtime minutes** based on the configured daily target and start/end time
+- Day status support (`Normal`, `Holiday`, `Vacation`, `Sick`) — non-working statuses are excluded from time calculations
+- **Locking** of work days to prevent further modification or deletion once finalized
+- **Week summaries** per ISO year/week, accumulating overtime carried over from the previous week
+- Configurable **work time settings**: daily target minutes, break rules (for >6h and >9h work days), and a monthly home office limit
+- Endpoint to retrieve the number of **home office days** for a given month/year
+
 ### Authentication & Security
 - **JWT-based authorization** protecting core API endpoints
 - Secure user registration validated by an administrative key (`X-Admin-Key` header)
 - **Rate limiting** configured on the login endpoint to prevent brute force attempts
 - Secure password hashing using **BCrypt**
+- Account **lockout** after repeated failed login attempts
 
 ### Background Jobs
 - Scheduled database cleanup of past calendar events using a customizable cron expression
+- Scheduled database cleanup of completed past todo items using a customizable cron expression
 
 ---
 
@@ -190,6 +202,20 @@ All endpoints are also available via Swagger UI at `/swagger` when running in de
 | `PUT` | `/{id}` | Update an existing todo item's details. Requires JWT. |
 | `PATCH` | `/{id}/toggle` | Toggle completion status of a todo item. Requires JWT. |
 | `DELETE` | `/{id}` | Delete a todo item by ID. Requires JWT. |
+
+### Work Time Planner – `/api/worktimeplanner`
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/workdays` | Get work days within a date range (`startDate`, `endDate`). Requires JWT. |
+| `POST` | `/workdays` | Create a new work day. Overtime/worked minutes are calculated server-side. Requires JWT. |
+| `PUT` | `/workdays/{id}` | Update an existing work day. Fails if the work day is locked. Requires JWT. |
+| `DELETE` | `/workdays/{id}` | Delete a work day. Fails if the work day is locked. Requires JWT. |
+| `GET` | `/weeksummary` | Get the saved week summary for a given `year` and `weekNumber`. Requires JWT. |
+| `POST` | `/weeksummary` | Calculate and persist the week summary (incl. overtime carried over from the previous week) for a given `year` and `weekNumber`. Requires JWT. |
+| `GET` | `/settings` | Get the current work time settings (daily target, break rules, home office limit). Requires JWT. |
+| `PUT` | `/settings` | Update the work time settings. Requires JWT. |
+| `GET` | `/homeoffice` | Get the number of home office days for a given `year` and `month`. Requires JWT. |
 
 ### Status – `/api/status`
 

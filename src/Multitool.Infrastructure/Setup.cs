@@ -32,7 +32,8 @@ public static class Setup
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(
                 connectionString,
-                npgsqlOptions => {
+                npgsqlOptions =>
+                {
                     npgsqlOptions.EnableRetryOnFailure(
                         maxRetryCount: 10,
                         maxRetryDelay: TimeSpan.FromSeconds(5),

@@ -20,14 +20,19 @@ public class JwtTokenGeneratorTests
         {"Jwt:Audience", "test-audience"}
     };
 
+    // GenerateToken
+
     [Fact]
     public void GenerateToken_WhenConfigIsValid_ReturnsTokenWithCorrectIssuerAndAudience()
     {
+        // Arrange
         var sut = new JwtTokenGenerator(BuildConfig(ValidSettings));
         var user = new User { Id = 1, Username = "testuser" };
 
+        // Act
         var token = sut.GenerateToken(user);
 
+        // Assert
         var jwtToken = new JwtSecurityTokenHandler().ReadJwtToken(token);
         jwtToken.Issuer.Should().Be("test-issuer");
         jwtToken.Audiences.Should().Contain("test-audience");
@@ -36,11 +41,14 @@ public class JwtTokenGeneratorTests
     [Fact]
     public void GenerateToken_WhenConfigIsValid_IncludesUserIdAndUsernameClaims()
     {
+        // Arrange
         var sut = new JwtTokenGenerator(BuildConfig(ValidSettings));
         var user = new User { Id = 42, Username = "testuser" };
 
+        // Act
         var token = sut.GenerateToken(user);
 
+        // Assert
         var jwtToken = new JwtSecurityTokenHandler().ReadJwtToken(token);
         jwtToken.Claims.Should().Contain(c => c.Type == ClaimTypes.NameIdentifier && c.Value == "42");
         jwtToken.Claims.Should().Contain(c => c.Type == ClaimTypes.Name && c.Value == "testuser");
@@ -49,12 +57,15 @@ public class JwtTokenGeneratorTests
     [Fact]
     public void GenerateToken_WhenConfigIsValid_SetsExpiryToEndOfDay()
     {
+        // Arrange
         var sut = new JwtTokenGenerator(BuildConfig(ValidSettings));
         var user = new User { Id = 1, Username = "testuser" };
-
         var before = DateTime.UtcNow;
+
+        // Act
         var token = sut.GenerateToken(user);
 
+        // Assert
         var jwtToken = new JwtSecurityTokenHandler().ReadJwtToken(token);
         jwtToken.ValidTo.Should().BeCloseTo(before.AddDays(1), TimeSpan.FromSeconds(5));
     }
@@ -62,6 +73,7 @@ public class JwtTokenGeneratorTests
     [Fact]
     public void GenerateToken_WhenJwtKeyIsMissing_ThrowsJwtMissingException()
     {
+        // Arrange
         var settings = new Dictionary<string, string?>
         {
             {"Jwt:Issuer", "test-issuer"},
@@ -70,8 +82,10 @@ public class JwtTokenGeneratorTests
         var sut = new JwtTokenGenerator(BuildConfig(settings));
         var user = new User { Id = 1, Username = "testuser" };
 
+        // Act
         var act = () => sut.GenerateToken(user);
 
+        // Assert
         act.Should().Throw<JwtMissingException>();
     }
 }

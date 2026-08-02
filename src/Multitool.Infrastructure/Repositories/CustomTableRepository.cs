@@ -27,33 +27,33 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
             .Where(t => t.TableId == tableId)
             .Select(t => new Table
             {
-                TableId  = t.TableId,
-                Name     = t.Name,
+                TableId = t.TableId,
+                Name = t.Name,
                 CreatedAt = t.CreatedAt,
-                Columns  = t.Columns
+                Columns = t.Columns
                     .OrderBy(c => c.ColOrder)
                     .Select(c => new Column
                     {
-                        ColumnId  = c.ColumnId,
-                        Name      = c.Name,
-                        DataType  = c.DataType,
-                        ColOrder  = c.ColOrder
+                        ColumnId = c.ColumnId,
+                        Name = c.Name,
+                        DataType = c.DataType,
+                        ColOrder = c.ColOrder
                     })
                     .ToList(),
                 Rows = t.Rows
                     .OrderBy(r => r.RowId)
                     .Select(r => new Row
                     {
-                        RowId    = r.RowId,
+                        RowId = r.RowId,
                         RowOrder = r.RowOrder,
-                        Cells    = r.Cells.Select(c => new Cell
+                        Cells = r.Cells.Select(c => new Cell
                         {
-                            ColumnId  = c.ColumnId,
+                            ColumnId = c.ColumnId,
                             ValString = c.ValString,
-                            ValInt    = c.ValInt,
-                            ValDec    = c.ValDec,
-                            ValDate   = c.ValDate,
-                            ValBool   = c.ValBool
+                            ValInt = c.ValInt,
+                            ValDec = c.ValDec,
+                            ValDate = c.ValDate,
+                            ValBool = c.ValBool
                         }).ToList()
                     })
                     .ToList()
@@ -91,8 +91,8 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
 
         var column = new Column
         {
-            TableId  = tableId,
-            Name     = "Neue Spalte",
+            TableId = tableId,
+            Name = "Neue Spalte",
             DataType = CustomDataType.String,
             ColOrder = maxOrder + 1
         };
@@ -148,9 +148,9 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
 
         var row = new Row
         {
-            TableId   = tableId,
+            TableId = tableId,
             CreatedAt = DateTime.Now,
-            RowOrder  = maxOrder + 1
+            RowOrder = maxOrder + 1
         };
 
         await db.CustomRows.AddAsync(row);
@@ -192,10 +192,10 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
         }
 
         cell.ValString = null;
-        cell.ValInt    = null;
-        cell.ValDec    = null;
-        cell.ValDate   = null;
-        cell.ValBool   = null;
+        cell.ValInt = null;
+        cell.ValDec = null;
+        cell.ValDate = null;
+        cell.ValBool = null;
 
         switch (dataType)
         {
@@ -218,9 +218,6 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
             case CustomDataType.Bool when bool.TryParse(value?.ToString(), out var b):
                 cell.ValBool = b;
                 break;
-
-            default:
-                throw new ArgumentException($"Unsupported data type or invalid value for type {dataType}: '{value}'");
         }
 
         await db.SaveChangesAsync();
@@ -234,10 +231,10 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
 
     public async Task<Row?> GetRowAsync(long rowId)
         => await db.CustomRows.FindAsync(rowId);
-    
+
     public async Task<bool> TableExistsAsync(long tableId)
         => await db.CustomTables.AnyAsync(t => t.TableId == tableId);
-    
+
     public async Task<List<long>> GetExistingRowIdsAsync(long tableId, List<long> rowIds)
         => await db.CustomRows
             .Where(r => r.TableId == tableId && rowIds.Contains(r.RowId))

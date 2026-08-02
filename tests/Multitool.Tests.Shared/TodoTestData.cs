@@ -18,7 +18,7 @@ public static class TodoTestData
         CreationDateTime = new DateTime(2026, 6, 11, 10, 0, 0, DateTimeKind.Utc)
     };
 
-    public static readonly CreateTodoDto DefaultCreateTodoDto = new(
+    public static CreateTodoDto DefaultCreateTodoDto => new(
         "Test Todo",
         "Test Description",
         1,
@@ -26,7 +26,7 @@ public static class TodoTestData
         new DateTime(2026, 6, 11, 12, 0, 0, DateTimeKind.Utc)
     );
 
-    public static readonly UpdateTodoDto DefaultUpdateTodoDto = new(
+    public static UpdateTodoDto DefaultUpdateTodoDto => new(
         "Updated Todo",
         "Updated Description",
         2,
@@ -34,6 +34,6 @@ public static class TodoTestData
         new DateTime(2026, 6, 12, 12, 0, 0, DateTimeKind.Utc)
     );
 
-    public static readonly Category DefaultCategory = new() { Id = 1, Name = "Test Category", Color = "#000000" };
-    public static readonly Category SecondCategory = new() { Id = 2, Name = "Second Category", Color = "#FFFFFF" };
+    public static Category DefaultCategory => new() { Id = 1, Name = "Test Category", Color = "#000000" };
+    public static Category SecondCategory => new() { Id = 2, Name = "Second Category", Color = "#FFFFFF" };
 }

@@ -1,6 +1,5 @@
 using Multitool.Domain.Entities.Todo;
 using Multitool.Infrastructure.Repositories;
-using Xunit;
 
 namespace Multitool.Infrastructure.Tests;
 
@@ -12,25 +11,27 @@ public class TodoRepositoryTests : RepositoryTestBase
     public TodoRepositoryTests()
     {
         _sut = new TodoRepository(Context);
-        SetupCategory().Wait();
+        SetupCategory();
     }
 
-    private async Task SetupCategory()
+    private void SetupCategory()
     {
         var category = new Multitool.Domain.Entities.Category.Category { Name = "Test Category", Color = "#000000" };
         Context.Categories.Add(category);
-        await Context.SaveChangesAsync();
+        Context.SaveChanges();
         _categoryId = category.Id;
     }
 
+    // GetAllAsync
+
     [Fact]
-    public async Task GetAllAsync_ShouldReturnSortedTodos()
+    public async Task GetAllAsync_WhenTodosExist_ReturnsSortedTodos()
     {
         // Arrange
         var t1 = new Todo { Title = "A", CategoryId = _categoryId, IsDone = true, CreationDateTime = DateTime.UtcNow.AddMinutes(-10) };
         var t2 = new Todo { Title = "B", CategoryId = _categoryId, IsDone = false, CreationDateTime = DateTime.UtcNow.AddMinutes(-5) };
         var t3 = new Todo { Title = "C", CategoryId = _categoryId, IsDone = false, CreationDateTime = DateTime.UtcNow, Priority = 1 };
-        
+
         Context.Todos.AddRange(t1, t2, t3);
         await Context.SaveChangesAsync();
 
@@ -43,8 +44,10 @@ public class TodoRepositoryTests : RepositoryTestBase
         Assert.True(result[2].IsDone); // t1 (done is last)
     }
 
+    // GetByIdAsync
+
     [Fact]
-    public async Task GetByIdAsync_ShouldReturnTodo()
+    public async Task GetByIdAsync_WhenTodoExists_ReturnsTodo()
     {
         // Arrange
         var todo = new Todo { Title = "Test", CategoryId = _categoryId, IsDone = false };
@@ -59,8 +62,10 @@ public class TodoRepositoryTests : RepositoryTestBase
         Assert.Equal(todo.Id, result.Id);
     }
 
+    // AddAsync
+
     [Fact]
-    public async Task AddAsync_ShouldAddTodo()
+    public async Task AddAsync_WhenTodoIsValid_AddsTodo()
     {
         // Arrange
         var todo = new Todo { Title = "New", CategoryId = _categoryId, IsDone = false };
@@ -74,8 +79,10 @@ public class TodoRepositoryTests : RepositoryTestBase
         Assert.Equal("New", savedTodo.Title);
     }
 
+    // UpdateAsync
+
     [Fact]
-    public async Task UpdateAsync_ShouldUpdateTodo()
+    public async Task UpdateAsync_WhenTodoExists_UpdatesTodo()
     {
         // Arrange
         var todo = new Todo { Title = "Old", CategoryId = _categoryId, IsDone = false };
@@ -93,8 +100,10 @@ public class TodoRepositoryTests : RepositoryTestBase
         Assert.Equal("Updated", updatedTodo!.Title);
     }
 
+    // DeleteAsync
+
     [Fact]
-    public async Task DeleteAsync_ShouldRemoveTodo()
+    public async Task DeleteAsync_WhenTodoExists_RemovesTodo()
     {
         // Arrange
         var todo = new Todo { Title = "To Delete", CategoryId = _categoryId, IsDone = false };

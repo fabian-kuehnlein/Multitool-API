@@ -1,6 +1,5 @@
 using System.Text.Json;
 using Multitool.Domain.Entities.Calendar;
-using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
 using Multitool.Infrastructure.ApiClients.Models;
 
@@ -19,9 +18,6 @@ public class CalendarApiClient(HttpClient httpClient) : ICalendarApiClient
         {
             PropertyNameCaseInsensitive = true
         });
-
-        if (data is null || data.Feiertage is null || data.Feiertage.Count <= 0)
-            throw new NotFoundException($"No holidays found for year {year}");
 
         return data?.Feiertage?.Select(item => new Holiday
         {

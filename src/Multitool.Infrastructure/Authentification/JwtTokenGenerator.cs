@@ -9,6 +9,7 @@ using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
 
 namespace Multitool.Infrastructure.Authentification;
+
 public class JwtTokenGenerator(IConfiguration config) : IJwtTokenGenerator
 {
     public string GenerateToken(User user)

@@ -20,7 +20,7 @@ public class CalendarServiceTests
 
     public CalendarServiceTests()
     {
-       TypeAdapterConfig.GlobalSettings.Apply(new MappingConfig());
+        TypeAdapterConfig.GlobalSettings.Apply(new MappingConfig());
 
         _calendarRepositoryMock = new Mock<ICalendarRepository>();
         _todoRepositoryMock = new Mock<ITodoRepository>();
@@ -33,6 +33,7 @@ public class CalendarServiceTests
     [Fact]
     public async Task GetEventsByRangeAsync_WhenEventsAndTodosExist_ReturnsMergedList()
     {
+        // Arrange
         var events = new List<CalendarEvent> { CalendarTestData.DefaultEvent };
         var todos = new List<Todo> { TodoTestData.DefaultTodo };
 
@@ -43,14 +44,17 @@ public class CalendarServiceTests
             .Setup(r => r.GetTodosWithDueDateInRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
             .ReturnsAsync(todos);
 
+        // Act
         var result = await _sut.GetEventsByRangeAsync(DateTime.UtcNow, DateTime.UtcNow.AddDays(7), "");
 
+        // Assert
         result.Should().HaveCount(2);
     }
 
     [Fact]
     public async Task GetEventsByRangeAsync_WhenTodoIsIncluded_MapsTodoFieldsCorrectly()
     {
+        // Arrange
         var todo = TodoTestData.DefaultTodo;
         _calendarRepositoryMock
             .Setup(r => r.GetEventsByRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<string>()))
@@ -59,8 +63,10 @@ public class CalendarServiceTests
             .Setup(r => r.GetTodosWithDueDateInRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
             .ReturnsAsync(new List<Todo> { todo });
 
+        // Act
         var result = await _sut.GetEventsByRangeAsync(DateTime.UtcNow, DateTime.UtcNow.AddDays(7), "");
 
+        // Assert
         var todoEvent = result.Should().ContainSingle().Subject;
         todoEvent.Id.Should().Be($"todo-{todo.Id}");
         todoEvent.Title.Should().Be(todo.Title);
@@ -74,6 +80,7 @@ public class CalendarServiceTests
     [Fact]
     public async Task GetEventsByRangeAsync_WhenOnlyEventsExist_ReturnsOnlyMappedEvents()
     {
+        // Arrange
         var events = new List<CalendarEvent> { CalendarTestData.DefaultEvent };
         _calendarRepositoryMock
             .Setup(r => r.GetEventsByRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<string>()))
@@ -82,15 +89,18 @@ public class CalendarServiceTests
             .Setup(r => r.GetTodosWithDueDateInRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
             .ReturnsAsync(new List<Todo>());
 
+        // Act
         var result = await _sut.GetEventsByRangeAsync(DateTime.UtcNow, DateTime.UtcNow.AddDays(7), "");
 
+        // Assert
         result.Should().ContainSingle();
         result[0].IsTodo.Should().BeFalse();
     }
 
     [Fact]
-    public async Task GetEventsByRangeAsync_WhenTodoEndDateTimeIsSetToNextDay()
+    public async Task GetEventsByRangeAsync_WhenTodoHasDueDate_SetsEndDateTimeToNextDay()
     {
+        // Arrange
         var todo = TodoTestData.DefaultTodo;
         _calendarRepositoryMock
             .Setup(r => r.GetEventsByRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<string>()))
@@ -99,8 +109,10 @@ public class CalendarServiceTests
             .Setup(r => r.GetTodosWithDueDateInRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
             .ReturnsAsync(new List<Todo> { todo });
 
+        // Act
         var result = await _sut.GetEventsByRangeAsync(DateTime.UtcNow, DateTime.UtcNow.AddDays(7), "");
 
+        // Assert
         var todoEvent = result.Should().ContainSingle().Subject;
         todoEvent.EndDateTime.Should().Be(todo.DueDate!.Value.Date.AddDays(1));
     }
@@ -108,56 +120,68 @@ public class CalendarServiceTests
     // SearchCalendarEventsAsync
 
     [Fact]
-    public async Task SearchCalendarEventsAsync_ReturnsMappedEventSearchResponses()
+    public async Task SearchCalendarEventsAsync_WhenEventsExist_ReturnsMappedEventSearchResponses()
     {
+        // Arrange
         _calendarRepositoryMock
             .Setup(r => r.SearchCalendarEventsAsync("Meeting"))
             .ReturnsAsync(new List<CalendarEvent> { CalendarTestData.DefaultEvent });
 
+        // Act
         var result = await _sut.SearchCalendarEventsAsync("Meeting");
 
+        // Assert
         result.Should().HaveCount(1);
         result[0].EventTitle.Should().Be(CalendarTestData.DefaultEvent.Title);
     }
 
     [Fact]
-    public async Task SearchCalendarEventsAsync_ReturnsEmptyList_WhenRepositoryReturnsNoResults()
+    public async Task SearchCalendarEventsAsync_WhenRepositoryReturnsNoResults_ReturnsEmptyList()
     {
+        // Arrange
         _calendarRepositoryMock
             .Setup(r => r.SearchCalendarEventsAsync(It.IsAny<string>()))
             .ReturnsAsync(new List<CalendarEvent>());
 
+        // Act
         var result = await _sut.SearchCalendarEventsAsync("nonexistent");
 
+        // Assert
         result.Should().BeEmpty();
     }
 
     // InsertEventAsync
 
     [Fact]
-    public async Task InsertEventAsync_ReturnsIdFromRepository()
+    public async Task InsertEventAsync_WhenEventIsValid_ReturnsIdFromRepository()
     {
+        // Arrange
         const long expectedId = 99L;
         _calendarRepositoryMock
             .Setup(r => r.InsertEventAsync(It.IsAny<CalendarEvent>()))
             .ReturnsAsync(expectedId);
 
+        // Act
         var result = await _sut.InsertEventAsync(CalendarTestData.DefaultCreateEvent);
 
+        // Assert
         result.Should().Be(expectedId);
     }
 
     [Fact]
-    public async Task InsertEventAsync_MapsCreateCalendarEvent_ToCalendarEvent()
+    public async Task InsertEventAsync_WhenEventIsValid_MapsToCalendarEvent()
     {
+        // Arrange
         CalendarEvent? captured = null;
         _calendarRepositoryMock
             .Setup(r => r.InsertEventAsync(It.IsAny<CalendarEvent>()))
             .Callback<CalendarEvent>(e => captured = e)
             .ReturnsAsync(1L);
 
+        // Act
         await _sut.InsertEventAsync(CalendarTestData.DefaultCreateEvent);
 
+        // Assert
         captured.Should().NotBeNull();
         captured!.Title.Should().Be(CalendarTestData.DefaultCreateEvent.Title);
         captured.StartDateTime.Should().Be(CalendarTestData.DefaultCreateEvent.StartDateTime);
@@ -168,6 +192,7 @@ public class CalendarServiceTests
     [Fact]
     public async Task UpdateEventAsync_WhenEventExists_DelegatesToRepository()
     {
+        // Arrange
         var existingEvent = new CalendarEvent
         {
             Id = CalendarTestData.DefaultEvent.Id,
@@ -183,8 +208,10 @@ public class CalendarServiceTests
             .Setup(r => r.UpdateEventAsync(existingEvent))
             .Returns(Task.CompletedTask);
 
+        // Act
         await _sut.UpdateEventAsync(CalendarTestData.DefaultEvent);
 
+        // Assert
         _calendarRepositoryMock.Verify(r => r.UpdateEventAsync(existingEvent), Times.Once);
         existingEvent.Title.Should().Be(CalendarTestData.DefaultEvent.Title);
     }
@@ -192,12 +219,15 @@ public class CalendarServiceTests
     [Fact]
     public async Task UpdateEventAsync_WhenEventDoesNotExist_ThrowsNotFoundException()
     {
+        // Arrange
         _calendarRepositoryMock
             .Setup(r => r.GetByIdAsync(It.IsAny<int>()))
             .ReturnsAsync((CalendarEvent?)null);
 
+        // Act
         var act = () => _sut.UpdateEventAsync(CalendarTestData.DefaultEvent);
 
+        // Assert
         await act.Should().ThrowAsync<NotFoundException>();
         _calendarRepositoryMock.Verify(r => r.UpdateEventAsync(It.IsAny<CalendarEvent>()), Times.Never);
     }
@@ -207,6 +237,7 @@ public class CalendarServiceTests
     [Fact]
     public async Task DeleteEventAsync_WhenEventExists_DelegatesToRepository_WithCorrectId()
     {
+        // Arrange
         _calendarRepositoryMock
             .Setup(r => r.GetByIdAsync(CalendarTestData.DefaultEvent.Id))
             .ReturnsAsync(CalendarTestData.DefaultEvent);
@@ -214,20 +245,25 @@ public class CalendarServiceTests
             .Setup(r => r.DeleteEventAsync(CalendarTestData.DefaultEvent.Id))
             .Returns(Task.CompletedTask);
 
+        // Act
         await _sut.DeleteEventAsync(CalendarTestData.DefaultEvent.Id);
 
+        // Assert
         _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(CalendarTestData.DefaultEvent.Id), Times.Once);
     }
 
     [Fact]
     public async Task DeleteEventAsync_WhenEventDoesNotExist_ThrowsNotFoundException()
     {
+        // Arrange
         _calendarRepositoryMock
             .Setup(r => r.GetByIdAsync(It.IsAny<int>()))
             .ReturnsAsync((CalendarEvent?)null);
 
+        // Act
         var act = () => _sut.DeleteEventAsync(CalendarTestData.DefaultEvent.Id);
 
+        // Assert
         await act.Should().ThrowAsync<NotFoundException>();
         _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(It.IsAny<int>()), Times.Never);
     }
@@ -237,26 +273,32 @@ public class CalendarServiceTests
     [Fact]
     public async Task GetHolidaysAsync_DelegatesToApiClient_NotRepository()
     {
+        // Arrange
         var holidays = new List<Holiday> { CalendarTestData.DefaultHoliday };
         _apiClientMock.Setup(a => a.GetHolidaysAsync("2026")).ReturnsAsync(holidays);
 
+        // Act
         var result = await _sut.GetHolidaysAsync("2026");
 
+        // Assert
         result.Should().BeEquivalentTo(holidays);
         _apiClientMock.Verify(a => a.GetHolidaysAsync("2026"), Times.Once);
         _calendarRepositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
-    public async Task GetHolidaysAsync_ReturnsEmptyList_WhenApiReturnsNoHolidays()
+    public async Task GetHolidaysAsync_WhenApiReturnsNoHolidays_ThrowsNotFoundException()
     {
+        // Arrange
         _apiClientMock
             .Setup(a => a.GetHolidaysAsync(It.IsAny<string>()))
             .ReturnsAsync(new List<Holiday>());
 
-        var result = await _sut.GetHolidaysAsync("2026");
+        // Act
+        var act = () => _sut.GetHolidaysAsync("2026");
 
-        result.Should().BeEmpty();
+        // Assert
+        await act.Should().ThrowAsync<NotFoundException>();
     }
 
     // DeletePastEventsAsync
@@ -264,6 +306,7 @@ public class CalendarServiceTests
     [Fact]
     public async Task DeletePastEventsAsync_WhenEventIsNonRecurring_AndOldEnough_DeletesEvent()
     {
+        // Arrange
         var threshold = DateTime.UtcNow.AddMonths(-3);
         var oldEvent = CalendarTestData.DefaultEvent;
         oldEvent.StartDateTime = threshold.AddDays(-10);
@@ -273,14 +316,17 @@ public class CalendarServiceTests
         _calendarRepositoryMock.Setup(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()))
             .ReturnsAsync(new List<CalendarEvent> { oldEvent });
 
+        // Act
         await _sut.DeletePastEventsAsync(3);
 
+        // Assert
         _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(oldEvent.Id), Times.Once);
     }
 
     [Fact]
     public async Task DeletePastEventsAsync_WhenEventIsNonRecurring_AndNotOldEnough_DoesNotDelete()
     {
+        // Arrange
         var threshold = DateTime.UtcNow.AddMonths(-3);
         var recentEvent = CalendarTestData.DefaultEvent;
         recentEvent.StartDateTime = threshold.AddDays(5);
@@ -290,14 +336,17 @@ public class CalendarServiceTests
         _calendarRepositoryMock.Setup(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()))
             .ReturnsAsync(new List<CalendarEvent> { recentEvent });
 
+        // Act
         await _sut.DeletePastEventsAsync(3);
 
+        // Assert
         _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(It.IsAny<int>()), Times.Never);
     }
 
     [Fact]
     public async Task DeletePastEventsAsync_WhenEventHasNoEndDate_UsesStartDateAsThreshold()
     {
+        // Arrange
         var threshold = DateTime.UtcNow.AddMonths(-3);
         var eventWithoutEnd = CalendarTestData.DefaultEvent;
         eventWithoutEnd.StartDateTime = threshold.AddDays(-1);
@@ -307,14 +356,17 @@ public class CalendarServiceTests
         _calendarRepositoryMock.Setup(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()))
             .ReturnsAsync(new List<CalendarEvent> { eventWithoutEnd });
 
+        // Act
         await _sut.DeletePastEventsAsync(3);
 
+        // Assert
         _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(eventWithoutEnd.Id), Times.Once);
     }
 
     [Fact]
     public async Task DeletePastEventsAsync_WhenRecurringEvent_AndNoRecurrenceEnd_DoesNotDelete()
     {
+        // Arrange
         var oldEvent = CalendarTestData.DefaultEvent;
         oldEvent.StartDateTime = DateTime.UtcNow.AddYears(-2);
         oldEvent.RecurrenceRule = "FREQ=WEEKLY";
@@ -323,14 +375,17 @@ public class CalendarServiceTests
         _calendarRepositoryMock.Setup(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()))
             .ReturnsAsync(new List<CalendarEvent> { oldEvent });
 
+        // Act
         await _sut.DeletePastEventsAsync(3);
 
+        // Assert
         _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(It.IsAny<int>()), Times.Never);
     }
 
     [Fact]
     public async Task DeletePastEventsAsync_WhenRecurringEvent_AndRecurrenceEndIsOldEnough_DeletesEvent()
     {
+        // Arrange
         var threshold = DateTime.UtcNow.AddMonths(-3);
         var oldRecurring = CalendarTestData.DefaultEvent;
         oldRecurring.StartDateTime = threshold.AddYears(-1);
@@ -340,14 +395,17 @@ public class CalendarServiceTests
         _calendarRepositoryMock.Setup(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()))
             .ReturnsAsync(new List<CalendarEvent> { oldRecurring });
 
+        // Act
         await _sut.DeletePastEventsAsync(3);
 
+        // Assert
         _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(oldRecurring.Id), Times.Once);
     }
 
     [Fact]
     public async Task DeletePastEventsAsync_WhenRecurringEvent_AndRecurrenceEndIsNotOldEnough_DoesNotDelete()
     {
+        // Arrange
         var threshold = DateTime.UtcNow.AddMonths(-3);
         var activeRecurring = CalendarTestData.DefaultEvent;
         activeRecurring.StartDateTime = threshold.AddYears(-1);
@@ -357,19 +415,24 @@ public class CalendarServiceTests
         _calendarRepositoryMock.Setup(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()))
             .ReturnsAsync(new List<CalendarEvent> { activeRecurring });
 
+        // Act
         await _sut.DeletePastEventsAsync(3);
 
+        // Assert
         _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(It.IsAny<int>()), Times.Never);
     }
 
     [Fact]
     public async Task DeletePastEventsAsync_WhenNoEventsExist_DoesNotCallDelete()
     {
+        // Arrange
         _calendarRepositoryMock.Setup(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()))
             .ReturnsAsync(new List<CalendarEvent>());
 
+        // Act
         await _sut.DeletePastEventsAsync(3);
 
+        // Assert
         _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(It.IsAny<int>()), Times.Never);
     }
 }
