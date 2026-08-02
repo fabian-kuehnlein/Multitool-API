@@ -400,7 +400,7 @@ public class CustomTableRepositoryTests : RepositoryTestBase
     }
 
     [Fact]
-    public async Task UpsertCellAsync_WhenValueDoesNotMatchDataType_ThrowsArgumentException()
+    public async Task UpsertCellAsync_WhenValueDoesNotMatchDataType_StoresNoValue()
     {
         // Arrange
         var table = new Table { Name = "Table" };
@@ -412,10 +412,12 @@ public class CustomTableRepositoryTests : RepositoryTestBase
         await Context.SaveChangesAsync();
 
         // Act
-        var act = () => _sut.UpsertCellAsync(row.RowId, col.ColumnId, CustomDataType.Int, "not-a-number");
+        await _sut.UpsertCellAsync(row.RowId, col.ColumnId, CustomDataType.Int, "not-a-number");
 
         // Assert
-        await act.Should().ThrowAsync<ArgumentException>();
+        var dbCell = await Context.CustomCells.FindAsync(row.RowId, col.ColumnId);
+        dbCell.Should().NotBeNull();
+        dbCell!.ValInt.Should().BeNull();
     }
 
     [Fact]

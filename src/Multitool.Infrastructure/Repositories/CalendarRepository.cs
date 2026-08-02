@@ -79,7 +79,7 @@ public class CalendarRepository(AppDbContext db) : ICalendarRepository
         return db.CalendarEvents
             .Where(e =>
                 // Non-recurring events that ended before the threshold
-                (string.IsNullOrWhiteSpace(e.RecurrenceRule)&&
+                (string.IsNullOrWhiteSpace(e.RecurrenceRule) &&
                     ((e.EndDateTime ?? e.StartDateTime) < date))
                 ||
                 // Recurring events with a recurrence that end before the threshold

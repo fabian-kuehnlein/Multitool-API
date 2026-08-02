@@ -3,6 +3,7 @@ using Moq;
 using Multitool.Application.Models.CustomTable;
 using Multitool.Application.Services;
 using Multitool.Domain.Entities.CustomTable;
+using Multitool.Domain.Enums;
 using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
 using Multitool.Tests.Shared;
@@ -366,5 +367,29 @@ public class CustomTableServiceTests
 
         // Assert
         await act.Should().ThrowAsync<NotFoundException>();
+    }
+
+    [Fact]
+    public async Task UpsertCellAsync_WhenValueDoesNotMatchColumnDataType_ThrowsArgumentException()
+    {
+        // Arrange
+        var row = CustomTableTestData.DefaultRow;
+        var column = new Column
+        {
+            ColumnId = 2,
+            TableId = 1,
+            Name = "Number Column",
+            DataType = CustomDataType.Int,
+            ColOrder = 1
+        };
+        _repositoryMock.Setup(r => r.GetRowAsync(row.RowId)).ReturnsAsync(row);
+        _repositoryMock.Setup(r => r.GetColumnAsync(column.ColumnId)).ReturnsAsync(column);
+
+        // Act
+        var act = () => _sut.UpsertCellAsync(row.RowId, column.ColumnId, "not-a-number");
+
+        // Assert
+        await act.Should().ThrowAsync<ArgumentException>();
+        _repositoryMock.Verify(r => r.UpsertCellAsync(It.IsAny<long>(), It.IsAny<long>(), It.IsAny<CustomDataType>(), It.IsAny<object?>()), Times.Never);
     }
 }

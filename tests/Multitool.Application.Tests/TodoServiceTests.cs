@@ -241,4 +241,39 @@ public class TodoServiceTests
         await act.Should().ThrowAsync<NotFoundException>()
             .WithMessage("*99*");
     }
+
+    // DeletePastTodosAsync
+
+    [Fact]
+    public async Task DeletePastTodosAsync_WhenTodosExist_DeletesEachTodo()
+    {
+        // Arrange
+        var pastTodos = new List<Todo>
+        {
+            new() { Id = 1, Title = "Old 1", CategoryId = 1, IsDone = false },
+            new() { Id = 2, Title = "Old 2", CategoryId = 1, IsDone = false }
+        };
+        _repositoryMock.Setup(r => r.GetTodosOlderThanAsync(It.IsAny<DateTime>())).ReturnsAsync(pastTodos);
+
+        // Act
+        await _sut.DeletePastTodosAsync(30);
+
+        // Assert
+        _repositoryMock.Verify(r => r.DeleteAsync(1), Times.Once);
+        _repositoryMock.Verify(r => r.DeleteAsync(2), Times.Once);
+    }
+
+    [Fact]
+    public async Task DeletePastTodosAsync_WhenNoTodosExist_DoesNotCallDelete()
+    {
+        // Arrange
+        _repositoryMock.Setup(r => r.GetTodosOlderThanAsync(It.IsAny<DateTime>()))
+            .ReturnsAsync(new List<Todo>());
+
+        // Act
+        await _sut.DeletePastTodosAsync(30);
+
+        // Assert
+        _repositoryMock.Verify(r => r.DeleteAsync(It.IsAny<int>()), Times.Never);
+    }
 }

@@ -90,7 +90,7 @@ public class CalendarController(ICalendarService calendarService) : ControllerBa
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> GetHolidays([FromRoute]string year)
+    public async Task<IActionResult> GetHolidays([FromRoute] string year)
     {
         var result = await calendarService.GetHolidaysAsync(year);
         return Ok(result);

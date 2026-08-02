@@ -31,6 +31,7 @@ public class WorkTimePlannerController(IWorkTimePlannerService service) : Contro
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> CreateWorkDay([FromBody] WorkDay workDay)
     {
         var created = await service.CreateWorkDayAsync(workDay);
@@ -42,8 +43,10 @@ public class WorkTimePlannerController(IWorkTimePlannerService service) : Contro
     /// </summary>
     [Authorize]
     [HttpPut("workdays/{id}")]
+    [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> UpdateWorkDay([FromRoute] int id, [FromBody] WorkDay workDay)
     {
         await service.UpdateWorkDayAsync(id, workDay);
@@ -55,8 +58,10 @@ public class WorkTimePlannerController(IWorkTimePlannerService service) : Contro
     /// </summary>
     [Authorize]
     [HttpDelete("workdays/{id}")]
+    [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> DeleteWorkDay([FromRoute] int id)
     {
         await service.DeleteWorkDayAsync(id);
@@ -70,6 +75,7 @@ public class WorkTimePlannerController(IWorkTimePlannerService service) : Contro
     [HttpGet("weeksummary")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetWeekSummary([FromQuery] int year, [FromQuery] int weekNumber)
     {
         var summary = await service.GetWeekSummaryAsync(year, weekNumber);
@@ -109,8 +115,10 @@ public class WorkTimePlannerController(IWorkTimePlannerService service) : Contro
     /// </summary>
     [Authorize]
     [HttpPut("settings")]
+    [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> UpdateSettings([FromBody] WorkTimeSettings settings)
     {
         await service.UpdateSettingsAsync(settings);

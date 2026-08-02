@@ -143,12 +143,12 @@ public class AuthenticationServiceTests
     public async Task LoginAsync_After5Failures_SetsLockoutEnd()
     {
         // Arrange
-        var user = new User 
-        { 
-            Id = 1, 
-            Username = "lockout-user", 
+        var user = new User
+        {
+            Id = 1,
+            Username = "lockout-user",
             PasswordHash = "hash",
-            AccessFailedCount = 4 
+            AccessFailedCount = 4
         };
         var request = new LoginRequest(user.Username, "wrong-pass");
 
@@ -160,7 +160,7 @@ public class AuthenticationServiceTests
 
         // Assert
         await act.Should().ThrowAsync<InvalidCredentialException>();
-        
+
         user.AccessFailedCount.Should().Be(5);
         user.LockoutEnd.Should().NotBeNull();
         user.LockoutEnd.Value.Should().BeAfter(DateTime.UtcNow);

@@ -1,6 +1,7 @@
 namespace Multitool.Application.Models.Calendar;
 
-public record CalendarEventDto {
+public record CalendarEventDto
+{
     public string Id { get; set; } = default!;
     public string Title { get; set; } = default!;
     public string? Note { get; set; }

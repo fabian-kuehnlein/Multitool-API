@@ -1,7 +1,9 @@
+using System.Globalization;
 using Mapster;
 using Multitool.Application.Interfaces;
 using Multitool.Application.Models.CustomTable;
 using Multitool.Domain.Entities.CustomTable;
+using Multitool.Domain.Enums;
 using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
 using Multitool.Application.Models.Info;
@@ -75,7 +77,7 @@ public class CustomTableService(ICustomTableRepository customtableRepository) : 
 
         var typeChanged = existing.DataType != dto.DataType;
 
-        existing.Name     = dto.Name;
+        existing.Name = dto.Name;
         existing.DataType = dto.DataType;
         existing.ColOrder = dto.ColOrder;
 
@@ -132,6 +134,22 @@ public class CustomTableService(ICustomTableRepository customtableRepository) : 
         if (column == null)
             throw new NotFoundException($"Column with Id {columnId} not found");
 
+        if (!CanParseValue(column.DataType, newValue))
+            throw new ArgumentException($"Unsupported data type or invalid value for type {column.DataType}: '{newValue}'");
+
         await customtableRepository.UpsertCellAsync(rowId, columnId, column.DataType, newValue);
+    }
+
+    private static bool CanParseValue(CustomDataType dataType, object? value)
+    {
+        return dataType switch
+        {
+            CustomDataType.String => true,
+            CustomDataType.Int => long.TryParse(value?.ToString(), NumberStyles.Integer, CultureInfo.InvariantCulture, out _),
+            CustomDataType.Decimal => decimal.TryParse(value?.ToString(), NumberStyles.Number, CultureInfo.InvariantCulture, out _),
+            CustomDataType.Date => DateTime.TryParse(value?.ToString(), CultureInfo.InvariantCulture, DateTimeStyles.None, out _),
+            CustomDataType.Bool => bool.TryParse(value?.ToString(), out _),
+            _ => false
+        };
     }
 }

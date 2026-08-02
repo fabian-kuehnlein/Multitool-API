@@ -1,6 +1,5 @@
 using Multitool.Domain.Entities.Todo;
 using Multitool.Infrastructure.Repositories;
-using Xunit;
 
 namespace Multitool.Infrastructure.Tests;
 
@@ -12,14 +11,14 @@ public class TodoRepositoryTests : RepositoryTestBase
     public TodoRepositoryTests()
     {
         _sut = new TodoRepository(Context);
-        SetupCategory().Wait();
+        SetupCategory();
     }
 
-    private async Task SetupCategory()
+    private void SetupCategory()
     {
         var category = new Multitool.Domain.Entities.Category.Category { Name = "Test Category", Color = "#000000" };
         Context.Categories.Add(category);
-        await Context.SaveChangesAsync();
+        Context.SaveChanges();
         _categoryId = category.Id;
     }
 
@@ -32,7 +31,7 @@ public class TodoRepositoryTests : RepositoryTestBase
         var t1 = new Todo { Title = "A", CategoryId = _categoryId, IsDone = true, CreationDateTime = DateTime.UtcNow.AddMinutes(-10) };
         var t2 = new Todo { Title = "B", CategoryId = _categoryId, IsDone = false, CreationDateTime = DateTime.UtcNow.AddMinutes(-5) };
         var t3 = new Todo { Title = "C", CategoryId = _categoryId, IsDone = false, CreationDateTime = DateTime.UtcNow, Priority = 1 };
-        
+
         Context.Todos.AddRange(t1, t2, t3);
         await Context.SaveChangesAsync();
 

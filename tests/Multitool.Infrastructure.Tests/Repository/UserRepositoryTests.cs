@@ -48,4 +48,14 @@ public class UserRepositoryTests : RepositoryTestBase
         result.Should().NotBeNull();
         result!.Username.Should().Be("findme");
     }
+
+    [Fact]
+    public async Task GetByUsernameAsync_WhenUserDoesNotExist_ReturnsNull()
+    {
+        // Act
+        var result = await _sut.GetByUsernameAsync("nobody");
+
+        // Assert
+        result.Should().BeNull();
+    }
 }

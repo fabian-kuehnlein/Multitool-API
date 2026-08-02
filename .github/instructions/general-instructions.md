@@ -14,3 +14,4 @@ For more specific rules, see the path-based files in `.github/instructions/`:
 - Point out violations of SOLID principles, unnecessary duplication, and missing error handling in the right place.
 - Prefer readability and consistency with existing code over personal style.
 - Only comment when a rule from the linked instructions files is violated or a real risk exists (bug, security, performance) – no pure matters of taste without justification.
+- Unused `using` directives must be removed to maintain a clean codebase and avoid unnecessary dependencies.

@@ -12,7 +12,7 @@ public static class Setup
     {
         var config = TypeAdapterConfig.GlobalSettings;
         config.Scan(Assembly.GetExecutingAssembly());
-        
+
         services.AddMapster();
 
         services.AddScoped<IAuthenticationService, AuthenticationService>();

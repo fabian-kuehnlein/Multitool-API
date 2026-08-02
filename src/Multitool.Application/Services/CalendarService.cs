@@ -10,7 +10,7 @@ namespace Multitool.Application.Services;
 public class CalendarService(ICalendarRepository calendarRepository, ITodoRepository todoRepository, ICalendarApiClient calendarApiClient) : ICalendarService
 {
     public async Task<List<CalendarEventDto>> GetEventsByRangeAsync(DateTime start, DateTime end, string categories)
-    {   
+    {
         var events = await calendarRepository.GetEventsByRangeAsync(start, end, categories);
 
         var eventDtos = events.Adapt<List<CalendarEventDto>>();
@@ -52,14 +52,14 @@ public class CalendarService(ICalendarRepository calendarRepository, ITodoReposi
         if (existing == null)
             throw new NotFoundException($"Event with Id {calendarEvent.Id} not found");
 
-        existing.Title          = calendarEvent.Title;
-        existing.Note           = calendarEvent.Note;
-        existing.StartDateTime  = calendarEvent.StartDateTime;
-        existing.EndDateTime    = calendarEvent.EndDateTime;
-        existing.IsAllDay       = calendarEvent.IsAllDay;
-        existing.CategoryId     = calendarEvent.CategoryId;
+        existing.Title = calendarEvent.Title;
+        existing.Note = calendarEvent.Note;
+        existing.StartDateTime = calendarEvent.StartDateTime;
+        existing.EndDateTime = calendarEvent.EndDateTime;
+        existing.IsAllDay = calendarEvent.IsAllDay;
+        existing.CategoryId = calendarEvent.CategoryId;
         existing.RecurrenceRule = calendarEvent.RecurrenceRule;
-        existing.RecurrenceEnd  = calendarEvent.RecurrenceEnd;
+        existing.RecurrenceEnd = calendarEvent.RecurrenceEnd;
 
         await calendarRepository.UpdateEventAsync(existing);
     }
@@ -75,10 +75,17 @@ public class CalendarService(ICalendarRepository calendarRepository, ITodoReposi
     }
 
     public async Task<List<Holiday>> GetHolidaysAsync(string year)
-        => await calendarApiClient.GetHolidaysAsync(year);
+    {
+        var holidays = await calendarApiClient.GetHolidaysAsync(year);
+
+        if (holidays.Count == 0)
+            throw new NotFoundException($"No holidays found for year {year}");
+
+        return holidays;
+    }
 
     public async Task DeletePastEventsAsync(int months)
-    { 
+    {
         var threshold = DateTime.Now.AddMonths(-months);
 
         var events = await calendarRepository.GetEventsOlderThanAsync(threshold);

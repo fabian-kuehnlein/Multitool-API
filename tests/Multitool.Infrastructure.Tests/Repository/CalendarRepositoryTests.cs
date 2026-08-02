@@ -173,7 +173,7 @@ public class CalendarRepositoryTests : RepositoryTestBase
     public async Task GetEventsByRangeAsync_WhenCategoriesProvided_FiltersByCategory()
     {
         // Arrange
-        var category2 = new Category{ Id = 2, Name = "Familie", Color = "#5d26b6" };
+        var category2 = new Category { Id = 2, Name = "Familie", Color = "#5d26b6" };
         Context.Categories.AddRange(DefaultCategory, category2);
         Context.CalendarEvents.AddRange(
             new CalendarEvent { Title = "Cat1", StartDateTime = Start, EndDateTime = Start.AddHours(1), CategoryId = DefaultCategory.Id, IsAllDay = false },

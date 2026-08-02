@@ -20,7 +20,7 @@ public class CalendarServiceTests
 
     public CalendarServiceTests()
     {
-       TypeAdapterConfig.GlobalSettings.Apply(new MappingConfig());
+        TypeAdapterConfig.GlobalSettings.Apply(new MappingConfig());
 
         _calendarRepositoryMock = new Mock<ICalendarRepository>();
         _todoRepositoryMock = new Mock<ITodoRepository>();
@@ -287,7 +287,7 @@ public class CalendarServiceTests
     }
 
     [Fact]
-    public async Task GetHolidaysAsync_WhenApiReturnsNoHolidays_ReturnsEmptyList()
+    public async Task GetHolidaysAsync_WhenApiReturnsNoHolidays_ThrowsNotFoundException()
     {
         // Arrange
         _apiClientMock
@@ -295,10 +295,10 @@ public class CalendarServiceTests
             .ReturnsAsync(new List<Holiday>());
 
         // Act
-        var result = await _sut.GetHolidaysAsync("2026");
+        var act = () => _sut.GetHolidaysAsync("2026");
 
         // Assert
-        result.Should().BeEmpty();
+        await act.Should().ThrowAsync<NotFoundException>();
     }
 
     // DeletePastEventsAsync

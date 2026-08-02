@@ -34,9 +34,9 @@ public class MappingConfig : IRegister
 
     private static object? CellValue(Cell cell) =>
         cell.ValString is not null ? (object?)cell.ValString :
-        cell.ValInt    is not null ? (object?)cell.ValInt    :
-        cell.ValDec    is not null ? (object?)cell.ValDec    :
-        cell.ValDate   is not null ? (object?)cell.ValDate   :
-        cell.ValBool   is not null ? (object?)cell.ValBool   :
+        cell.ValInt is not null ? (object?)cell.ValInt :
+        cell.ValDec is not null ? (object?)cell.ValDec :
+        cell.ValDate is not null ? (object?)cell.ValDate :
+        cell.ValBool is not null ? (object?)cell.ValBool :
         null;
 }
