@@ -1,6 +1,6 @@
 using Multitool.Domain.Interfaces;
 
-namespace Multitool.Infrastructure.Authentification;
+namespace Multitool.Infrastructure.Authentication;
 
 public class PasswordHasher : IPasswordHasher
 {

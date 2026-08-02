@@ -2,7 +2,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Multitool.Domain.Entities.Config;
 using Multitool.Domain.Exceptions;
-using Multitool.Infrastructure.Authentification;
+using Multitool.Infrastructure.Authentication;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 

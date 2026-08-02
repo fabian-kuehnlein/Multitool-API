@@ -8,7 +8,7 @@ using System.Text;
 using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
 
-namespace Multitool.Infrastructure.Authentification;
+namespace Multitool.Infrastructure.Authentication;
 
 public class JwtTokenGenerator(IConfiguration config) : IJwtTokenGenerator
 {

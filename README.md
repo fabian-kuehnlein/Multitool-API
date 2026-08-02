@@ -132,7 +132,7 @@ Multitool.sln
 │   │
 │   └── Multitool.Infrastructure/       # EF Core, repositories, API clients, authentication helpers
 │       ├── ApiClients/
-│       ├── Authentification/
+│       ├── Authentication/
 │       ├── Data/
 │       │   ├── Migrations/
 │       │   ├── AppDbContext.cs
@@ -231,15 +231,16 @@ Configure the following environment variables or configuration keys in your `app
 
 | Variable | Description |
 |---|---|
-| `DB_CONNECTION_STRING` | Connection string to the PostgreSQL database |
+| `AdminKey` | Key checked on user registration via `X-Admin-Key` header |
+| `ASPNETCORE_ENVIRONMENT` | Runtime environment, e.g. `Development` or `Production` |
+| `ConnectionStrings__DefaultConnection` | Connection string to the PostgreSQL database |
+| `CronJobs__CleanUpPastEvents` | Cron expression for background cleanup of calendar events |
+| `CronJobs__CleanUpPastEventsMonths` | Months of past calendar events to retain during cleanup (default: `3`) |
+| `CronJobs__CleanUpPastTodos` | Cron expression for background cleanup of calendar events |
+| `CronJobs__CleanUpPastTodosDays` | Days of past todos to retain during cleanup (default: `14`) |
 | `Jwt__Key` | Secret key used to sign JWT session tokens (required) |
 | `Jwt__Issuer` | Issuer of the JWT session tokens (default: `MultitoolApi`) |
 | `Jwt__Audience` | Audience of the JWT session tokens (default: `MultitoolFrontend`) |
-| `AdminKey` | Key checked on user registration via `X-Admin-Key` header |
-| `APPLY_MIGRATIONS` | Set to `true` to run migrations on startup in development environment |
-| `ASPNETCORE_ENVIRONMENT` | Runtime environment, e.g. `Development` or `Production` |
-| `CronJobs__CleanUpPastEvents` | Cron expression for background cleanup of calendar events (default: `0 0 1 * *`) |
-| `CronJobs__CleanUpPastEventsMonths` | Months of past calendar events to retain during cleanup (default: `3`) |
 
 ---
 
