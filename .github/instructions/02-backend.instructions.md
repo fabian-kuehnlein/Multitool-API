@@ -2,13 +2,15 @@
 applyTo: "**/*.cs"
 ---
 
-# .NET Backend Guidelines
+# Backend Conventions
 
 ## Purpose
 
-This file describes the conventions for the .NET/C# backend code in this repo
-(controllers, services, repositories, models). For unit-test-specific rules, see
-`dotnet-unittests.instructions.md`.
+This file defines the project-specific conventions for the .NET/C# production code
+(controllers, services, repositories, models). It applies to `**/*.cs`.
+
+Baseline are the Microsoft .NET/C# conventions (see `01-general.instructions.md`);
+this file only adds what differs. For unit-test-specific rules, see `03-testing.instructions.md`.
 
 ## General
 

@@ -5,12 +5,13 @@ applyTo:
   - "**/*Test.cs"
 ---
 
-# .NET Unit Test Guidelines
+# Test Conventions
 
 ## Purpose
 
-Conventions for unit tests in the .NET backend (controller tests, application-/service tests,
-repository tests). Complements `dotnet-backend.instructions.md`.
+Conventions for all unit tests in the .NET backend (controller tests, application-/service tests,
+repository tests). Complements `02-backend.instructions.md`; the Microsoft .NET/C# conventions
+are the baseline (see `01-general.instructions.md`).
 
 ## Naming Convention
 
@@ -154,8 +155,8 @@ of the respective test method. Example:
 
 ```csharp
 // Arrange
-var event = CalendarEvent CalendarTestData.DefaultEvent;
-event.CategoryId = 2;
+var calendarEvent = CalendarTestData.DefaultEvent;
+calendarEvent.CategoryId = 2;
 ```
 
 Important:
