@@ -1,3 +1,6 @@
+using System.Collections.Specialized;
+using System.Globalization;
+using System.Web;
 using FluentAssertions;
 using Mapster;
 using Moq;
@@ -301,6 +304,113 @@ public class CalendarServiceTests
         await act.Should().ThrowAsync<NotFoundException>();
     }
 
+    // GetICalLinkAsync
+
+    [Fact]
+    public async Task GetICalLinkAsync_WhenEndDateTimeIsSet_ReturnsLinkWithAllQueryParameters()
+    {
+        // Arrange
+        var calendarEvent = CalendarTestData.DefaultICalLinkEvent;
+
+        // Act
+        var result = await _sut.GetICalLinkAsync(calendarEvent);
+
+        // Assert
+        var query = ParseQuery(result);
+        query["title"].Should().Be("Team Meeting");
+        query["start"].Should().Be("2026-06-01T09:00:00.0000000Z");
+        query["end"].Should().Be("2026-06-01T10:00:00.0000000Z");
+        query["description"].Should().Be("Besprechung Projekt Updates");
+    }
+
+    [Fact]
+    public async Task GetICalLinkAsync_WhenEndDateTimeIsNull_AddsOneHourToStartAsEnd()
+    {
+        // Arrange
+        var calendarEvent = CalendarTestData.DefaultICalLinkEvent with { EndDateTime = null };
+
+        // Act
+        var result = await _sut.GetICalLinkAsync(calendarEvent);
+
+        // Assert
+        var query = ParseQuery(result);
+        query["start"].Should().Be("2026-06-01T09:00:00.0000000Z");
+        query["end"].Should().Be("2026-06-01T10:00:00.0000000Z");
+    }
+
+    [Fact]
+    public async Task GetICalLinkAsync_WhenEndDateTimeEqualsStartDateTime_AddsOneHourToEnd()
+    {
+        // Arrange
+        var calendarEvent = CalendarTestData.DefaultICalLinkEvent with
+        {
+            EndDateTime = CalendarTestData.DefaultICalLinkEvent.StartDateTime
+        };
+
+        // Act
+        var result = await _sut.GetICalLinkAsync(calendarEvent);
+
+        // Assert
+        var query = ParseQuery(result);
+        query["start"].Should().Be("2026-06-01T09:00:00.0000000Z");
+        query["end"].Should().Be("2026-06-01T10:00:00.0000000Z");
+    }
+
+    [Fact]
+    public async Task GetICalLinkAsync_WhenNoteIsNull_SetsEmptyDescription()
+    {
+        // Arrange
+        var calendarEvent = CalendarTestData.DefaultICalLinkEvent with { Note = null };
+
+        // Act
+        var result = await _sut.GetICalLinkAsync(calendarEvent);
+
+        // Assert
+        var query = ParseQuery(result);
+        query["description"].Should().BeEmpty();
+        query["title"].Should().Be("Team Meeting");
+    }
+
+    [Fact]
+    public async Task GetICalLinkAsync_WhenEndDateTimeIsBeforeStartDateTime_AddsOneHourToEnd()
+    {
+        // Arrange
+        var calendarEvent = CalendarTestData.DefaultICalLinkEvent with
+        {
+            EndDateTime = CalendarTestData.DefaultICalLinkEvent.StartDateTime.AddMinutes(-30)
+        };
+
+        // Act
+        var result = await _sut.GetICalLinkAsync(calendarEvent);
+
+        // Assert
+        var query = ParseQuery(result);
+        query["start"].Should().Be("2026-06-01T09:00:00.0000000Z");
+        query["end"].Should().Be("2026-06-01T09:30:00.0000000Z");
+    }
+
+    [Fact]
+    public async Task GetICalLinkAsync_WhenDatesAreLocal_ConvertsToUtcInLink()
+    {
+        // Arrange
+        var calendarEvent = CalendarTestData.DefaultICalLinkEvent with
+        {
+            StartDateTime = new DateTime(2026, 6, 1, 9, 0, 0, DateTimeKind.Local),
+            EndDateTime = new DateTime(2026, 6, 1, 10, 0, 0, DateTimeKind.Local)
+        };
+
+        // Act
+        var result = await _sut.GetICalLinkAsync(calendarEvent);
+
+        // Assert
+        var query = ParseQuery(result);
+        query["start"].Should().EndWith("Z");
+        query["end"].Should().EndWith("Z");
+        DateTime.Parse(query["start"]!, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal)
+            .Should()
+            .Be(calendarEvent.StartDateTime.ToUniversalTime());
+    }
+
     // DeletePastEventsAsync
 
     [Fact]
@@ -434,5 +544,11 @@ public class CalendarServiceTests
 
         // Assert
         _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(It.IsAny<int>()), Times.Never);
+    }
+
+    private static NameValueCollection ParseQuery(string link)
+    {
+        var query = link[(link.IndexOf('?') + 1)..];
+        return HttpUtility.ParseQueryString(query);
     }
 }

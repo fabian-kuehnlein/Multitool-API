@@ -95,4 +95,18 @@ public class CalendarController(ICalendarService calendarService) : ControllerBa
         var result = await calendarService.GetHolidaysAsync(year);
         return Ok(result);
     }
+
+    /// <summary>
+    /// Returns a link to download the given event as an iCal file.
+    /// </summary>
+    [Authorize]
+    [HttpPost("events/ical-link")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> GetICalLink([FromBody] GetICalLinkDto calendarEvent)
+    {
+        var result = await calendarService.GetICalLinkAsync(calendarEvent);
+        return Ok(result);
+    }
 }
