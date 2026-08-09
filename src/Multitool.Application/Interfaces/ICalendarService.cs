@@ -12,4 +12,5 @@ public interface ICalendarService
     Task DeleteEventAsync(int id);
     Task<List<Holiday>> GetHolidaysAsync(string year);
     Task DeletePastEventsAsync(int months);
+    Task<string> GetICalLinkAsync(GetICalLinkDto calendarEvent);
 }

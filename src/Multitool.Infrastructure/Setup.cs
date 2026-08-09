@@ -2,7 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Multitool.Domain.Interfaces;
 using Multitool.Infrastructure.ApiClients;
-using Multitool.Infrastructure.Authentification;
+using Multitool.Infrastructure.Authentication;
 using Multitool.Infrastructure.Data;
 using Multitool.Infrastructure.Repositories;
 

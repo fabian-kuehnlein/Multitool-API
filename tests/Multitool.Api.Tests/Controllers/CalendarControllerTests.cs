@@ -149,4 +149,24 @@ public class CalendarControllerTests
         var ok = result.Should().BeOfType<OkObjectResult>().Subject;
         ok.Value.Should().BeEquivalentTo(holidays);
     }
+
+    // POST api/Calendar/events/ical-link
+
+    [Fact]
+    public async Task GetICalLink_WhenEventIsValid_ReturnsOkWithLink()
+    {
+        // Arrange
+        var calendarEvent = CalendarTestData.DefaultICalLinkEvent;
+        const string expectedLink = "https://api.getcal.link/event.ics?title=Team+Meeting";
+        _serviceMock
+            .Setup(s => s.GetICalLinkAsync(calendarEvent))
+            .ReturnsAsync(expectedLink);
+
+        // Act
+        var result = await _sut.GetICalLink(calendarEvent);
+
+        // Assert
+        var ok = result.Should().BeOfType<OkObjectResult>().Subject;
+        ok.Value.Should().Be(expectedLink);
+    }
 }
