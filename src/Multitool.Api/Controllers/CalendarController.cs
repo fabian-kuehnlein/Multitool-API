@@ -2,7 +2,6 @@ using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Multitool.Application.Interfaces;
-using Multitool.Domain.Entities.Calendar;
 using Multitool.Application.Models.Calendar;
 
 namespace Multitool.Api.Controllers;
@@ -40,7 +39,7 @@ public class CalendarController(ICalendarService calendarService) : ControllerBa
     }
 
     /// <summary>
-    /// Inserts a new calendar event
+    /// Inserts a new calendar event.
     /// </summary>
     [Authorize]
     [HttpPost("events")]
@@ -54,21 +53,22 @@ public class CalendarController(ICalendarService calendarService) : ControllerBa
     }
 
     /// <summary>
-    /// Updates an existing calendar event
+    /// Updates an existing calendar event.
     /// </summary>
     [Authorize]
-    [HttpPut("events")]
+    [HttpPut("events/{id}")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> UpdateEvent([FromBody] CalendarEvent calendarEvent)
+    public async Task<IActionResult> UpdateEvent([FromRoute] int id, [FromBody] UpdateCalendarEventDto dto)
     {
-        await calendarService.UpdateEventAsync(calendarEvent);
+        await calendarService.UpdateEventAsync(id, dto);
         return NoContent();
     }
 
     /// <summary>
-    /// Deletes an existing calendar event via its Id
+    /// Deletes an existing calendar event via its Id.
     /// </summary>
     [Authorize]
     [HttpDelete("events/{id}")]

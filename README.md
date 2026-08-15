@@ -1,6 +1,6 @@
 # Multitool API
 
-A RESTful Web API built with **.NET 10** and **ASP.NET Core**, serving as the backend for the Multitool Frontend (repository will be published soon).
+A RESTful Web API built with **.NET 10** and **ASP.NET Core**, serving as the backend for the [Multitool Frontend](https://github.com/fabian-kuehnlein/Multitool-Frontend.git).
 The application follows a **Clean Architecture** pattern and currently provides the following features:
 - **Authentication & Security** with JWT-based protection and rate limiting.
 - **Calendar** with recurring event support.

@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Multitool.Api.Controllers;
 using Multitool.Application.Interfaces;
-using Multitool.Domain.Entities.Calendar;
 using Multitool.Tests.Shared;
 using Multitool.Application.Models.Calendar;
 
@@ -96,19 +95,20 @@ public class CalendarControllerTests
         ok.Value.Should().Be(expectedId);
     }
 
-    // PUT api/Calendar/events
+    // PUT api/Calendar/events/{id}
 
     [Fact]
     public async Task UpdateEvent_WhenUpdateSucceeds_ReturnsNoContent()
     {
         // Arrange
-        var calendarEvent = CalendarTestData.DefaultEvent;
+        var dto = CalendarTestData.DefaultUpdateEvent;
+        const int eventId = 1;
         _serviceMock
-            .Setup(s => s.UpdateEventAsync(calendarEvent))
+            .Setup(s => s.UpdateEventAsync(eventId, dto))
             .Returns(Task.CompletedTask);
 
         // Act
-        var result = await _sut.UpdateEvent(calendarEvent);
+        var result = await _sut.UpdateEvent(eventId, dto);
 
         // Assert
         result.Should().BeOfType<NoContentResult>();
@@ -138,7 +138,7 @@ public class CalendarControllerTests
     public async Task GetHolidays_WhenHolidaysExist_ReturnsOkWithHolidays()
     {
         // Arrange
-        var holidays = new List<Holiday> { CalendarTestData.DefaultHoliday };
+        var holidays = new List<HolidayDto> { new() { Name = "Neujahr", Date = new DateTime(2026, 1, 1) } };
         const string year = "2026";
         _serviceMock.Setup(s => s.GetHolidaysAsync(year)).ReturnsAsync(holidays);
 

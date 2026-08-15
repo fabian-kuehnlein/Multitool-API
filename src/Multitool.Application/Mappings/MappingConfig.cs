@@ -1,6 +1,8 @@
 using Mapster;
+using Multitool.Domain.Entities.Todo;
 using Multitool.Domain.Entities.Calendar;
 using Multitool.Domain.Entities.CustomTable;
+using Multitool.Application.Models;
 using Multitool.Application.Models.CustomTable;
 using Multitool.Application.Models.Calendar;
 using Multitool.Application.Models.Info;
@@ -22,6 +24,12 @@ public class MappingConfig : IRegister
 
         // -----------------------------------------------------------------
 
+        config.NewConfig<CreateTodoDto, Todo>()
+            .Map(dest => dest.IsDone, src => false)
+            .Map(dest => dest.CreationDateTime, src => DateTime.Now);
+
+        // -----------------------------------------------------------------
+
         config.NewConfig<Row, RowInfo>()
             .Map(dest => dest.Cells, src => src.Cells.ToDictionary(
                 c => c.ColumnId,
@@ -29,7 +37,8 @@ public class MappingConfig : IRegister
             ));
 
         config.NewConfig<CreateTableDto, Table>()
-            .Map(dest => dest.CreatedAt, src => DateTime.Now);
+            .Map(dest => dest.CreatedAt, src => DateTime.Now)
+            .Map(dest => dest.Columns, src => new List<Column> { src.Column.Adapt<Column>() });
     }
 
     private static object? CellValue(Cell cell) =>

@@ -46,21 +46,21 @@ public class CalendarService(ICalendarRepository calendarRepository, ITodoReposi
     public async Task<long> InsertEventAsync(CreateCalendarEventDto newEvent)
         => await calendarRepository.InsertEventAsync(newEvent.Adapt<CalendarEvent>());
 
-    public async Task UpdateEventAsync(CalendarEvent calendarEvent)
+    public async Task UpdateEventAsync(int id, UpdateCalendarEventDto updateCalendarEventDto)
     {
-        var existing = await calendarRepository.GetByIdAsync(calendarEvent.Id);
+        var existing = await calendarRepository.GetByIdAsync(id);
 
         if (existing == null)
-            throw new NotFoundException($"Event with Id {calendarEvent.Id} not found");
+            throw new NotFoundException($"Event with Id {id} not found");
 
-        existing.Title = calendarEvent.Title;
-        existing.Note = calendarEvent.Note;
-        existing.StartDateTime = calendarEvent.StartDateTime;
-        existing.EndDateTime = calendarEvent.EndDateTime;
-        existing.IsAllDay = calendarEvent.IsAllDay;
-        existing.CategoryId = calendarEvent.CategoryId;
-        existing.RecurrenceRule = calendarEvent.RecurrenceRule;
-        existing.RecurrenceEnd = calendarEvent.RecurrenceEnd;
+        existing.Title = updateCalendarEventDto.Title;
+        existing.Note = updateCalendarEventDto.Note;
+        existing.StartDateTime = updateCalendarEventDto.StartDateTime;
+        existing.EndDateTime = updateCalendarEventDto.EndDateTime;
+        existing.IsAllDay = updateCalendarEventDto.IsAllDay;
+        existing.CategoryId = updateCalendarEventDto.CategoryId;
+        existing.RecurrenceRule = updateCalendarEventDto.RecurrenceRule;
+        existing.RecurrenceEnd = updateCalendarEventDto.RecurrenceEnd;
 
         await calendarRepository.UpdateEventAsync(existing);
     }
@@ -75,14 +75,14 @@ public class CalendarService(ICalendarRepository calendarRepository, ITodoReposi
         await calendarRepository.DeleteEventAsync(id);
     }
 
-    public async Task<List<Holiday>> GetHolidaysAsync(string year)
+    public async Task<List<HolidayDto>> GetHolidaysAsync(string year)
     {
         var holidays = await calendarApiClient.GetHolidaysAsync(year);
 
         if (holidays.Count == 0)
             throw new NotFoundException($"No holidays found for year {year}");
 
-        return holidays;
+        return holidays.Adapt<List<HolidayDto>>();
     }
 
     public Task<string> GetICalLinkAsync(GetICalLinkDto calendarEvent)

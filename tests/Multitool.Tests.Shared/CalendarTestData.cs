@@ -39,6 +39,17 @@ public static class CalendarTestData
         null
     );
 
+    public static UpdateCalendarEventDto DefaultUpdateEvent => new(
+        "Updated Meeting",
+        "Aktualisierte Besprechung",
+        new DateTime(2026, 6, 1, 10, 0, 0),
+        new DateTime(2026, 6, 1, 11, 0, 0),
+        false,
+        1,
+        null,
+        null
+    );
+
     public static GetICalLinkDto DefaultICalLinkEvent => new(
         "Team Meeting",
         "Besprechung Projekt Updates",

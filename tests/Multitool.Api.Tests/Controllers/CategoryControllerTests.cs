@@ -3,8 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Multitool.Api.Controllers;
 using Multitool.Application.Interfaces;
-using Multitool.Domain.Entities.Category;
-using Multitool.Tests.Shared;
+using Multitool.Application.Models;
 
 namespace Multitool.Api.Tests.Controllers;
 
@@ -25,7 +24,7 @@ public class CategoryControllerTests
     public async Task GetCategories_WhenCategoriesExist_ReturnsOkWithCategories()
     {
         // Arrange
-        var categories = new List<Category> { CalendarTestData.DefaultCategory };
+        var categories = new List<CategoryDto> { new() { Id = 1, Name = "Arbeit", Color = "#FF0000" } };
         _serviceMock.Setup(s => s.GetCategoriesAsync()).ReturnsAsync(categories);
 
         // Act

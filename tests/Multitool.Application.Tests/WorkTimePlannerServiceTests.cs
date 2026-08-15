@@ -1,5 +1,7 @@
 using FluentAssertions;
+using Mapster;
 using Moq;
+using Multitool.Application.Models.WorkTimePlanner;
 using Multitool.Application.Services;
 using Multitool.Domain.Entities.WorkTimePlanner;
 using Multitool.Domain.Exceptions;
@@ -48,7 +50,7 @@ public class WorkTimePlannerServiceTests
         var result = await _sut.GetWorkDaysAsync(DateTime.UtcNow, DateTime.UtcNow.AddDays(7));
 
         // Assert
-        result.Should().BeEquivalentTo(workDays);
+        result.Should().BeEquivalentTo(workDays.Adapt<List<WorkDayDto>>());
     }
 
     // GetWorkDayByIdAsync
@@ -64,7 +66,7 @@ public class WorkTimePlannerServiceTests
         var result = await _sut.GetWorkDayByIdAsync(1);
 
         // Assert
-        result.Should().BeEquivalentTo(workDay);
+        result.Should().BeEquivalentTo(workDay.Adapt<WorkDayDto>());
     }
 
     [Fact]
@@ -86,17 +88,17 @@ public class WorkTimePlannerServiceTests
     public async Task CreateWorkDayAsync_WhenStartAndEndTimeProvided_CalculatesWorkAndOvertimeMinutes()
     {
         // Arrange
-        var workDay = new WorkDay
-        {
-            Status = DayStatus.Normal,
-            StartTime = new TimeOnly(8, 0),
-            EndTime = new TimeOnly(17, 30),
-            BreakMinutes = 30
-        };
+        var dto = new CreateWorkDayDto(
+            DateTime.UtcNow,
+            new TimeOnly(8, 0),
+            new TimeOnly(17, 30),
+            30,
+            false,
+            DayStatus.Normal);
         _settingsRepositoryMock.Setup(r => r.GetAsync()).ReturnsAsync(DefaultSettings);
 
         // Act
-        var result = await _sut.CreateWorkDayAsync(workDay);
+        var result = await _sut.CreateWorkDayAsync(dto);
 
         // Assert
         result.WorkMinutes.Should().Be(540);
@@ -107,17 +109,17 @@ public class WorkTimePlannerServiceTests
     public async Task CreateWorkDayAsync_WhenStatusIsHoliday_SetsWorkAndOvertimeToZero()
     {
         // Arrange
-        var workDay = new WorkDay
-        {
-            Status = DayStatus.Holiday,
-            StartTime = new TimeOnly(8, 0),
-            EndTime = new TimeOnly(16, 30),
-            BreakMinutes = 0
-        };
+        var dto = new CreateWorkDayDto(
+            DateTime.UtcNow,
+            new TimeOnly(8, 0),
+            new TimeOnly(16, 30),
+            0,
+            false,
+            DayStatus.Holiday);
         _settingsRepositoryMock.Setup(r => r.GetAsync()).ReturnsAsync(DefaultSettings);
 
         // Act
-        var result = await _sut.CreateWorkDayAsync(workDay);
+        var result = await _sut.CreateWorkDayAsync(dto);
 
         // Assert
         result.WorkMinutes.Should().Be(0);
@@ -130,17 +132,17 @@ public class WorkTimePlannerServiceTests
     public async Task CreateWorkDayAsync_WhenStatusIsVacationOrSick_SetsWorkAndOvertimeToZero(DayStatus status)
     {
         // Arrange
-        var workDay = new WorkDay
-        {
-            Status = status,
-            StartTime = new TimeOnly(8, 0),
-            EndTime = new TimeOnly(16, 30),
-            BreakMinutes = 0
-        };
+        var dto = new CreateWorkDayDto(
+            DateTime.UtcNow,
+            new TimeOnly(8, 0),
+            new TimeOnly(16, 30),
+            0,
+            false,
+            status);
         _settingsRepositoryMock.Setup(r => r.GetAsync()).ReturnsAsync(DefaultSettings);
 
         // Act
-        var result = await _sut.CreateWorkDayAsync(workDay);
+        var result = await _sut.CreateWorkDayAsync(dto);
 
         // Assert
         result.WorkMinutes.Should().Be(0);
@@ -151,11 +153,11 @@ public class WorkTimePlannerServiceTests
     public async Task CreateWorkDayAsync_WhenStartOrEndTimeIsNull_SetsWorkAndOvertimeToZero()
     {
         // Arrange
-        var workDay = new WorkDay { Status = DayStatus.Normal, StartTime = null, EndTime = null };
+        var dto = new CreateWorkDayDto(DateTime.UtcNow, null, null, 0, false, DayStatus.Normal);
         _settingsRepositoryMock.Setup(r => r.GetAsync()).ReturnsAsync(DefaultSettings);
 
         // Act
-        var result = await _sut.CreateWorkDayAsync(workDay);
+        var result = await _sut.CreateWorkDayAsync(dto);
 
         // Assert
         result.WorkMinutes.Should().Be(0);
@@ -166,11 +168,11 @@ public class WorkTimePlannerServiceTests
     public async Task CreateWorkDayAsync_WhenSettingsDoNotExist_CreatesDefaultSettings()
     {
         // Arrange
-        var workDay = new WorkDay { Status = DayStatus.Normal, StartTime = null, EndTime = null };
+        var dto = new CreateWorkDayDto(DateTime.UtcNow, null, null, 0, false, DayStatus.Normal);
         _settingsRepositoryMock.Setup(r => r.GetAsync()).ReturnsAsync((WorkTimeSettings?)null);
 
         // Act
-        await _sut.CreateWorkDayAsync(workDay);
+        await _sut.CreateWorkDayAsync(dto);
 
         // Assert
         _settingsRepositoryMock.Verify(r => r.AddAsync(It.Is<WorkTimeSettings>(s =>
@@ -187,28 +189,26 @@ public class WorkTimePlannerServiceTests
     {
         // Arrange
         var existing = new WorkDay { Id = 1, Status = DayStatus.Normal, IsLocked = false };
-        var update = new WorkDay
-        {
-            Status = DayStatus.Normal,
-            Date = new DateTime(2026, 6, 2),
-            StartTime = new TimeOnly(9, 0),
-            EndTime = new TimeOnly(17, 0),
-            BreakMinutes = 45,
-            IsHomeOffice = true,
-            IsLocked = false
-        };
+        var dto = new UpdateWorkDayDto(
+            new DateTime(2026, 6, 2),
+            new TimeOnly(9, 0),
+            new TimeOnly(17, 0),
+            45,
+            true,
+            DayStatus.Normal,
+            false);
         _workDayRepositoryMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(existing);
         _settingsRepositoryMock.Setup(r => r.GetAsync()).ReturnsAsync(DefaultSettings);
 
         // Act
-        await _sut.UpdateWorkDayAsync(1, update);
+        await _sut.UpdateWorkDayAsync(1, dto);
 
         // Assert
-        existing.Date.Should().Be(update.Date);
-        existing.StartTime.Should().Be(update.StartTime);
-        existing.EndTime.Should().Be(update.EndTime);
-        existing.BreakMinutes.Should().Be(update.BreakMinutes);
-        existing.IsHomeOffice.Should().Be(update.IsHomeOffice);
+        existing.Date.Should().Be(dto.Date);
+        existing.StartTime.Should().Be(dto.StartTime);
+        existing.EndTime.Should().Be(dto.EndTime);
+        existing.BreakMinutes.Should().Be(dto.BreakMinutes);
+        existing.IsHomeOffice.Should().Be(dto.IsHomeOffice);
         _workDayRepositoryMock.Verify(r => r.UpdateAsync(existing), Times.Once);
     }
 
@@ -219,7 +219,8 @@ public class WorkTimePlannerServiceTests
         _workDayRepositoryMock.Setup(r => r.GetByIdAsync(It.IsAny<int>())).ReturnsAsync((WorkDay?)null);
 
         // Act
-        var act = () => _sut.UpdateWorkDayAsync(99, new WorkDay { Status = DayStatus.Normal });
+        var act = () => _sut.UpdateWorkDayAsync(99, new UpdateWorkDayDto(
+            DateTime.UtcNow, null, null, 0, false, DayStatus.Normal, false));
 
         // Assert
         await act.Should().ThrowAsync<NotFoundException>().WithMessage("*99*");
@@ -233,7 +234,8 @@ public class WorkTimePlannerServiceTests
         _workDayRepositoryMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(locked);
 
         // Act
-        var act = () => _sut.UpdateWorkDayAsync(1, new WorkDay { Status = DayStatus.Normal });
+        var act = () => _sut.UpdateWorkDayAsync(1, new UpdateWorkDayDto(
+            DateTime.UtcNow, null, null, 0, false, DayStatus.Normal, false));
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>();
@@ -297,7 +299,7 @@ public class WorkTimePlannerServiceTests
         var result = await _sut.GetWeekSummaryAsync(2026, 23);
 
         // Assert
-        result.Should().BeEquivalentTo(summary);
+        result.Should().BeEquivalentTo(summary.Adapt<WeekSummaryDto>());
     }
 
     [Fact]
@@ -402,7 +404,7 @@ public class WorkTimePlannerServiceTests
         var result = await _sut.GetSettingsAsync();
 
         // Assert
-        result.Should().BeEquivalentTo(DefaultSettings);
+        result.Should().BeEquivalentTo(DefaultSettings.Adapt<WorkTimeSettingsDto>());
     }
 
     [Fact]
@@ -429,17 +431,17 @@ public class WorkTimePlannerServiceTests
     {
         // Arrange
         var existing = new WorkTimeSettings { Id = 1, DailyTargetMinutes = 480 };
-        var update = new WorkTimeSettings { DailyTargetMinutes = 450, BreakRule6h = 20, BreakRule9h = 40, HomeOfficeLimit = 15 };
+        var dto = new UpdateWorkTimeSettingsDto(450, 20, 40, 15);
         _settingsRepositoryMock.Setup(r => r.GetAsync()).ReturnsAsync(existing);
 
         // Act
-        await _sut.UpdateSettingsAsync(update);
+        await _sut.UpdateSettingsAsync(dto);
 
         // Assert
-        existing.DailyTargetMinutes.Should().Be(450);
-        existing.BreakRule6h.Should().Be(20);
-        existing.BreakRule9h.Should().Be(40);
-        existing.HomeOfficeLimit.Should().Be(15);
+        existing.DailyTargetMinutes.Should().Be(dto.DailyTargetMinutes);
+        existing.BreakRule6h.Should().Be(dto.BreakRule6h);
+        existing.BreakRule9h.Should().Be(dto.BreakRule9h);
+        existing.HomeOfficeLimit.Should().Be(dto.HomeOfficeLimit);
         _settingsRepositoryMock.Verify(r => r.UpdateAsync(existing), Times.Once);
     }
 
@@ -450,7 +452,7 @@ public class WorkTimePlannerServiceTests
         _settingsRepositoryMock.Setup(r => r.GetAsync()).ReturnsAsync((WorkTimeSettings?)null);
 
         // Act
-        var act = () => _sut.UpdateSettingsAsync(new WorkTimeSettings());
+        var act = () => _sut.UpdateSettingsAsync(new UpdateWorkTimeSettingsDto(480, 30, 45, 20));
 
         // Assert
         await act.Should().ThrowAsync<NotFoundException>();
