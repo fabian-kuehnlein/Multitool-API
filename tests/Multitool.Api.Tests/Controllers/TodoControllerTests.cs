@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Multitool.Api.Controllers;
 using Multitool.Application.Interfaces;
-using Multitool.Domain.Entities.Todo;
+using Multitool.Application.Models;
 using Multitool.Tests.Shared;
 
 namespace Multitool.Api.Tests.Controllers;
@@ -27,7 +27,7 @@ public class TodoControllerTests
     public async Task GetTodos_WhenTodosExist_ReturnsOkWithTodos()
     {
         // Arrange
-        var todos = new List<Todo> { TodoTestData.DefaultTodo };
+        var todos = new List<TodoDto> { TodoTestData.DefaultTodoDto };
         _serviceMock.Setup(s => s.GetAllTodosAsync()).ReturnsAsync(todos);
 
         // Act
@@ -45,7 +45,7 @@ public class TodoControllerTests
     {
         // Arrange
         var dto = TodoTestData.DefaultCreateTodoDto;
-        var createdTodo = TodoTestData.DefaultTodo;
+        var createdTodo = TodoTestData.DefaultTodoDto;
         _serviceMock
             .Setup(s => s.CreateTodoAsync(dto))
             .ReturnsAsync(createdTodo);

@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Multitool.Application.Interfaces;
-using Multitool.Domain.Entities.WorkTimePlanner;
+using Multitool.Application.Models.WorkTimePlanner;
 
 namespace Multitool.Api.Controllers;
 
@@ -32,9 +32,9 @@ public class WorkTimePlannerController(IWorkTimePlannerService service) : Contro
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> CreateWorkDay([FromBody] WorkDay workDay)
+    public async Task<IActionResult> CreateWorkDay([FromBody] CreateWorkDayDto dto)
     {
-        var created = await service.CreateWorkDayAsync(workDay);
+        var created = await service.CreateWorkDayAsync(dto);
         return CreatedAtAction(nameof(GetWorkDays), new { startDate = created.Date, endDate = created.Date }, created);
     }
 
@@ -47,9 +47,9 @@ public class WorkTimePlannerController(IWorkTimePlannerService service) : Contro
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> UpdateWorkDay([FromRoute] int id, [FromBody] WorkDay workDay)
+    public async Task<IActionResult> UpdateWorkDay([FromRoute] int id, [FromBody] UpdateWorkDayDto dto)
     {
-        await service.UpdateWorkDayAsync(id, workDay);
+        await service.UpdateWorkDayAsync(id, dto);
         return NoContent();
     }
 
@@ -119,9 +119,9 @@ public class WorkTimePlannerController(IWorkTimePlannerService service) : Contro
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> UpdateSettings([FromBody] WorkTimeSettings settings)
+    public async Task<IActionResult> UpdateSettings([FromBody] UpdateWorkTimeSettingsDto dto)
     {
-        await service.UpdateSettingsAsync(settings);
+        await service.UpdateSettingsAsync(dto);
         return NoContent();
     }
 

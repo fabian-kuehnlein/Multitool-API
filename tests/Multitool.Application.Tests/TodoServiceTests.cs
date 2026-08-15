@@ -1,6 +1,8 @@
 using FluentAssertions;
+using Mapster;
 using Moq;
 using Multitool.Application.Interfaces;
+using Multitool.Application.Mappings;
 using Multitool.Application.Models;
 using Multitool.Application.Services;
 using Multitool.Domain.Entities.Todo;
@@ -18,6 +20,7 @@ public class TodoServiceTests
 
     public TodoServiceTests()
     {
+        TypeAdapterConfig.GlobalSettings.Apply(new MappingConfig());
         _repositoryMock = new Mock<ITodoRepository>();
         _sut = new TodoService(_repositoryMock.Object);
     }
@@ -35,7 +38,7 @@ public class TodoServiceTests
         var result = await _sut.GetAllTodosAsync();
 
         // Assert
-        result.Should().BeEquivalentTo(todos);
+        result.Should().BeEquivalentTo(todos.Adapt<List<TodoDto>>());
     }
 
     // GetTodoByIdAsync
@@ -52,7 +55,7 @@ public class TodoServiceTests
         var result = await _sut.GetTodoByIdAsync(todo.Id);
 
         // Assert
-        result.Should().BeEquivalentTo(todo);
+        result.Should().BeEquivalentTo(todo.Adapt<TodoDto>());
     }
 
     [Fact]

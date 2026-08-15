@@ -1,5 +1,7 @@
 using FluentAssertions;
+using Mapster;
 using Moq;
+using Multitool.Application.Mappings;
 using Multitool.Application.Models.CustomTable;
 using Multitool.Application.Services;
 using Multitool.Domain.Entities.CustomTable;
@@ -17,6 +19,7 @@ public class CustomTableServiceTests
 
     public CustomTableServiceTests()
     {
+        TypeAdapterConfig.GlobalSettings.Apply(new MappingConfig());
         _repositoryMock = new Mock<ICustomTableRepository>();
         _sut = new CustomTableService(_repositoryMock.Object);
     }
@@ -81,7 +84,11 @@ public class CustomTableServiceTests
 
         // Assert
         result.Should().Be(10L);
-        _repositoryMock.Verify(r => r.CreateTableAsync(It.Is<Table>(t => t.Name == dto.Name)), Times.Once);
+        _repositoryMock.Verify(r => r.CreateTableAsync(It.Is<Table>(t =>
+            t.Name == dto.Name &&
+            t.Columns.Count == 1 &&
+            t.Columns[0].Name == dto.Column.Name &&
+            t.Columns[0].DataType == dto.Column.DataType)), Times.Once);
     }
 
     // UpdateTableAsync

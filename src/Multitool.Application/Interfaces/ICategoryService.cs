@@ -1,8 +1,8 @@
-using Multitool.Domain.Entities.Category;
+using Multitool.Application.Models;
 
 namespace Multitool.Application.Interfaces;
 
 public interface ICategoryService
 {
-    Task<List<Category>> GetCategoriesAsync();
+    Task<List<CategoryDto>> GetCategoriesAsync();
 }

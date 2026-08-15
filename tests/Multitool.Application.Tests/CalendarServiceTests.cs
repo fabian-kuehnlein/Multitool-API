@@ -6,6 +6,7 @@ using Mapster;
 using Moq;
 using Multitool.Tests.Shared;
 using Multitool.Application.Mappings;
+using Multitool.Application.Models.Calendar;
 using Multitool.Application.Services;
 using Multitool.Domain.Entities.Calendar;
 using Multitool.Domain.Exceptions;
@@ -196,6 +197,7 @@ public class CalendarServiceTests
     public async Task UpdateEventAsync_WhenEventExists_DelegatesToRepository()
     {
         // Arrange
+        var dto = CalendarTestData.DefaultUpdateEvent;
         var existingEvent = new CalendarEvent
         {
             Id = CalendarTestData.DefaultEvent.Id,
@@ -205,18 +207,18 @@ public class CalendarServiceTests
             CategoryId = 1
         };
         _calendarRepositoryMock
-            .Setup(r => r.GetByIdAsync(CalendarTestData.DefaultEvent.Id))
+            .Setup(r => r.GetByIdAsync(existingEvent.Id))
             .ReturnsAsync(existingEvent);
         _calendarRepositoryMock
             .Setup(r => r.UpdateEventAsync(existingEvent))
             .Returns(Task.CompletedTask);
 
         // Act
-        await _sut.UpdateEventAsync(CalendarTestData.DefaultEvent);
+        await _sut.UpdateEventAsync(existingEvent.Id, dto);
 
         // Assert
         _calendarRepositoryMock.Verify(r => r.UpdateEventAsync(existingEvent), Times.Once);
-        existingEvent.Title.Should().Be(CalendarTestData.DefaultEvent.Title);
+        existingEvent.Title.Should().Be(dto.Title);
     }
 
     [Fact]
@@ -228,7 +230,7 @@ public class CalendarServiceTests
             .ReturnsAsync((CalendarEvent?)null);
 
         // Act
-        var act = () => _sut.UpdateEventAsync(CalendarTestData.DefaultEvent);
+        var act = () => _sut.UpdateEventAsync(99, CalendarTestData.DefaultUpdateEvent);
 
         // Assert
         await act.Should().ThrowAsync<NotFoundException>();
@@ -284,7 +286,7 @@ public class CalendarServiceTests
         var result = await _sut.GetHolidaysAsync("2026");
 
         // Assert
-        result.Should().BeEquivalentTo(holidays);
+        result.Should().BeEquivalentTo(holidays.Adapt<List<HolidayDto>>());
         _apiClientMock.Verify(a => a.GetHolidaysAsync("2026"), Times.Once);
         _calendarRepositoryMock.VerifyNoOtherCalls();
     }

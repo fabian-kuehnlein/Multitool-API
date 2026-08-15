@@ -1,3 +1,4 @@
+using Mapster;
 using Multitool.Application.Interfaces;
 using Multitool.Application.Models;
 using Multitool.Domain.Entities.Todo;
@@ -8,31 +9,24 @@ namespace Multitool.Application.Services;
 
 public class TodoService(ITodoRepository todoRepository) : ITodoService
 {
-    public async Task<List<Todo>> GetAllTodosAsync()
+    public async Task<List<TodoDto>> GetAllTodosAsync()
     {
-        return await todoRepository.GetAllAsync();
+        var todos = await todoRepository.GetAllAsync();
+        return todos.Adapt<List<TodoDto>>();
     }
 
-    public async Task<Todo?> GetTodoByIdAsync(int id)
+    public async Task<TodoDto?> GetTodoByIdAsync(int id)
     {
-        return await todoRepository.GetByIdAsync(id);
+        var todo = await todoRepository.GetByIdAsync(id);
+        return todo?.Adapt<TodoDto>();
     }
 
-    public async Task<Todo> CreateTodoAsync(CreateTodoDto createTodoDto)
+    public async Task<TodoDto> CreateTodoAsync(CreateTodoDto createTodoDto)
     {
-        var todo = new Todo
-        {
-            Title = createTodoDto.Title,
-            Description = createTodoDto.Description,
-            CategoryId = createTodoDto.CategoryId,
-            Priority = createTodoDto.Priority,
-            DueDate = createTodoDto.DueDate,
-            IsDone = false,
-            CreationDateTime = DateTime.Now
-        };
+        var todo = createTodoDto.Adapt<Todo>();
 
         await todoRepository.AddAsync(todo);
-        return todo;
+        return todo.Adapt<TodoDto>();
     }
 
     public async Task UpdateTodoAsync(int id, UpdateTodoDto updateTodoDto)

@@ -210,7 +210,10 @@ The service contains the **business logic** – this is where most tests are exp
 
 #### Mapping (if Adapt/Mapster is used)
 - One test that verifies the relevant fields are mapped correctly
+- Include server-managed fields (`CreatedAt`, `IsDone`, etc.) in the assertions
 - No test for every single field – only the non-trivial ones
+- `Create<Entity>Dto` has no `Id` – assert that server-generated ids/timestamps are set by the service, not passed in
+- Updates assign fields explicitly (`existing.X = dto.X`) – the update test asserts the mutated fields on the existing object
 
 #### Time-dependent values
 - `CreationDateTime`, `LockoutEnd`, `ExpiresAt` etc. with `BeCloseTo(..., TimeSpan.FromSeconds(5))`

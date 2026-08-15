@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Multitool.Api.Controllers;
 using Multitool.Application.Interfaces;
+using Multitool.Application.Models.WorkTimePlanner;
 using Multitool.Domain.Entities.WorkTimePlanner;
 
 namespace Multitool.Api.Tests;
@@ -12,7 +13,7 @@ public class WorkTimePlannerControllerTests
     private readonly Mock<IWorkTimePlannerService> _serviceMock;
     private readonly WorkTimePlannerController _sut;
 
-    private static readonly WorkDay DefaultWorkDay = new()
+    private static readonly WorkDayDto DefaultWorkDayDto = new()
     {
         Id = 1,
         Date = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc),
@@ -26,7 +27,26 @@ public class WorkTimePlannerControllerTests
         IsLocked = false
     };
 
-    private static readonly WeekSummary DefaultWeekSummary = new()
+    private static readonly CreateWorkDayDto DefaultCreateWorkDayDto = new(
+        new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc),
+        new TimeOnly(8, 0),
+        new TimeOnly(16, 30),
+        30,
+        false,
+        DayStatus.Normal
+    );
+
+    private static readonly UpdateWorkDayDto DefaultUpdateWorkDayDto = new(
+        new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc),
+        new TimeOnly(8, 0),
+        new TimeOnly(16, 30),
+        30,
+        false,
+        DayStatus.Normal,
+        false
+    );
+
+    private static readonly WeekSummaryDto DefaultWeekSummaryDto = new()
     {
         Id = 1,
         Year = 2026,
@@ -34,7 +54,7 @@ public class WorkTimePlannerControllerTests
         TotalOvertime = 60
     };
 
-    private static readonly WorkTimeSettings DefaultSettings = new()
+    private static readonly WorkTimeSettingsDto DefaultSettingsDto = new()
     {
         Id = 1,
         DailyTargetMinutes = 480,
@@ -42,6 +62,8 @@ public class WorkTimePlannerControllerTests
         BreakRule9h = 45,
         HomeOfficeLimit = 20
     };
+
+    private static readonly UpdateWorkTimeSettingsDto DefaultUpdateSettingsDto = new(480, 30, 45, 20);
 
     public WorkTimePlannerControllerTests()
     {
@@ -55,12 +77,12 @@ public class WorkTimePlannerControllerTests
     public async Task GetWorkDays_WhenWorkDaysExist_ReturnsOkWithWorkDays()
     {
         // Arrange
-        var workDays = new List<WorkDay> { DefaultWorkDay };
+        var workDays = new List<WorkDayDto> { DefaultWorkDayDto };
         _serviceMock.Setup(s => s.GetWorkDaysAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
             .ReturnsAsync(workDays);
 
         // Act
-        var result = await _sut.GetWorkDays(DefaultWorkDay.Date, DefaultWorkDay.Date.AddDays(7));
+        var result = await _sut.GetWorkDays(DefaultWorkDayDto.Date, DefaultWorkDayDto.Date.AddDays(7));
 
         // Assert
         var ok = result.Should().BeOfType<OkObjectResult>().Subject;
@@ -73,30 +95,30 @@ public class WorkTimePlannerControllerTests
     public async Task CreateWorkDay_WhenWorkDayIsValid_ReturnsCreatedAtAction()
     {
         // Arrange
-        _serviceMock.Setup(s => s.CreateWorkDayAsync(DefaultWorkDay)).ReturnsAsync(DefaultWorkDay);
+        _serviceMock.Setup(s => s.CreateWorkDayAsync(DefaultCreateWorkDayDto)).ReturnsAsync(DefaultWorkDayDto);
 
         // Act
-        var result = await _sut.CreateWorkDay(DefaultWorkDay);
+        var result = await _sut.CreateWorkDay(DefaultCreateWorkDayDto);
 
         // Assert
         var created = result.Should().BeOfType<CreatedAtActionResult>().Subject;
-        created.Value.Should().BeEquivalentTo(DefaultWorkDay);
+        created.Value.Should().BeEquivalentTo(DefaultWorkDayDto);
     }
 
     [Fact]
     public async Task CreateWorkDay_WhenWorkDayIsValid_SetsCorrectRouteValues()
     {
         // Arrange
-        _serviceMock.Setup(s => s.CreateWorkDayAsync(DefaultWorkDay)).ReturnsAsync(DefaultWorkDay);
+        _serviceMock.Setup(s => s.CreateWorkDayAsync(DefaultCreateWorkDayDto)).ReturnsAsync(DefaultWorkDayDto);
 
         // Act
-        var result = await _sut.CreateWorkDay(DefaultWorkDay);
+        var result = await _sut.CreateWorkDay(DefaultCreateWorkDayDto);
 
         // Assert
         var created = result.Should().BeOfType<CreatedAtActionResult>().Subject;
         created.ActionName.Should().Be(nameof(_sut.GetWorkDays));
-        created.RouteValues!["startDate"].Should().Be(DefaultWorkDay.Date);
-        created.RouteValues!["endDate"].Should().Be(DefaultWorkDay.Date);
+        created.RouteValues!["startDate"].Should().Be(DefaultWorkDayDto.Date);
+        created.RouteValues!["endDate"].Should().Be(DefaultWorkDayDto.Date);
     }
 
     // PUT api/worktimeplanner/workdays/{id}
@@ -105,11 +127,11 @@ public class WorkTimePlannerControllerTests
     public async Task UpdateWorkDay_WhenWorkDayExists_ReturnsNoContent()
     {
         // Arrange
-        _serviceMock.Setup(s => s.UpdateWorkDayAsync(DefaultWorkDay.Id, DefaultWorkDay))
+        _serviceMock.Setup(s => s.UpdateWorkDayAsync(DefaultWorkDayDto.Id, DefaultUpdateWorkDayDto))
             .Returns(Task.CompletedTask);
 
         // Act
-        var result = await _sut.UpdateWorkDay(DefaultWorkDay.Id, DefaultWorkDay);
+        var result = await _sut.UpdateWorkDay(DefaultWorkDayDto.Id, DefaultUpdateWorkDayDto);
 
         // Assert
         result.Should().BeOfType<NoContentResult>();
@@ -121,11 +143,11 @@ public class WorkTimePlannerControllerTests
     public async Task DeleteWorkDay_WhenWorkDayExists_ReturnsNoContent()
     {
         // Arrange
-        _serviceMock.Setup(s => s.DeleteWorkDayAsync(DefaultWorkDay.Id))
+        _serviceMock.Setup(s => s.DeleteWorkDayAsync(DefaultWorkDayDto.Id))
             .Returns(Task.CompletedTask);
 
         // Act
-        var result = await _sut.DeleteWorkDay(DefaultWorkDay.Id);
+        var result = await _sut.DeleteWorkDay(DefaultWorkDayDto.Id);
 
         // Assert
         result.Should().BeOfType<NoContentResult>();
@@ -137,14 +159,14 @@ public class WorkTimePlannerControllerTests
     public async Task GetWeekSummary_WhenSummaryExists_ReturnsOkWithSummary()
     {
         // Arrange
-        _serviceMock.Setup(s => s.GetWeekSummaryAsync(2026, 23)).ReturnsAsync(DefaultWeekSummary);
+        _serviceMock.Setup(s => s.GetWeekSummaryAsync(2026, 23)).ReturnsAsync(DefaultWeekSummaryDto);
 
         // Act
         var result = await _sut.GetWeekSummary(2026, 23);
 
         // Assert
         var ok = result.Should().BeOfType<OkObjectResult>().Subject;
-        ok.Value.Should().BeEquivalentTo(DefaultWeekSummary);
+        ok.Value.Should().BeEquivalentTo(DefaultWeekSummaryDto);
     }
 
     // POST api/worktimeplanner/weeksummary
@@ -153,14 +175,14 @@ public class WorkTimePlannerControllerTests
     public async Task SaveWeekSummary_WhenSummaryIsSaved_ReturnsOkWithSummary()
     {
         // Arrange
-        _serviceMock.Setup(s => s.SaveWeekSummaryAsync(2026, 23)).ReturnsAsync(DefaultWeekSummary);
+        _serviceMock.Setup(s => s.SaveWeekSummaryAsync(2026, 23)).ReturnsAsync(DefaultWeekSummaryDto);
 
         // Act
         var result = await _sut.SaveWeekSummary(2026, 23);
 
         // Assert
         var ok = result.Should().BeOfType<OkObjectResult>().Subject;
-        ok.Value.Should().BeEquivalentTo(DefaultWeekSummary);
+        ok.Value.Should().BeEquivalentTo(DefaultWeekSummaryDto);
     }
 
     // GET api/worktimeplanner/settings
@@ -169,14 +191,14 @@ public class WorkTimePlannerControllerTests
     public async Task GetSettings_WhenSettingsExist_ReturnsOkWithSettings()
     {
         // Arrange
-        _serviceMock.Setup(s => s.GetSettingsAsync()).ReturnsAsync(DefaultSettings);
+        _serviceMock.Setup(s => s.GetSettingsAsync()).ReturnsAsync(DefaultSettingsDto);
 
         // Act
         var result = await _sut.GetSettings();
 
         // Assert
         var ok = result.Should().BeOfType<OkObjectResult>().Subject;
-        ok.Value.Should().BeEquivalentTo(DefaultSettings);
+        ok.Value.Should().BeEquivalentTo(DefaultSettingsDto);
     }
 
     // PUT api/worktimeplanner/settings
@@ -185,10 +207,10 @@ public class WorkTimePlannerControllerTests
     public async Task UpdateSettings_WhenSettingsExist_ReturnsNoContent()
     {
         // Arrange
-        _serviceMock.Setup(s => s.UpdateSettingsAsync(DefaultSettings)).Returns(Task.CompletedTask);
+        _serviceMock.Setup(s => s.UpdateSettingsAsync(DefaultUpdateSettingsDto)).Returns(Task.CompletedTask);
 
         // Act
-        var result = await _sut.UpdateSettings(DefaultSettings);
+        var result = await _sut.UpdateSettings(DefaultUpdateSettingsDto);
 
         // Assert
         result.Should().BeOfType<NoContentResult>();

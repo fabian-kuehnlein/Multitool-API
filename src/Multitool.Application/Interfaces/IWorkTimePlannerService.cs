@@ -1,20 +1,20 @@
-using Multitool.Domain.Entities.WorkTimePlanner;
+using Multitool.Application.Models.WorkTimePlanner;
 
 namespace Multitool.Application.Interfaces;
 
 public interface IWorkTimePlannerService
 {
-    Task<List<WorkDay>> GetWorkDaysAsync(DateTime startDate, DateTime endDate);
-    Task<WorkDay?> GetWorkDayByIdAsync(int id);
-    Task<WorkDay> CreateWorkDayAsync(WorkDay workDay);
-    Task UpdateWorkDayAsync(int id, WorkDay workDay);
+    Task<List<WorkDayDto>> GetWorkDaysAsync(DateTime startDate, DateTime endDate);
+    Task<WorkDayDto?> GetWorkDayByIdAsync(int id);
+    Task<WorkDayDto> CreateWorkDayAsync(CreateWorkDayDto dto);
+    Task UpdateWorkDayAsync(int id, UpdateWorkDayDto dto);
     Task DeleteWorkDayAsync(int id);
 
-    Task<WeekSummary?> GetWeekSummaryAsync(int year, int weekNumber);
-    Task<WeekSummary> SaveWeekSummaryAsync(int year, int weekNumber);
+    Task<WeekSummaryDto?> GetWeekSummaryAsync(int year, int weekNumber);
+    Task<WeekSummaryDto> SaveWeekSummaryAsync(int year, int weekNumber);
 
-    Task<WorkTimeSettings> GetSettingsAsync();
-    Task UpdateSettingsAsync(WorkTimeSettings settings);
+    Task<WorkTimeSettingsDto> GetSettingsAsync();
+    Task UpdateSettingsAsync(UpdateWorkTimeSettingsDto dto);
 
     Task<int> GetHomeOfficeDaysCountAsync(int year, int month);
 }

@@ -31,7 +31,6 @@ public class CustomTableService(ICustomTableRepository customtableRepository) : 
     public async Task<long> CreateTableAsync(CreateTableDto dto)
     {
         var table = dto.Adapt<Table>();
-        table.Columns.Add(dto.Column.Adapt<Column>());
 
         return await customtableRepository.CreateTableAsync(table);
     }

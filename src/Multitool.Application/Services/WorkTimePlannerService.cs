@@ -1,5 +1,7 @@
 using System.Globalization;
+using Mapster;
 using Multitool.Application.Interfaces;
+using Multitool.Application.Models.WorkTimePlanner;
 using Multitool.Domain.Entities.WorkTimePlanner;
 using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
@@ -11,25 +13,29 @@ public class WorkTimePlannerService(
     IWeekSummaryRepository weekSummaryRepository,
     IWorkTimeSettingsRepository settingsRepository) : IWorkTimePlannerService
 {
-    public async Task<List<WorkDay>> GetWorkDaysAsync(DateTime startDate, DateTime endDate)
+    public async Task<List<WorkDayDto>> GetWorkDaysAsync(DateTime startDate, DateTime endDate)
     {
-        return await workDayRepository.GetByDateRangeAsync(startDate, endDate);
+        var workDays = await workDayRepository.GetByDateRangeAsync(startDate, endDate);
+        return workDays.Adapt<List<WorkDayDto>>();
     }
 
-    public async Task<WorkDay?> GetWorkDayByIdAsync(int id)
+    public async Task<WorkDayDto?> GetWorkDayByIdAsync(int id)
     {
-        return await workDayRepository.GetByIdAsync(id);
+        var workDay = await workDayRepository.GetByIdAsync(id);
+        return workDay?.Adapt<WorkDayDto>();
     }
 
-    public async Task<WorkDay> CreateWorkDayAsync(WorkDay workDay)
+    public async Task<WorkDayDto> CreateWorkDayAsync(CreateWorkDayDto dto)
     {
+        var workDay = dto.Adapt<WorkDay>();
+
         var settings = await GetOrCreateSettingsAsync();
         CalculateWorkDayAsync(workDay, settings);
         await workDayRepository.AddAsync(workDay);
-        return workDay;
+        return workDay.Adapt<WorkDayDto>();
     }
 
-    public async Task UpdateWorkDayAsync(int id, WorkDay workDay)
+    public async Task UpdateWorkDayAsync(int id, UpdateWorkDayDto dto)
     {
         var existing = await workDayRepository.GetByIdAsync(id)
             ?? throw new NotFoundException($"WorkDay with ID {id} not found.");
@@ -39,15 +45,16 @@ public class WorkTimePlannerService(
 
         var settings = await GetOrCreateSettingsAsync();
 
-        existing.Date = workDay.Date;
-        existing.StartTime = workDay.StartTime;
-        existing.EndTime = workDay.EndTime;
-        existing.BreakMinutes = workDay.BreakMinutes;
-        existing.IsHomeOffice = workDay.IsHomeOffice;
-        existing.Status = workDay.Status;
-        existing.IsLocked = workDay.IsLocked;
+        existing.Date = dto.Date;
+        existing.StartTime = dto.StartTime;
+        existing.EndTime = dto.EndTime;
+        existing.BreakMinutes = dto.BreakMinutes;
+        existing.IsHomeOffice = dto.IsHomeOffice;
+        existing.Status = dto.Status;
+        existing.IsLocked = dto.IsLocked;
 
         CalculateWorkDayAsync(existing, settings);
+        
         await workDayRepository.UpdateAsync(existing);
     }
 
@@ -62,12 +69,13 @@ public class WorkTimePlannerService(
         await workDayRepository.DeleteAsync(id);
     }
 
-    public async Task<WeekSummary?> GetWeekSummaryAsync(int year, int weekNumber)
+    public async Task<WeekSummaryDto?> GetWeekSummaryAsync(int year, int weekNumber)
     {
-        return await weekSummaryRepository.GetByYearAndWeekAsync(year, weekNumber);
+        var summary = await weekSummaryRepository.GetByYearAndWeekAsync(year, weekNumber);
+        return summary?.Adapt<WeekSummaryDto>();
     }
 
-    public async Task<WeekSummary> SaveWeekSummaryAsync(int year, int weekNumber)
+    public async Task<WeekSummaryDto> SaveWeekSummaryAsync(int year, int weekNumber)
     {
         var existing = await weekSummaryRepository.GetByYearAndWeekAsync(year, weekNumber);
 
@@ -87,7 +95,7 @@ public class WorkTimePlannerService(
         {
             existing.TotalOvertime = totalOvertime;
             await weekSummaryRepository.UpdateAsync(existing);
-            return existing;
+            return existing.Adapt<WeekSummaryDto>();
         }
 
         var summary = new WeekSummary
@@ -98,23 +106,24 @@ public class WorkTimePlannerService(
         };
 
         await weekSummaryRepository.AddAsync(summary);
-        return summary;
+        return summary.Adapt<WeekSummaryDto>();
     }
 
-    public async Task<WorkTimeSettings> GetSettingsAsync()
+    public async Task<WorkTimeSettingsDto> GetSettingsAsync()
     {
-        return await GetOrCreateSettingsAsync();
+        var settings = await GetOrCreateSettingsAsync();
+        return settings.Adapt<WorkTimeSettingsDto>();
     }
 
-    public async Task UpdateSettingsAsync(WorkTimeSettings settings)
+    public async Task UpdateSettingsAsync(UpdateWorkTimeSettingsDto dto)
     {
         var existing = await settingsRepository.GetAsync()
             ?? throw new NotFoundException("WorkTimeSettings not found.");
 
-        existing.DailyTargetMinutes = settings.DailyTargetMinutes;
-        existing.BreakRule6h = settings.BreakRule6h;
-        existing.BreakRule9h = settings.BreakRule9h;
-        existing.HomeOfficeLimit = settings.HomeOfficeLimit;
+        existing.DailyTargetMinutes = dto.DailyTargetMinutes;
+        existing.BreakRule6h = dto.BreakRule6h;
+        existing.BreakRule9h = dto.BreakRule9h;
+        existing.HomeOfficeLimit = dto.HomeOfficeLimit;
 
         await settingsRepository.UpdateAsync(existing);
     }

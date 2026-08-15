@@ -1,5 +1,7 @@
 using FluentAssertions;
+using Mapster;
 using Moq;
+using Multitool.Application.Models;
 using Multitool.Application.Services;
 using Multitool.Domain.Entities.Category;
 using Multitool.Domain.Exceptions;
@@ -32,7 +34,7 @@ public class CategoryServiceTests
         var result = await _sut.GetCategoriesAsync();
 
         // Assert
-        result.Should().BeEquivalentTo(categories);
+        result.Should().BeEquivalentTo(categories.Adapt<List<CategoryDto>>());
     }
 
     [Fact]

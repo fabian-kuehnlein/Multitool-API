@@ -18,6 +18,19 @@ public static class TodoTestData
         CreationDateTime = new DateTime(2026, 6, 11, 10, 0, 0, DateTimeKind.Utc)
     };
 
+    public static TodoDto DefaultTodoDto => new()
+    {
+        Id = DefaultTodo.Id,
+        Title = DefaultTodo.Title,
+        Description = DefaultTodo.Description,
+        CategoryId = DefaultTodo.CategoryId,
+        IsDone = DefaultTodo.IsDone,
+        Priority = DefaultTodo.Priority,
+        DueDate = DefaultTodo.DueDate,
+        CreationDateTime = DefaultTodo.CreationDateTime,
+        CompletedDateTime = DefaultTodo.CompletedDateTime
+    };
+
     public static CreateTodoDto DefaultCreateTodoDto => new(
         "Test Todo",
         "Test Description",
