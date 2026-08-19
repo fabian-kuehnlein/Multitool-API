@@ -15,6 +15,8 @@ RUN apt-get update && apt-get install -y \
     libgssapi-krb5-2 \
     && rm -rf /var/lib/apt/lists/*
 
+RUN echo "fs.inotify.max_user_instances=512" >> /etc/sysctl.conf
+
 COPY --from=build /app/publish .
 
 ENV ASPNETCORE_URLS=http://+:10000
