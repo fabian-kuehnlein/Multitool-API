@@ -112,6 +112,22 @@ public async Task UpdateTodoAsync_WhenTodoDoesNotExist_ThrowsNotFoundExceptionAn
 }
 ```
 
+### Grouping & Finalizing Verifications for Multiple Mocks
+When a test verifies invocations across **multiple mocked dependencies** (e.g., `_calendarRepositoryMock` and `_todoRepositoryMock`):
+- **Complete one mock fully before verifying the next mock**. Do NOT interleave `.Verify(...)` calls between different mocks.
+- For each mock, group all `.Verify(...)` calls together, immediately followed by `.VerifyNoOtherCalls()`, before moving on to the next mock.
+
+#### Example
+
+```csharp
+// Assert
+_calendarRepositoryMock.Verify(r => r.GetEventsByRangeAsync(start, end, ""), Times.Once);
+_calendarRepositoryMock.VerifyNoOtherCalls();
+
+_todoRepositoryMock.Verify(r => r.GetTodosWithDueDateInRangeAsync(start, end), Times.Once);
+_todoRepositoryMock.VerifyNoOtherCalls();
+```
+
 ### Comprehensive Assertions
 Unit tests must feature deep and thorough assertions in the `// Assert` block:
 - **Return Values**: Assert returned objects completely. Check properties, mapped fields, status flags, and timestamps.
@@ -369,6 +385,130 @@ Controller tests **exclusively verify the HTTP flow** (HTTP status code, respons
 
 The service contains the **business logic** – this is where most tests are expected.
 
+#### Standard Service Test Class Structure
+
+All application service test classes (`*ServiceTests.cs`) **must follow a mandatory, standardized layout structure**:
+
+1. **Mapster Registration in Constructor**: Apply global mapping configuration: `TypeAdapterConfig.GlobalSettings.Apply(new MappingConfig());`.
+2. **Private Readonly Repository Mocks**: Declare mock fields for injected repositories (e.g., `private readonly Mock<ITodoRepository> _repositoryMock;`).
+3. **Private Default Response Fields**: Declare private fields for default mock return values (`private List<Todo> _getTodosResponse;`, `private Todo? _getByIdResponse;`, `private int _createTodoResponse;`).
+4. **Captured Argument Fields (`.Callback<T>`)**: Declare private fields to capture entities passed into repository methods (`private Todo? _createdTodo;`, `private Todo? _updatedTodo;`, `private Todo? _deletedTodo;`).
+   - **Omit Unused Callbacks & Variables**: If the captured data of a callback is **not actually used or asserted against** in tests, **omit/remove both the `.Callback<T>(...)` setup on the mock and the private variable field itself**. Do not keep dead callback variables.
+5. **Private `GetService()` Factory Method**:
+   - Resets captured entity fields (`_createdTodo = null; _updatedTodo = null; _deletedTodo = null;`).
+   - Resets repository mock states via `_repositoryMock.Reset()`.
+   - Configures default setups on `_repositoryMock`:
+     - `.Setup(r => r.GetAllAsync()).ReturnsAsync(_getTodosResponse);`
+     - `.Setup(r => r.GetByIdAsync(It.IsAny<int>())).ReturnsAsync(_getByIdResponse);`
+     - `.Setup(r => r.CreateTodoAsync(It.IsAny<Todo>())).Callback<Todo>(t => _createdTodo = t).ReturnsAsync(_createTodoResponse);`
+     - `.Setup(r => r.UpdateTodoAsync(It.IsAny<Todo>())).Callback<Todo>(t => _updatedTodo = t).Returns(Task.CompletedTask);`
+     - `.Setup(r => r.DeleteTodoAsync(It.IsAny<Todo>())).Callback<Todo>(t => _deletedTodo = t).Returns(Task.CompletedTask);`
+   - Instantiates and returns the target service (`return new TodoService(_repositoryMock.Object);`).
+6. **Method Separator Comments**: Visually group test methods using `// MethodNameAsync`.
+7. **Assertions via `AssertEx`**:
+   - Use `AssertEx.AreEqual(actual, expected)` for entity, DTO, and property assertions.
+   - Use `AssertEx.Throws<NotFoundException>(act)` for async exception assertions.
+   - **`AssertEx.CloseTo(...)`**: **Must be used** whenever testing `.UtcNow` or timestamp setters in the service (e.g., `AssertEx.CloseTo(_createdTodo!.CreationDateTime, DateTime.UtcNow, TimeSpan.FromSeconds(5));`).
+8. **Strict Moq Verification & No Other Calls**:
+   - Verify expected repository calls with exact property matchers (`_repositoryMock.Verify(r => r.CreateTodoAsync(It.Is<Todo>(...)), Times.Once);`).
+   - Always call `_repositoryMock.VerifyNoOtherCalls();` to enforce that no unexpected repository calls occurred.
+
+#### Example (Service Test Layout)
+
+```csharp
+public class TodoServiceTests
+{
+    private readonly Mock<ITodoRepository> _repositoryMock;
+
+    private List<Todo> _getTodosResponse;
+    private Todo? _getByIdResponse;
+    private int _createTodoResponse;
+
+    private static readonly int ID = TodoTestData.DefaultTodo.Id;
+
+    private Todo? _createdTodo;
+    private Todo? _updatedTodo;
+    private Todo? _deletedTodo;
+
+    public TodoServiceTests()
+    {
+        TypeAdapterConfig.GlobalSettings.Apply(new MappingConfig());
+
+        _repositoryMock = new Mock<ITodoRepository>();
+
+        _getTodosResponse = new List<Todo>();
+        _getByIdResponse = TodoTestData.DefaultTodo;
+        _createTodoResponse = ID;
+    }
+
+    private TodoService GetService()
+    {
+        _createdTodo = null;
+        _updatedTodo = null;
+        _deletedTodo = null;
+
+        _repositoryMock.Reset();
+
+        _repositoryMock.Setup(r => r.GetAllAsync())
+            .ReturnsAsync(_getTodosResponse);
+
+        _repositoryMock.Setup(r => r.GetByIdAsync(It.IsAny<int>()))
+            .ReturnsAsync(_getByIdResponse);
+
+        _repositoryMock.Setup(r => r.CreateTodoAsync(It.IsAny<Todo>()))
+            .Callback<Todo>(t => _createdTodo = t)
+            .ReturnsAsync(_createTodoResponse);
+
+        _repositoryMock.Setup(r => r.UpdateTodoAsync(It.IsAny<Todo>()))
+            .Callback<Todo>(t => _updatedTodo = t)
+            .Returns(Task.CompletedTask);
+
+        _repositoryMock.Setup(r => r.DeleteTodoAsync(It.IsAny<Todo>()))
+            .Callback<Todo>(t => _deletedTodo = t)
+            .Returns(Task.CompletedTask);
+
+        return new TodoService(_repositoryMock.Object);
+    }
+
+    // CreateTodoAsync
+    [Fact]
+    public async Task CreateTodoAsync_WhenDtoIsValid_CallsRepositoryAdd()
+    {
+        // Arrange
+        var todo = TodoTestData.DefaultCreateTodoDto;
+        var service = GetService();
+
+        // Act
+        var result = await service.CreateTodoAsync(todo);
+
+        // Assert
+        AssertEx.AreEqual(result, ID);
+        AssertEx.AreEqual(_createdTodo, new Todo
+        {
+            Title = todo.Title,
+            Description = todo.Description,
+            CategoryId = todo.CategoryId,
+            Priority = todo.Priority,
+            DueDate = todo.DueDate,
+            IsDone = false,
+            CreationDateTime = _createdTodo!.CreationDateTime
+        });
+        AssertEx.CloseTo(_createdTodo!.CreationDateTime, DateTime.UtcNow, TimeSpan.FromSeconds(5));
+
+        _repositoryMock.Verify(r => r.CreateTodoAsync(It.Is<Todo>(createdTodo =>
+            createdTodo.Title == todo.Title &&
+            createdTodo.Description == todo.Description &&
+            createdTodo.CategoryId == todo.CategoryId &&
+            createdTodo.Priority == todo.Priority &&
+            createdTodo.DueDate == todo.DueDate &&
+            createdTodo.IsDone == false &&
+            createdTodo.CreationDateTime <= DateTime.UtcNow
+        )), Times.Once);
+        _repositoryMock.VerifyNoOtherCalls();
+    }
+}
+```
+
 #### Happy path (always)
 - Method returns the correct result
 - Correct fields are set (mapping, calculations)
@@ -392,7 +532,7 @@ The service contains the **business logic** – this is where most tests are exp
 - Updates assign fields explicitly (`existing.X = dto.X`) – the update test asserts the mutated fields on the existing object
 
 #### Time-dependent values
-- `CreationDateTime`, `LockoutEnd`, `ExpiresAt` etc. with `BeCloseTo(..., TimeSpan.FromSeconds(5))`
+- `CreationDateTime`, `LockoutEnd`, `ExpiresAt` etc. tested with `AssertEx.CloseTo(actual, DateTime.UtcNow, TimeSpan.FromSeconds(5))`
 
 ---
 
@@ -423,9 +563,10 @@ The repository is tested **against a real (in-memory/SQLite) database** – no m
 ---
 
 ### GlobalExceptionHandler
-- Test exception mappings with `[Theory]` + `[InlineData]` (one test for all exception types)
-- Verify: the correct HTTP status code is set
-- Do not test in the controller – exclusively in the handler itself
+- Test exception mappings with `[Theory]` + `[InlineData]` in `tests/Multitool.Api.Tests/Exceptions/GlobalExceptionHandlerTests.cs` (one test for all exception types).
+- **Mandatory Synchronization Rule**: Whenever a new exception type or mapping is added or modified in `GlobalExceptionHandler` (`src/Multitool.Api/Exceptions/GlobalExceptionHandler.cs`), the corresponding test cases in `tests/Multitool.Api.Tests/Exceptions/GlobalExceptionHandlerTests.cs` **must immediately be added/updated**.
+- Verify: the correct HTTP status code is set for each exception type.
+- Do not test exception propagation in controller tests – exclusively in `GlobalExceptionHandlerTests.cs`.
 
 ---
 
@@ -500,7 +641,11 @@ When reviewing, please check:
 - Do repository tests use `AsNoTracking().FirstOrDefaultAsync()` instead of `FindAsync` after `ExecuteDeleteAsync`?
 - Are TestData properties (`=>`) used instead of fields (`= new()`) to avoid mutation between tests?
 - Are test-relevant entities, DTOs, and models added or updated in `tests/Multitool.Tests.Shared` whenever application models change (instead of creating ad-hoc inline test objects)?
+- Are new or modified exception mappings in `GlobalExceptionHandler` updated in `tests/Multitool.Api.Tests/Exceptions/GlobalExceptionHandlerTests.cs`?
 - Do controller test classes follow the standard controller test layout (`GetController()` factory method, mock resets, default response fields, `AssertEx` assertions, and `.VerifyNoOtherCalls()`)?
+- Do service test classes follow the standard service test layout (`GetService()` factory method, mock resets, Mapster setup in constructor, `.Callback<T>` argument capture, `AssertEx.AreEqual`, `AssertEx.CloseTo` for `.UtcNow` timestamp setters, and `.VerifyNoOtherCalls()`)?
+- Are unused `.Callback<T>(...)` setups and unused captured private fields omitted/removed if their data is not asserted on?
 - Are all expected mock method calls verified in the `// Assert` block using `.Verify(...)` (with `Times.Once` for expected calls and `Times.Never` for negative paths)?
+- When multiple mocks are verified in a test, is each mock fully completed (`.Verify(...)` + `.VerifyNoOtherCalls()`) before verifying the next mock?
 - Is `It.IsAny<T>()` avoided in favor of exact values or `It.Is<T>(...)` parameter matchers?
 - Are return values, collection contents, mapped properties, and side effects thoroughly asserted instead of relying on simple null/not-null checks?

@@ -1,11 +1,15 @@
-using FluentAssertions;
+using System.Globalization;
 using Mapster;
 using Moq;
+using Multitool.Application.Mappings;
 using Multitool.Application.Models.WorkTimePlanner;
 using Multitool.Application.Services;
 using Multitool.Domain.Entities.WorkTimePlanner;
+using Multitool.Domain.Enums;
 using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
+using Multitool.Tests.Shared;
+using Multitool.Tests.Shared.Assertions;
 
 namespace Multitool.Application.Tests;
 
@@ -14,116 +18,198 @@ public class WorkTimePlannerServiceTests
     private readonly Mock<IWorkDayRepository> _workDayRepositoryMock;
     private readonly Mock<IWeekSummaryRepository> _weekSummaryRepositoryMock;
     private readonly Mock<IWorkTimeSettingsRepository> _settingsRepositoryMock;
-    private readonly WorkTimePlannerService _sut;
 
-    private static readonly WorkTimeSettings DefaultSettings = new()
-    {
-        Id = 1,
-        DailyTargetMinutes = 480,
-        BreakRule6h = 30,
-        BreakRule9h = 45,
-        HomeOfficeLimit = 20
-    };
+    private List<WorkDay> _getWorkDaysByRangeResponse;
+    private WorkDay? _getWorkDayByIdResponse;
+    private int _createWorkDayResponse;
+    private WeekSummary? _getWeekSummaryResponse;
+    private WorkTimeSettings? _getSettingsResponse;
+
+    private static readonly int ID = WorkTimePlannerTestData.DefaultWorkDay.Id;
+
+    private WorkDay? _createdWorkDay;
+    private WorkDay? _deletedWorkDay;
+    private WeekSummary? _addedSummary;
+    private WorkTimeSettings? _addedSettings;
 
     public WorkTimePlannerServiceTests()
     {
+        TypeAdapterConfig.GlobalSettings.Apply(new MappingConfig());
+
         _workDayRepositoryMock = new Mock<IWorkDayRepository>();
         _weekSummaryRepositoryMock = new Mock<IWeekSummaryRepository>();
         _settingsRepositoryMock = new Mock<IWorkTimeSettingsRepository>();
-        _sut = new WorkTimePlannerService(
+
+        _getWorkDaysByRangeResponse = new List<WorkDay>();
+        _getWorkDayByIdResponse = WorkTimePlannerTestData.DefaultWorkDay;
+        _createWorkDayResponse = ID;
+        _getWeekSummaryResponse = null;
+        _getSettingsResponse = WorkTimePlannerTestData.DefaultSettings;
+    }
+
+    private WorkTimePlannerService GetService()
+    {
+        _createdWorkDay = null;
+        _deletedWorkDay = null;
+        _addedSummary = null;
+        _addedSettings = null;
+
+        _workDayRepositoryMock.Reset();
+        _weekSummaryRepositoryMock.Reset();
+        _settingsRepositoryMock.Reset();
+
+        _workDayRepositoryMock.Setup(r => r.GetByDateRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .ReturnsAsync(_getWorkDaysByRangeResponse);
+
+        _workDayRepositoryMock.Setup(r => r.GetByIdAsync(It.IsAny<int>()))
+            .ReturnsAsync(_getWorkDayByIdResponse);
+
+        _workDayRepositoryMock.Setup(r => r.CreateWorkDayAsync(It.IsAny<WorkDay>()))
+            .Callback<WorkDay>(w => _createdWorkDay = w)
+            .ReturnsAsync(_createWorkDayResponse);
+
+        _workDayRepositoryMock.Setup(r => r.UpdateWorkDayAsync(It.IsAny<WorkDay>()))
+            .Returns(Task.CompletedTask);
+
+        _workDayRepositoryMock.Setup(r => r.DeleteWorkDayAsync(It.IsAny<WorkDay>()))
+            .Callback<WorkDay>(w => _deletedWorkDay = w)
+            .Returns(Task.CompletedTask);
+
+        _weekSummaryRepositoryMock.Setup(r => r.GetByYearAndWeekAsync(It.IsAny<int>(), It.IsAny<int>()))
+            .ReturnsAsync(_getWeekSummaryResponse);
+
+        _weekSummaryRepositoryMock.Setup(r => r.AddAsync(It.IsAny<WeekSummary>()))
+            .Callback<WeekSummary>(s => _addedSummary = s)
+            .Returns(Task.CompletedTask);
+
+        _weekSummaryRepositoryMock.Setup(r => r.UpdateAsync(It.IsAny<WeekSummary>()))
+            .Returns(Task.CompletedTask);
+
+        _settingsRepositoryMock.Setup(r => r.GetAsync())
+            .ReturnsAsync(_getSettingsResponse);
+
+        _settingsRepositoryMock.Setup(r => r.AddAsync(It.IsAny<WorkTimeSettings>()))
+            .Callback<WorkTimeSettings>(s => _addedSettings = s)
+            .Returns(Task.CompletedTask);
+
+        _settingsRepositoryMock.Setup(r => r.UpdateAsync(It.IsAny<WorkTimeSettings>()))
+            .Returns(Task.CompletedTask);
+
+        return new WorkTimePlannerService(
             _workDayRepositoryMock.Object,
             _weekSummaryRepositoryMock.Object,
             _settingsRepositoryMock.Object);
     }
 
     // GetWorkDaysAsync
-
     [Fact]
-    public async Task GetWorkDaysAsync_WhenWorkDaysExist_ReturnsWorkDays()
+    public async Task GetWorkDaysAsync_WhenWorkDaysExist_ReturnsMappedWorkDays()
     {
         // Arrange
-        var workDays = new List<WorkDay> { new() { Status = DayStatus.Normal } };
-        _workDayRepositoryMock.Setup(r => r.GetByDateRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
-            .ReturnsAsync(workDays);
+        var workDays = new List<WorkDay> { WorkTimePlannerTestData.DefaultWorkDay };
+        _getWorkDaysByRangeResponse = workDays;
+        var service = GetService();
 
         // Act
-        var result = await _sut.GetWorkDaysAsync(DateTime.UtcNow, DateTime.UtcNow.AddDays(7));
+        var result = await service.GetWorkDaysAsync(DateTime.UtcNow, DateTime.UtcNow.AddDays(7));
 
         // Assert
-        result.Should().BeEquivalentTo(workDays.Adapt<List<WorkDayDto>>());
+        AssertEx.AreEqual(result, workDays.Adapt<List<WorkDayDto>>());
+
+        _workDayRepositoryMock.Verify(r => r.GetByDateRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()), Times.Once);
+        _workDayRepositoryMock.VerifyNoOtherCalls();
     }
 
     // GetWorkDayByIdAsync
-
     [Fact]
     public async Task GetWorkDayByIdAsync_WhenWorkDayExists_ReturnsWorkDay()
     {
         // Arrange
-        var workDay = new WorkDay { Id = 1, Status = DayStatus.Normal };
-        _workDayRepositoryMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(workDay);
+        var workDay = WorkTimePlannerTestData.DefaultWorkDay;
+        _getWorkDayByIdResponse = workDay;
+        var service = GetService();
 
         // Act
-        var result = await _sut.GetWorkDayByIdAsync(1);
+        var result = await service.GetWorkDayByIdAsync(ID);
 
         // Assert
-        result.Should().BeEquivalentTo(workDay.Adapt<WorkDayDto>());
+        AssertEx.AreEqual(result, workDay.Adapt<WorkDayDto>());
+
+        _workDayRepositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
+        _workDayRepositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
     public async Task GetWorkDayByIdAsync_WhenWorkDayDoesNotExist_ReturnsNull()
     {
         // Arrange
-        _workDayRepositoryMock.Setup(r => r.GetByIdAsync(It.IsAny<int>())).ReturnsAsync((WorkDay?)null);
+        _getWorkDayByIdResponse = null;
+        var service = GetService();
 
         // Act
-        var result = await _sut.GetWorkDayByIdAsync(99);
+        var result = await service.GetWorkDayByIdAsync(ID);
 
         // Assert
-        result.Should().BeNull();
+        AssertEx.AreEqual(null, result);
+
+        _workDayRepositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
+        _workDayRepositoryMock.VerifyNoOtherCalls();
     }
 
     // CreateWorkDayAsync
-
     [Fact]
     public async Task CreateWorkDayAsync_WhenStartAndEndTimeProvided_CalculatesWorkAndOvertimeMinutes()
     {
         // Arrange
-        var dto = new CreateWorkDayDto(
-            DateTime.UtcNow,
-            new TimeOnly(8, 0),
-            new TimeOnly(17, 30),
-            30,
-            false,
-            DayStatus.Normal);
-        _settingsRepositoryMock.Setup(r => r.GetAsync()).ReturnsAsync(DefaultSettings);
+        var dto = WorkTimePlannerTestData.DefaultCreateWorkDayDto;
+        var service = GetService();
 
         // Act
-        var result = await _sut.CreateWorkDayAsync(dto);
+        var result = await service.CreateWorkDayAsync(dto);
 
         // Assert
-        result.WorkMinutes.Should().Be(540);
-        result.OvertimeMinutes.Should().Be(60);
+        AssertEx.AreEqual(result, ID);
+        AssertEx.AreEqual(480, _createdWorkDay!.WorkMinutes);
+        AssertEx.AreEqual(0, _createdWorkDay.OvertimeMinutes);
+
+        _workDayRepositoryMock.Verify(r => r.CreateWorkDayAsync(It.Is<WorkDay>(w =>
+            w.Date == dto.Date &&
+            w.StartTime == dto.StartTime &&
+            w.EndTime == dto.EndTime &&
+            w.BreakMinutes == dto.BreakMinutes &&
+            w.Status == DayStatus.Normal &&
+            w.WorkMinutes == 480 &&
+            w.OvertimeMinutes == 0
+        )), Times.Once);
+        _workDayRepositoryMock.VerifyNoOtherCalls();
+
+        _settingsRepositoryMock.Verify(r => r.GetAsync(), Times.Once);
+        _settingsRepositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
     public async Task CreateWorkDayAsync_WhenStatusIsHoliday_SetsWorkAndOvertimeToZero()
     {
         // Arrange
-        var dto = new CreateWorkDayDto(
-            DateTime.UtcNow,
-            new TimeOnly(8, 0),
-            new TimeOnly(16, 30),
-            0,
-            false,
-            DayStatus.Holiday);
-        _settingsRepositoryMock.Setup(r => r.GetAsync()).ReturnsAsync(DefaultSettings);
+        var dto = WorkTimePlannerTestData.DefaultCreateWorkDayDto with { Status = DayStatus.Holiday };
+        var service = GetService();
 
         // Act
-        var result = await _sut.CreateWorkDayAsync(dto);
+        var result = await service.CreateWorkDayAsync(dto);
 
         // Assert
-        result.WorkMinutes.Should().Be(0);
-        result.OvertimeMinutes.Should().Be(0);
+        AssertEx.AreEqual(result, ID);
+        AssertEx.AreEqual(0, _createdWorkDay!.WorkMinutes);
+        AssertEx.AreEqual(0, _createdWorkDay.OvertimeMinutes);
+
+        _workDayRepositoryMock.Verify(r => r.CreateWorkDayAsync(It.Is<WorkDay>(w =>
+            w.WorkMinutes == 0 &&
+            w.OvertimeMinutes == 0
+        )), Times.Once);
+        _workDayRepositoryMock.VerifyNoOtherCalls();
+
+        _settingsRepositoryMock.Verify(r => r.GetAsync(), Times.Once);
+        _settingsRepositoryMock.VerifyNoOtherCalls();
     }
 
     [Theory]
@@ -132,374 +218,542 @@ public class WorkTimePlannerServiceTests
     public async Task CreateWorkDayAsync_WhenStatusIsVacationOrSick_SetsWorkAndOvertimeToZero(DayStatus status)
     {
         // Arrange
-        var dto = new CreateWorkDayDto(
-            DateTime.UtcNow,
-            new TimeOnly(8, 0),
-            new TimeOnly(16, 30),
-            0,
-            false,
-            status);
-        _settingsRepositoryMock.Setup(r => r.GetAsync()).ReturnsAsync(DefaultSettings);
+        var dto = WorkTimePlannerTestData.DefaultCreateWorkDayDto with { Status = status };
+        var service = GetService();
 
         // Act
-        var result = await _sut.CreateWorkDayAsync(dto);
+        var result = await service.CreateWorkDayAsync(dto);
 
         // Assert
-        result.WorkMinutes.Should().Be(0);
-        result.OvertimeMinutes.Should().Be(0);
+        AssertEx.AreEqual(result, ID);
+        AssertEx.AreEqual(0, _createdWorkDay!.WorkMinutes);
+        AssertEx.AreEqual(0, _createdWorkDay.OvertimeMinutes);
+
+        _workDayRepositoryMock.Verify(r => r.CreateWorkDayAsync(It.Is<WorkDay>(w =>
+            w.WorkMinutes == 0 &&
+            w.OvertimeMinutes == 0
+        )), Times.Once);
+        _workDayRepositoryMock.VerifyNoOtherCalls();
+
+        _settingsRepositoryMock.Verify(r => r.GetAsync(), Times.Once);
+        _settingsRepositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
-    public async Task CreateWorkDayAsync_WhenStartOrEndTimeIsNull_SetsWorkAndOvertimeToZero()
+    public async Task CreateWorkDayAsync_WhenStartOrEndTimeIsMissing_SetsWorkAndOvertimeToZero()
     {
         // Arrange
-        var dto = new CreateWorkDayDto(DateTime.UtcNow, null, null, 0, false, DayStatus.Normal);
-        _settingsRepositoryMock.Setup(r => r.GetAsync()).ReturnsAsync(DefaultSettings);
+        var dto = WorkTimePlannerTestData.DefaultCreateWorkDayDto with { StartTime = null, EndTime = null };
+        var service = GetService();
 
         // Act
-        var result = await _sut.CreateWorkDayAsync(dto);
+        var result = await service.CreateWorkDayAsync(dto);
 
         // Assert
-        result.WorkMinutes.Should().Be(0);
-        result.OvertimeMinutes.Should().Be(0);
+        AssertEx.AreEqual(result, ID);
+        AssertEx.AreEqual(0, _createdWorkDay!.WorkMinutes);
+        AssertEx.AreEqual(0, _createdWorkDay.OvertimeMinutes);
+
+        _workDayRepositoryMock.Verify(r => r.CreateWorkDayAsync(It.Is<WorkDay>(w =>
+            w.WorkMinutes == 0 &&
+            w.OvertimeMinutes == 0
+        )), Times.Once);
+        _workDayRepositoryMock.VerifyNoOtherCalls();
+
+        _settingsRepositoryMock.Verify(r => r.GetAsync(), Times.Once);
+        _settingsRepositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
     public async Task CreateWorkDayAsync_WhenSettingsDoNotExist_CreatesDefaultSettings()
     {
         // Arrange
-        var dto = new CreateWorkDayDto(DateTime.UtcNow, null, null, 0, false, DayStatus.Normal);
-        _settingsRepositoryMock.Setup(r => r.GetAsync()).ReturnsAsync((WorkTimeSettings?)null);
+        var dto = WorkTimePlannerTestData.DefaultCreateWorkDayDto with { StartTime = null, EndTime = null };
+        _getSettingsResponse = null;
+        var service = GetService();
 
         // Act
-        await _sut.CreateWorkDayAsync(dto);
+        await service.CreateWorkDayAsync(dto);
 
         // Assert
+        AssertEx.AreEqual(_addedSettings, new WorkTimeSettings
+        {
+            DailyTargetMinutes = 480,
+            BreakRule6h = 30,
+            BreakRule9h = 45,
+            HomeOfficeLimit = 20
+        });
+
+        _workDayRepositoryMock.Verify(r => r.CreateWorkDayAsync(It.Is<WorkDay>(w =>
+            w.WorkMinutes == 0 &&
+            w.OvertimeMinutes == 0
+        )), Times.Once);
+        _workDayRepositoryMock.VerifyNoOtherCalls();
+
+        _settingsRepositoryMock.Verify(r => r.GetAsync(), Times.Once);
         _settingsRepositoryMock.Verify(r => r.AddAsync(It.Is<WorkTimeSettings>(s =>
             s.DailyTargetMinutes == 480 &&
             s.BreakRule6h == 30 &&
             s.BreakRule9h == 45 &&
-            s.HomeOfficeLimit == 20)), Times.Once);
+            s.HomeOfficeLimit == 20
+        )), Times.Once);
+        _settingsRepositoryMock.VerifyNoOtherCalls();
     }
 
     // UpdateWorkDayAsync
-
     [Fact]
     public async Task UpdateWorkDayAsync_WhenWorkDayExists_UpdatesAllFields()
     {
         // Arrange
-        var existing = new WorkDay { Id = 1, Status = DayStatus.Normal, IsLocked = false };
-        var dto = new UpdateWorkDayDto(
-            new DateTime(2026, 6, 2),
-            new TimeOnly(9, 0),
-            new TimeOnly(17, 0),
-            45,
-            true,
-            DayStatus.Normal,
-            false);
-        _workDayRepositoryMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(existing);
-        _settingsRepositoryMock.Setup(r => r.GetAsync()).ReturnsAsync(DefaultSettings);
+        var existing = WorkTimePlannerTestData.DefaultWorkDay;
+        var dto = WorkTimePlannerTestData.DefaultUpdateWorkDayDto;
+
+        _getWorkDayByIdResponse = existing;
+        var service = GetService();
 
         // Act
-        await _sut.UpdateWorkDayAsync(1, dto);
+        await service.UpdateWorkDayAsync(ID, dto);
 
         // Assert
-        existing.Date.Should().Be(dto.Date);
-        existing.StartTime.Should().Be(dto.StartTime);
-        existing.EndTime.Should().Be(dto.EndTime);
-        existing.BreakMinutes.Should().Be(dto.BreakMinutes);
-        existing.IsHomeOffice.Should().Be(dto.IsHomeOffice);
-        _workDayRepositoryMock.Verify(r => r.UpdateAsync(existing), Times.Once);
+        AssertEx.AreEqual(dto.Date, existing.Date);
+        AssertEx.AreEqual(dto.StartTime, existing.StartTime);
+        AssertEx.AreEqual(dto.EndTime, existing.EndTime);
+        AssertEx.AreEqual(dto.BreakMinutes, existing.BreakMinutes);
+        AssertEx.AreEqual(dto.IsHomeOffice, existing.IsHomeOffice);
+        AssertEx.AreEqual(dto.Status, existing.Status);
+        AssertEx.AreEqual(dto.IsLocked, existing.IsLocked);
+        AssertEx.AreEqual(480, existing.WorkMinutes);
+        AssertEx.AreEqual(0, existing.OvertimeMinutes);
+
+        _workDayRepositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
+        _workDayRepositoryMock.Verify(r => r.UpdateWorkDayAsync(It.Is<WorkDay>(w =>
+            w.Id == ID &&
+            w.Date == dto.Date &&
+            w.StartTime == dto.StartTime &&
+            w.BreakMinutes == dto.BreakMinutes
+        )), Times.Once);
+        _workDayRepositoryMock.VerifyNoOtherCalls();
+
+        _settingsRepositoryMock.Verify(r => r.GetAsync(), Times.Once);
+        _settingsRepositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
     public async Task UpdateWorkDayAsync_WhenWorkDayDoesNotExist_ThrowsNotFoundException()
     {
         // Arrange
-        _workDayRepositoryMock.Setup(r => r.GetByIdAsync(It.IsAny<int>())).ReturnsAsync((WorkDay?)null);
+        _getWorkDayByIdResponse = null;
+        var service = GetService();
 
         // Act
-        var act = () => _sut.UpdateWorkDayAsync(99, new UpdateWorkDayDto(
-            DateTime.UtcNow, null, null, 0, false, DayStatus.Normal, false));
+        Func<Task> act = async () => await service.UpdateWorkDayAsync(ID, WorkTimePlannerTestData.DefaultUpdateWorkDayDto);
 
         // Assert
-        await act.Should().ThrowAsync<NotFoundException>().WithMessage("*99*");
+        await AssertEx.Throws<NotFoundException>(act);
+
+        _workDayRepositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
+        _workDayRepositoryMock.Verify(r => r.UpdateWorkDayAsync(It.IsAny<WorkDay>()), Times.Never);
+        _workDayRepositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
     public async Task UpdateWorkDayAsync_WhenWorkDayIsLocked_ThrowsInvalidOperationException()
     {
         // Arrange
-        var locked = new WorkDay { Id = 1, Status = DayStatus.Normal, IsLocked = true };
-        _workDayRepositoryMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(locked);
+        var locked = WorkTimePlannerTestData.DefaultWorkDay;
+        locked.IsLocked = true;
+        _getWorkDayByIdResponse = locked;
+        var service = GetService();
 
         // Act
-        var act = () => _sut.UpdateWorkDayAsync(1, new UpdateWorkDayDto(
-            DateTime.UtcNow, null, null, 0, false, DayStatus.Normal, false));
+        Func<Task> act = async () => await service.UpdateWorkDayAsync(ID, WorkTimePlannerTestData.DefaultUpdateWorkDayDto);
 
         // Assert
-        await act.Should().ThrowAsync<InvalidOperationException>();
-        _workDayRepositoryMock.Verify(r => r.UpdateAsync(It.IsAny<WorkDay>()), Times.Never);
+        await AssertEx.Throws<InvalidOperationException>(act);
+
+        _workDayRepositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
+        _workDayRepositoryMock.Verify(r => r.UpdateWorkDayAsync(It.IsAny<WorkDay>()), Times.Never);
+        _workDayRepositoryMock.VerifyNoOtherCalls();
     }
 
     // DeleteWorkDayAsync
-
     [Fact]
     public async Task DeleteWorkDayAsync_WhenWorkDayExists_CallsRepositoryDelete()
     {
         // Arrange
-        var workDay = new WorkDay { Id = 1, Status = DayStatus.Normal, IsLocked = false };
-        _workDayRepositoryMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(workDay);
+        var workDay = WorkTimePlannerTestData.DefaultWorkDay;
+        _getWorkDayByIdResponse = workDay;
+        var service = GetService();
 
         // Act
-        await _sut.DeleteWorkDayAsync(1);
+        await service.DeleteWorkDayAsync(ID);
 
         // Assert
-        _workDayRepositoryMock.Verify(r => r.DeleteAsync(1), Times.Once);
+        AssertEx.AreEqual(workDay, _deletedWorkDay);
+
+        _workDayRepositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
+        _workDayRepositoryMock.Verify(r => r.DeleteWorkDayAsync(It.Is<WorkDay>(w => w.Id == ID)), Times.Once);
+        _workDayRepositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
     public async Task DeleteWorkDayAsync_WhenWorkDayDoesNotExist_ThrowsNotFoundException()
     {
         // Arrange
-        _workDayRepositoryMock.Setup(r => r.GetByIdAsync(It.IsAny<int>())).ReturnsAsync((WorkDay?)null);
+        _getWorkDayByIdResponse = null;
+        var service = GetService();
 
         // Act
-        var act = () => _sut.DeleteWorkDayAsync(99);
+        Func<Task> act = async () => await service.DeleteWorkDayAsync(ID);
 
         // Assert
-        await act.Should().ThrowAsync<NotFoundException>().WithMessage("*99*");
+        await AssertEx.Throws<NotFoundException>(act);
+
+        _workDayRepositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
+        _workDayRepositoryMock.Verify(r => r.DeleteWorkDayAsync(It.IsAny<WorkDay>()), Times.Never);
+        _workDayRepositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
     public async Task DeleteWorkDayAsync_WhenWorkDayIsLocked_ThrowsInvalidOperationException()
     {
         // Arrange
-        var locked = new WorkDay { Id = 1, Status = DayStatus.Normal, IsLocked = true };
-        _workDayRepositoryMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(locked);
+        var locked = WorkTimePlannerTestData.DefaultWorkDay;
+        locked.IsLocked = true;
+        _getWorkDayByIdResponse = locked;
+        var service = GetService();
 
         // Act
-        var act = () => _sut.DeleteWorkDayAsync(1);
+        Func<Task> act = async () => await service.DeleteWorkDayAsync(ID);
 
         // Assert
-        await act.Should().ThrowAsync<InvalidOperationException>();
-        _workDayRepositoryMock.Verify(r => r.DeleteAsync(It.IsAny<int>()), Times.Never);
+        await AssertEx.Throws<InvalidOperationException>(act);
+
+        _workDayRepositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
+        _workDayRepositoryMock.Verify(r => r.DeleteWorkDayAsync(It.IsAny<WorkDay>()), Times.Never);
+        _workDayRepositoryMock.VerifyNoOtherCalls();
     }
 
     // GetWeekSummaryAsync
-
     [Fact]
     public async Task GetWeekSummaryAsync_WhenSummaryExists_ReturnsSummary()
     {
         // Arrange
-        var summary = new WeekSummary { Year = 2026, WeekNumber = 23, TotalOvertime = 60 };
-        _weekSummaryRepositoryMock.Setup(r => r.GetByYearAndWeekAsync(2026, 23)).ReturnsAsync(summary);
+        var summary = WorkTimePlannerTestData.DefaultWeekSummary;
+        _getWeekSummaryResponse = summary;
+        var service = GetService();
 
         // Act
-        var result = await _sut.GetWeekSummaryAsync(2026, 23);
+        var result = await service.GetWeekSummaryAsync(2026, 23);
 
         // Assert
-        result.Should().BeEquivalentTo(summary.Adapt<WeekSummaryDto>());
+        AssertEx.AreEqual(result, summary.Adapt<WeekSummaryDto>());
+
+        _weekSummaryRepositoryMock.Verify(r => r.GetByYearAndWeekAsync(2026, 23), Times.Once);
+        _weekSummaryRepositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
     public async Task GetWeekSummaryAsync_WhenSummaryDoesNotExist_ReturnsNull()
     {
         // Arrange
-        _weekSummaryRepositoryMock.Setup(r => r.GetByYearAndWeekAsync(It.IsAny<int>(), It.IsAny<int>()))
-            .ReturnsAsync((WeekSummary?)null);
+        _getWeekSummaryResponse = null;
+        var service = GetService();
 
         // Act
-        var result = await _sut.GetWeekSummaryAsync(2026, 23);
+        var result = await service.GetWeekSummaryAsync(2026, 23);
 
         // Assert
-        result.Should().BeNull();
+        AssertEx.AreEqual(null, result);
+
+        _weekSummaryRepositoryMock.Verify(r => r.GetByYearAndWeekAsync(2026, 23), Times.Once);
+        _weekSummaryRepositoryMock.VerifyNoOtherCalls();
     }
 
     // SaveWeekSummaryAsync
-
     [Fact]
     public async Task SaveWeekSummaryAsync_WhenNoExistingSummary_CreatesNewSummaryWithCumulativeOvertime()
     {
         // Arrange
-        var previousSummary = new WeekSummary { Year = 2026, WeekNumber = 22, TotalOvertime = 60 };
-        var workDays = new List<WorkDay>
+        var previousSummary = WorkTimePlannerTestData.DefaultWeekSummary;
+        previousSummary.Year = 2026;
+        previousSummary.WeekNumber = 22;
+        previousSummary.TotalOvertime = 60;
+
+        _getWeekSummaryResponse = null;
+        _getWorkDaysByRangeResponse = new List<WorkDay>
         {
             new() { Status = DayStatus.Normal, OvertimeMinutes = 30 },
             new() { Status = DayStatus.Normal, OvertimeMinutes = -15 }
         };
-        _weekSummaryRepositoryMock.Setup(r => r.GetByYearAndWeekAsync(2026, 23)).ReturnsAsync((WeekSummary?)null);
-        _weekSummaryRepositoryMock.Setup(r => r.GetByYearAndWeekAsync(2026, 22)).ReturnsAsync(previousSummary);
-        _workDayRepositoryMock.Setup(r => r.GetByDateRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
-            .ReturnsAsync(workDays);
+        var service = GetService();
+        _weekSummaryRepositoryMock
+            .Setup(r => r.GetByYearAndWeekAsync(2026, 22))
+            .ReturnsAsync(previousSummary);
 
         // Act
-        var result = await _sut.SaveWeekSummaryAsync(2026, 23);
+        var result = await service.SaveWeekSummaryAsync(2026, 23);
 
         // Assert
-        result.TotalOvertime.Should().Be(75); // 60 (previous) + 30 - 15 (this week)
-        _weekSummaryRepositoryMock.Verify(r => r.AddAsync(It.IsAny<WeekSummary>()), Times.Once);
+        AssertEx.AreEqual(75, result.TotalOvertime); // 60 (previous) + 30 - 15 (this week)
+        AssertEx.AreEqual(_addedSummary, new WeekSummary
+        {
+            Year = 2026,
+            WeekNumber = 23,
+            TotalOvertime = 75
+        });
+
+        _weekSummaryRepositoryMock.Verify(r => r.GetByYearAndWeekAsync(2026, 23), Times.Once);
+        _weekSummaryRepositoryMock.Verify(r => r.GetByYearAndWeekAsync(2026, 22), Times.Once);
+        _weekSummaryRepositoryMock.Verify(r => r.AddAsync(It.Is<WeekSummary>(s =>
+            s.Year == 2026 &&
+            s.WeekNumber == 23 &&
+            s.TotalOvertime == 75
+        )), Times.Once);
+        _weekSummaryRepositoryMock.VerifyNoOtherCalls();
+
+        _workDayRepositoryMock.Verify(r => r.GetByDateRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()), Times.Once);
+        _workDayRepositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
     public async Task SaveWeekSummaryAsync_WhenExistingSummaryExists_UpdatesInsteadOfCreating()
     {
         // Arrange
-        var existing = new WeekSummary { Id = 1, Year = 2026, WeekNumber = 23, TotalOvertime = 0 };
-        _weekSummaryRepositoryMock.Setup(r => r.GetByYearAndWeekAsync(2026, 23)).ReturnsAsync(existing);
-        _weekSummaryRepositoryMock.Setup(r => r.GetByYearAndWeekAsync(2026, 22)).ReturnsAsync((WeekSummary?)null);
-        _workDayRepositoryMock.Setup(r => r.GetByDateRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
-            .ReturnsAsync(new List<WorkDay> { new() { Status = DayStatus.Normal, OvertimeMinutes = 45 } });
+        var existing = WorkTimePlannerTestData.DefaultWeekSummary;
+        existing.Year = 2026;
+        existing.WeekNumber = 23;
+        existing.TotalOvertime = 0;
+
+        _getWeekSummaryResponse = existing;
+        _getWorkDaysByRangeResponse = new List<WorkDay>
+        {
+            new() { Status = DayStatus.Normal, OvertimeMinutes = 45 }
+        };
+        var service = GetService();
 
         // Act
-        var result = await _sut.SaveWeekSummaryAsync(2026, 23);
+        var result = await service.SaveWeekSummaryAsync(2026, 23);
 
         // Assert
-        result.TotalOvertime.Should().Be(45);
-        _weekSummaryRepositoryMock.Verify(r => r.UpdateAsync(existing), Times.Once);
+        AssertEx.AreEqual(45, result.TotalOvertime);
+        AssertEx.AreEqual(45, existing.TotalOvertime);
+
+        _weekSummaryRepositoryMock.Verify(r => r.GetByYearAndWeekAsync(2026, 23), Times.Once);
+        _weekSummaryRepositoryMock.Verify(r => r.GetByYearAndWeekAsync(2026, 22), Times.Once);
+        _weekSummaryRepositoryMock.Verify(r => r.UpdateAsync(It.Is<WeekSummary>(s =>
+            s.TotalOvertime == 45
+        )), Times.Once);
         _weekSummaryRepositoryMock.Verify(r => r.AddAsync(It.IsAny<WeekSummary>()), Times.Never);
+        _weekSummaryRepositoryMock.VerifyNoOtherCalls();
+
+        _workDayRepositoryMock.Verify(r => r.GetByDateRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()), Times.Once);
+        _workDayRepositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
-    public async Task SaveWeekSummaryAsync_WhenWeekIsFirstOfYear_UsesPreviousYearLastWeek()
+    public async Task SaveWeekSummaryAsync_WhenWeekIsFirstOfYear_UsesLastWeekOfPreviousYear()
     {
         // Arrange
-        _weekSummaryRepositoryMock.Setup(r => r.GetByYearAndWeekAsync(2026, 1)).ReturnsAsync((WeekSummary?)null);
-        _weekSummaryRepositoryMock.Setup(r => r.GetByYearAndWeekAsync(2025, It.IsAny<int>())).ReturnsAsync((WeekSummary?)null);
-        _workDayRepositoryMock.Setup(r => r.GetByDateRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
-            .ReturnsAsync(new List<WorkDay>());
+        _getWeekSummaryResponse = null;
+        _getWorkDaysByRangeResponse = new List<WorkDay>();
+        var service = GetService();
 
         // Act
-        await _sut.SaveWeekSummaryAsync(2026, 1);
+        await service.SaveWeekSummaryAsync(2026, 1);
 
         // Assert
+        _weekSummaryRepositoryMock.Verify(r => r.GetByYearAndWeekAsync(2026, 1), Times.Once);
         _weekSummaryRepositoryMock.Verify(r => r.GetByYearAndWeekAsync(2025, It.IsAny<int>()), Times.Once);
+        _weekSummaryRepositoryMock.Verify(r => r.AddAsync(It.Is<WeekSummary>(s =>
+            s.Year == 2026 &&
+            s.WeekNumber == 1 &&
+            s.TotalOvertime == 0
+        )), Times.Once);
+        _weekSummaryRepositoryMock.VerifyNoOtherCalls();
+
+        _workDayRepositoryMock.Verify(r => r.GetByDateRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()), Times.Once);
+        _workDayRepositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
     public async Task SaveWeekSummaryAsync_WhenNoPreviousSummaryExists_StartsFromZero()
     {
         // Arrange
-        _weekSummaryRepositoryMock.Setup(r => r.GetByYearAndWeekAsync(It.IsAny<int>(), It.IsAny<int>()))
-            .ReturnsAsync((WeekSummary?)null);
-        _workDayRepositoryMock.Setup(r => r.GetByDateRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
-            .ReturnsAsync(new List<WorkDay> { new() { Status = DayStatus.Normal, OvertimeMinutes = 30 } });
+        _getWeekSummaryResponse = null;
+        _getWorkDaysByRangeResponse = new List<WorkDay>
+        {
+            new() { Status = DayStatus.Normal, OvertimeMinutes = 30 }
+        };
+        var service = GetService();
 
         // Act
-        var result = await _sut.SaveWeekSummaryAsync(2026, 23);
+        var result = await service.SaveWeekSummaryAsync(2026, 23);
 
         // Assert
-        result.TotalOvertime.Should().Be(30);
+        AssertEx.AreEqual(30, result.TotalOvertime);
+
+        _weekSummaryRepositoryMock.Verify(r => r.GetByYearAndWeekAsync(2026, 23), Times.Once);
+        _weekSummaryRepositoryMock.Verify(r => r.GetByYearAndWeekAsync(2026, 22), Times.Once);
+        _weekSummaryRepositoryMock.Verify(r => r.AddAsync(It.Is<WeekSummary>(s =>
+            s.TotalOvertime == 30
+        )), Times.Once);
+        _weekSummaryRepositoryMock.VerifyNoOtherCalls();
+
+        _workDayRepositoryMock.Verify(r => r.GetByDateRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()), Times.Once);
+        _workDayRepositoryMock.VerifyNoOtherCalls();
     }
 
     // GetSettingsAsync
-
     [Fact]
     public async Task GetSettingsAsync_WhenSettingsExist_ReturnsSettings()
     {
         // Arrange
-        _settingsRepositoryMock.Setup(r => r.GetAsync()).ReturnsAsync(DefaultSettings);
+        var settings = WorkTimePlannerTestData.DefaultSettings;
+        _getSettingsResponse = settings;
+        var service = GetService();
 
         // Act
-        var result = await _sut.GetSettingsAsync();
+        var result = await service.GetSettingsAsync();
 
         // Assert
-        result.Should().BeEquivalentTo(DefaultSettings.Adapt<WorkTimeSettingsDto>());
+        AssertEx.AreEqual(result, settings.Adapt<WorkTimeSettingsDto>());
+
+        _settingsRepositoryMock.Verify(r => r.GetAsync(), Times.Once);
+        _settingsRepositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
     public async Task GetSettingsAsync_WhenSettingsDoNotExist_CreatesDefaultSettings()
     {
         // Arrange
-        _settingsRepositoryMock.Setup(r => r.GetAsync()).ReturnsAsync((WorkTimeSettings?)null);
+        _getSettingsResponse = null;
+        var service = GetService();
 
         // Act
-        var result = await _sut.GetSettingsAsync();
+        var result = await service.GetSettingsAsync();
 
         // Assert
-        result.DailyTargetMinutes.Should().Be(480);
-        result.BreakRule6h.Should().Be(30);
-        result.BreakRule9h.Should().Be(45);
-        result.HomeOfficeLimit.Should().Be(20);
-        _settingsRepositoryMock.Verify(r => r.AddAsync(It.IsAny<WorkTimeSettings>()), Times.Once);
+        AssertEx.AreEqual(480, result.DailyTargetMinutes);
+        AssertEx.AreEqual(30, result.BreakRule6h);
+        AssertEx.AreEqual(45, result.BreakRule9h);
+        AssertEx.AreEqual(20, result.HomeOfficeLimit);
+        AssertEx.AreEqual(_addedSettings, new WorkTimeSettings
+        {
+            DailyTargetMinutes = 480,
+            BreakRule6h = 30,
+            BreakRule9h = 45,
+            HomeOfficeLimit = 20
+        });
+
+        _settingsRepositoryMock.Verify(r => r.GetAsync(), Times.Once);
+        _settingsRepositoryMock.Verify(r => r.AddAsync(It.Is<WorkTimeSettings>(s =>
+            s.DailyTargetMinutes == 480 &&
+            s.BreakRule6h == 30 &&
+            s.BreakRule9h == 45 &&
+            s.HomeOfficeLimit == 20
+        )), Times.Once);
+        _settingsRepositoryMock.VerifyNoOtherCalls();
     }
 
     // UpdateSettingsAsync
-
     [Fact]
     public async Task UpdateSettingsAsync_WhenSettingsExist_UpdatesAllFields()
     {
         // Arrange
-        var existing = new WorkTimeSettings { Id = 1, DailyTargetMinutes = 480 };
-        var dto = new UpdateWorkTimeSettingsDto(450, 20, 40, 15);
-        _settingsRepositoryMock.Setup(r => r.GetAsync()).ReturnsAsync(existing);
+        var existing = WorkTimePlannerTestData.DefaultSettings;
+        var dto = WorkTimePlannerTestData.DefaultUpdateSettingsDto;
+        _getSettingsResponse = existing;
+        var service = GetService();
 
         // Act
-        await _sut.UpdateSettingsAsync(dto);
+        await service.UpdateSettingsAsync(dto);
 
         // Assert
-        existing.DailyTargetMinutes.Should().Be(dto.DailyTargetMinutes);
-        existing.BreakRule6h.Should().Be(dto.BreakRule6h);
-        existing.BreakRule9h.Should().Be(dto.BreakRule9h);
-        existing.HomeOfficeLimit.Should().Be(dto.HomeOfficeLimit);
-        _settingsRepositoryMock.Verify(r => r.UpdateAsync(existing), Times.Once);
+        AssertEx.AreEqual(dto.DailyTargetMinutes, existing.DailyTargetMinutes);
+        AssertEx.AreEqual(dto.BreakRule6h, existing.BreakRule6h);
+        AssertEx.AreEqual(dto.BreakRule9h, existing.BreakRule9h);
+        AssertEx.AreEqual(dto.HomeOfficeLimit, existing.HomeOfficeLimit);
+
+        _settingsRepositoryMock.Verify(r => r.GetAsync(), Times.Once);
+        _settingsRepositoryMock.Verify(r => r.UpdateAsync(It.Is<WorkTimeSettings>(s =>
+            s.DailyTargetMinutes == dto.DailyTargetMinutes &&
+            s.BreakRule6h == dto.BreakRule6h &&
+            s.BreakRule9h == dto.BreakRule9h &&
+            s.HomeOfficeLimit == dto.HomeOfficeLimit
+        )), Times.Once);
+        _settingsRepositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
     public async Task UpdateSettingsAsync_WhenSettingsDoNotExist_ThrowsNotFoundException()
     {
         // Arrange
-        _settingsRepositoryMock.Setup(r => r.GetAsync()).ReturnsAsync((WorkTimeSettings?)null);
+        _getSettingsResponse = null;
+        var service = GetService();
 
         // Act
-        var act = () => _sut.UpdateSettingsAsync(new UpdateWorkTimeSettingsDto(480, 30, 45, 20));
+        Func<Task> act = async () => await service.UpdateSettingsAsync(WorkTimePlannerTestData.DefaultUpdateSettingsDto);
 
         // Assert
-        await act.Should().ThrowAsync<NotFoundException>();
+        await AssertEx.Throws<NotFoundException>(act);
+
+        _settingsRepositoryMock.Verify(r => r.GetAsync(), Times.Once);
+        _settingsRepositoryMock.Verify(r => r.UpdateAsync(It.IsAny<WorkTimeSettings>()), Times.Never);
+        _settingsRepositoryMock.Verify(r => r.AddAsync(It.IsAny<WorkTimeSettings>()), Times.Never);
+        _settingsRepositoryMock.VerifyNoOtherCalls();
     }
 
     // GetHomeOfficeDaysCountAsync
-
     [Fact]
     public async Task GetHomeOfficeDaysCountAsync_WhenHomeOfficeDaysExist_ReturnsCorrectCount()
     {
         // Arrange
-        var workDays = new List<WorkDay>
-        {
-            new() { Status = DayStatus.Normal, IsHomeOffice = true },
-            new() { Status = DayStatus.Normal, IsHomeOffice = true },
-            new() { Status = DayStatus.Normal, IsHomeOffice = false }
-        };
-        _workDayRepositoryMock.Setup(r => r.GetByDateRangeAsync(
-            new DateTime(2026, 6, 1),
-            new DateTime(2026, 7, 1)))
-            .ReturnsAsync(workDays);
+        var homeOfficeDay1 = WorkTimePlannerTestData.DefaultWorkDay;
+        homeOfficeDay1.IsHomeOffice = true;
+        var homeOfficeDay2 = WorkTimePlannerTestData.DefaultWorkDay;
+        homeOfficeDay2.IsHomeOffice = true;
+        var officeDay = WorkTimePlannerTestData.DefaultWorkDay;
+        officeDay.IsHomeOffice = false;
+
+        _getWorkDaysByRangeResponse = new List<WorkDay> { homeOfficeDay1, homeOfficeDay2, officeDay };
+        var service = GetService();
 
         // Act
-        var result = await _sut.GetHomeOfficeDaysCountAsync(2026, 6);
+        var result = await service.GetHomeOfficeDaysCountAsync(2026, 6);
 
         // Assert
-        result.Should().Be(2);
+        AssertEx.AreEqual(2, result);
+
+        _workDayRepositoryMock.Verify(r => r.GetByDateRangeAsync(
+            new DateTime(2026, 6, 1),
+            new DateTime(2026, 7, 1)
+        ), Times.Once);
+        _workDayRepositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
     public async Task GetHomeOfficeDaysCountAsync_WhenNoHomeOfficeDays_ReturnsZero()
     {
         // Arrange
-        var workDays = new List<WorkDay>
-        {
-            new() { Status = DayStatus.Normal, IsHomeOffice = false },
-            new() { Status = DayStatus.Normal, IsHomeOffice = false }
-        };
-        _workDayRepositoryMock.Setup(r => r.GetByDateRangeAsync(
-            new DateTime(2026, 6, 1),
-            new DateTime(2026, 7, 1)))
-            .ReturnsAsync(workDays);
+        var officeDay1 = WorkTimePlannerTestData.DefaultWorkDay;
+        officeDay1.IsHomeOffice = false;
+        var officeDay2 = WorkTimePlannerTestData.DefaultWorkDay;
+        officeDay2.IsHomeOffice = false;
+
+        _getWorkDaysByRangeResponse = new List<WorkDay> { officeDay1, officeDay2 };
+        var service = GetService();
 
         // Act
-        var result = await _sut.GetHomeOfficeDaysCountAsync(2026, 6);
+        var result = await service.GetHomeOfficeDaysCountAsync(2026, 6);
 
         // Assert
-        result.Should().Be(0);
+        AssertEx.AreEqual(0, result);
+
+        _workDayRepositoryMock.Verify(r => r.GetByDateRangeAsync(
+            new DateTime(2026, 6, 1),
+            new DateTime(2026, 7, 1)
+        ), Times.Once);
+        _workDayRepositoryMock.VerifyNoOtherCalls();
     }
 }

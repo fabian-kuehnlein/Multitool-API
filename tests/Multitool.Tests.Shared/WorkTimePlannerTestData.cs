@@ -5,6 +5,35 @@ namespace Multitool.Tests.Shared;
 
 public static class WorkTimePlannerTestData
 {
+    public static WorkDay DefaultWorkDay => new()
+    {
+        Id = 1,
+        Date = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc),
+        StartTime = new TimeOnly(8, 0),
+        EndTime = new TimeOnly(16, 30),
+        BreakMinutes = 30,
+        IsHomeOffice = false,
+        Status = DayStatus.Normal,
+        IsLocked = false
+    };
+
+    public static WeekSummary DefaultWeekSummary => new()
+    {
+        Id = 1,
+        Year = 2026,
+        WeekNumber = 23,
+        TotalOvertime = 60
+    };
+
+    public static WorkTimeSettings DefaultSettings => new()
+    {
+        Id = 1,
+        DailyTargetMinutes = 480,
+        BreakRule6h = 30,
+        BreakRule9h = 45,
+        HomeOfficeLimit = 20
+    };
+
     public static WorkDayDto DefaultWorkDayDto => new()
     {
         Id = 1,
