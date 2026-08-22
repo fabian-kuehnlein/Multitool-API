@@ -15,7 +15,7 @@ public class AuthenticationService(IUserRepository userRepository, IPasswordHash
 
         var existing = await userRepository.GetByUsernameAsync(username);
         if (existing != null)
-            throw new UserAlreadyExistsException(username);
+            throw new UserAlreadyExistsException("User already exists.");
 
         var user = new User
         {

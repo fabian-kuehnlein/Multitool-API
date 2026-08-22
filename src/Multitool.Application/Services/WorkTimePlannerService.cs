@@ -25,14 +25,14 @@ public class WorkTimePlannerService(
         return workDay?.Adapt<WorkDayDto>();
     }
 
-    public async Task<WorkDayDto> CreateWorkDayAsync(CreateWorkDayDto dto)
+    public async Task<int> CreateWorkDayAsync(CreateWorkDayDto dto)
     {
         var workDay = dto.Adapt<WorkDay>();
 
         var settings = await GetOrCreateSettingsAsync();
         CalculateWorkDayAsync(workDay, settings);
-        await workDayRepository.AddAsync(workDay);
-        return workDay.Adapt<WorkDayDto>();
+        
+        return await workDayRepository.CreateWorkDayAsync(workDay);
     }
 
     public async Task UpdateWorkDayAsync(int id, UpdateWorkDayDto dto)
@@ -55,18 +55,20 @@ public class WorkTimePlannerService(
 
         CalculateWorkDayAsync(existing, settings);
         
-        await workDayRepository.UpdateAsync(existing);
+        await workDayRepository.UpdateWorkDayAsync(existing);
     }
 
     public async Task DeleteWorkDayAsync(int id)
     {
-        var existing = await workDayRepository.GetByIdAsync(id)
-            ?? throw new NotFoundException($"WorkDay with ID {id} not found.");
+        var existing = await workDayRepository.GetByIdAsync(id);
+        
+        if (existing == null)
+            throw new NotFoundException($"WorkDay with ID {id} not found.");
 
         if (existing.IsLocked)
             throw new InvalidOperationException("Cannot modify a locked WorkDay.");
 
-        await workDayRepository.DeleteAsync(id);
+        await workDayRepository.DeleteWorkDayAsync(existing);
     }
 
     public async Task<WeekSummaryDto?> GetWeekSummaryAsync(int year, int weekNumber)

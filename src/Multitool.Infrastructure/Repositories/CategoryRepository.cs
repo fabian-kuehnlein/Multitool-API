@@ -7,17 +7,17 @@ namespace Multitool.Infrastructure.Repositories;
 
 public class CategoryRepository(AppDbContext db) : ICategoryRepository
 {
+    public async Task<Category?> GetByIdAsync(int id)
+    {
+        return await db.Categories.FindAsync(id);
+    }
+
     public async Task<List<Category>> GetCategoriesAsync()
     {
         return await db.Categories
             .AsNoTracking()
             .OrderBy(c => c.Id)
             .ToListAsync();
-    }
-
-    public async Task<Category?> GetByIdAsync(int id)
-    {
-        return await db.Categories.FindAsync(id);
     }
 
     public async Task<int> CreateCategoryAsync(Category category)

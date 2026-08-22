@@ -44,12 +44,12 @@ public class CalendarController(ICalendarService calendarService) : ControllerBa
     [Authorize]
     [HttpPost("events")]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> InsertEvent([FromBody] CreateCalendarEventDto calendarEvent)
+    public async Task<IActionResult> CreateEvent([FromBody] CreateCalendarEventDto calendarEvent)
     {
-        var id = await calendarService.InsertEventAsync(calendarEvent);
-        return Ok(id);
+        var id = await calendarService.CreateEventAsync(calendarEvent);
+        return StatusCode(StatusCodes.Status201Created, id);
     }
 
     /// <summary>

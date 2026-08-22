@@ -43,8 +43,8 @@ public class CalendarService(ICalendarRepository calendarRepository, ITodoReposi
         return result.Adapt<List<EventSearchResponseDto>>();
     }
 
-    public async Task<long> InsertEventAsync(CreateCalendarEventDto newEvent)
-        => await calendarRepository.InsertEventAsync(newEvent.Adapt<CalendarEvent>());
+    public async Task<long> CreateEventAsync(CreateCalendarEventDto newEvent)
+        => await calendarRepository.CreateEventAsync(newEvent.Adapt<CalendarEvent>());
 
     public async Task UpdateEventAsync(int id, UpdateCalendarEventDto updateCalendarEventDto)
     {

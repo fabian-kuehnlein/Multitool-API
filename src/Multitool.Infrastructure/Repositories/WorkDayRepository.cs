@@ -21,25 +21,23 @@ public class WorkDayRepository(AppDbContext db) : IWorkDayRepository
         return await db.WorkDays.FindAsync(id);
     }
 
-    public async Task AddAsync(WorkDay workDay)
+    public async Task<int> CreateWorkDayAsync(WorkDay workDay)
     {
         await db.WorkDays.AddAsync(workDay);
         await db.SaveChangesAsync();
+
+        return workDay.Id;
     }
 
-    public async Task UpdateAsync(WorkDay workDay)
+    public async Task UpdateWorkDayAsync(WorkDay workDay)
     {
         db.WorkDays.Update(workDay);
         await db.SaveChangesAsync();
     }
 
-    public async Task DeleteAsync(int id)
+    public async Task DeleteWorkDayAsync(WorkDay workDay)
     {
-        var workDay = await db.WorkDays.FindAsync(id);
-        if (workDay is not null)
-        {
-            db.WorkDays.Remove(workDay);
-            await db.SaveChangesAsync();
-        }
+        db.WorkDays.Remove(workDay);
+        await db.SaveChangesAsync();
     }
 }

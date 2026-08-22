@@ -6,7 +6,7 @@ public interface ITodoService
 {
     Task<List<TodoDto>> GetAllTodosAsync();
     Task<TodoDto?> GetTodoByIdAsync(int id);
-    Task<TodoDto> CreateTodoAsync(CreateTodoDto createTodoDto);
+    Task<int> CreateTodoAsync(CreateTodoDto createTodoDto);
     Task UpdateTodoAsync(int id, UpdateTodoDto updateTodoDto);
     Task ToggleDoneAsync(int id);
     Task DeleteTodoAsync(int id);

@@ -84,11 +84,11 @@ public class CalendarControllerTests
         var createEvent = CalendarTestData.DefaultCreateEvent;
         const long expectedId = 2;
         _serviceMock
-            .Setup(s => s.InsertEventAsync(createEvent))
+            .Setup(s => s.CreateEventAsync(createEvent))
             .ReturnsAsync(expectedId);
 
         // Act
-        var result = await _sut.InsertEvent(createEvent);
+        var result = await _sut.CreateEvent(createEvent);
 
         // Assert
         var ok = result.Should().BeOfType<OkObjectResult>().Subject;

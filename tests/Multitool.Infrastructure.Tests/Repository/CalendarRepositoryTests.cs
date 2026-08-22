@@ -247,7 +247,7 @@ public class CalendarRepositoryTests : RepositoryTestBase
         Context.Categories.Add(DefaultCategory);
 
         // Act
-        var id = await _sut.InsertEventAsync(ev);
+        var id = await _sut.CreateEventAsync(ev);
 
         // Assert
         id.Should().BeGreaterThan(0);

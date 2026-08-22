@@ -24,7 +24,7 @@ MethodUnderTest_Condition_ExpectedBehavior
 Example:
 
 ```csharp
-GetByIdAsync_WhenEventExists_ReturnsEvent
+GetEventByIdAsync_WhenEventExists_ReturnsEvent
 ```
 
 Otherwise, the common C# naming conventions for test classes and methods apply.
@@ -35,7 +35,7 @@ Every test must be clearly divided into the three sections and annotated with co
 
 ```csharp
 [Fact]
-public async Task GetByIdAsync_WhenEventExists_ReturnsEvent()
+public async Task GetEventByIdAsync_WhenEventExists_ReturnsEvent()
 {
     // Arrange
     ...
@@ -109,9 +109,9 @@ public async Task Me_WhenUserIsAuthenticated_ReturnsUser()
 Here, the plain method name as a separator comment is sufficient:
 
 ```csharp
-// GetByIdAsync
+// GetEventByIdAsync
 [Fact]
-public async Task GetByIdAsync_WhenEventExists_ReturnsEvent()
+public async Task GetEventByIdAsync_WhenEventExists_ReturnsEvent()
 {
     // Arrange
     ...
@@ -124,7 +124,7 @@ public async Task GetByIdAsync_WhenEventExists_ReturnsEvent()
 }
 
 [Fact]
-public async Task GetByIdAsync_WhenEventDoesNotExist_ReturnsNull()
+public async Task GetEventByIdAsync_WhenEventDoesNotExist_ReturnsNull()
 {
     // Arrange
     ...
@@ -199,7 +199,7 @@ The service contains the **business logic** – this is where most tests are exp
 - Repository is called with the right parameters
 
 #### Negative paths (if present)
-- `WhenXDoesNotExist_ThrowsNotFoundException` – when `GetByIdAsync` returns null
+- `WhenXDoesNotExist_ThrowsNotFoundException` – when `Get<Module>ByIdAsync` returns null
 - `WhenXIsLocked_ThrowsInvalidOperationException` – for status checks
 - `WhenAdminKeyIsInvalid_ThrowsInvalidCredentialException` – for validations
 

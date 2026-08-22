@@ -71,7 +71,7 @@ public class TodoRepositoryTests : RepositoryTestBase
         var todo = new Todo { Title = "New", CategoryId = _categoryId, IsDone = false };
 
         // Act
-        await _sut.AddAsync(todo);
+        await _sut.CreateTodoAsync(todo);
 
         // Assert
         var savedTodo = await Context.Todos.FindAsync(todo.Id);
@@ -93,7 +93,7 @@ public class TodoRepositoryTests : RepositoryTestBase
         todo.Title = "Updated";
 
         // Act
-        await _sut.UpdateAsync(todo);
+        await _sut.UpdateTodoAsync(todo);
 
         // Assert
         var updatedTodo = await Context.Todos.FindAsync(todo.Id);
@@ -111,7 +111,7 @@ public class TodoRepositoryTests : RepositoryTestBase
         await Context.SaveChangesAsync();
 
         // Act
-        await _sut.DeleteAsync(todo.Id);
+        await _sut.DeleteTodoAsync(todo);
 
         // Assert
         var deletedTodo = await Context.Todos.FindAsync(todo.Id);

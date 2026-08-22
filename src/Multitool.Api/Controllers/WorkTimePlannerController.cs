@@ -34,8 +34,8 @@ public class WorkTimePlannerController(IWorkTimePlannerService service) : Contro
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> CreateWorkDay([FromBody] CreateWorkDayDto dto)
     {
-        var created = await service.CreateWorkDayAsync(dto);
-        return CreatedAtAction(nameof(GetWorkDays), new { startDate = created.Date, endDate = created.Date }, created);
+        var id = await service.CreateWorkDayAsync(dto);
+        return StatusCode(StatusCodes.Status201Created, id);
     }
 
     /// <summary>

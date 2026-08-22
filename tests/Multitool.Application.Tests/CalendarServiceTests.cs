@@ -162,11 +162,11 @@ public class CalendarServiceTests
         // Arrange
         const long expectedId = 99L;
         _calendarRepositoryMock
-            .Setup(r => r.InsertEventAsync(It.IsAny<CalendarEvent>()))
+            .Setup(r => r.CreateEventAsync(It.IsAny<CalendarEvent>()))
             .ReturnsAsync(expectedId);
 
         // Act
-        var result = await _sut.InsertEventAsync(CalendarTestData.DefaultCreateEvent);
+        var result = await _sut.CreateEventAsync(CalendarTestData.DefaultCreateEvent);
 
         // Assert
         result.Should().Be(expectedId);
@@ -178,12 +178,12 @@ public class CalendarServiceTests
         // Arrange
         CalendarEvent? captured = null;
         _calendarRepositoryMock
-            .Setup(r => r.InsertEventAsync(It.IsAny<CalendarEvent>()))
+            .Setup(r => r.CreateEventAsync(It.IsAny<CalendarEvent>()))
             .Callback<CalendarEvent>(e => captured = e)
             .ReturnsAsync(1L);
 
         // Act
-        await _sut.InsertEventAsync(CalendarTestData.DefaultCreateEvent);
+        await _sut.CreateEventAsync(CalendarTestData.DefaultCreateEvent);
 
         // Assert
         captured.Should().NotBeNull();

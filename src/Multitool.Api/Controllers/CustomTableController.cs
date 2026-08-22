@@ -44,13 +44,12 @@ public class CustomTableController(ICustomTableService customtableService) : Con
     [Authorize]
     [HttpPost("tables")]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> CreateTable([FromBody] CreateTableDto dto)
     {
         var id = await customtableService.CreateTableAsync(dto);
-        return Ok(id);
+        return StatusCode(StatusCodes.Status201Created, id);
     }
 
     /// <summary>
