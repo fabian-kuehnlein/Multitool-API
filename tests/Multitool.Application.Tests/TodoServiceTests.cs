@@ -44,7 +44,7 @@ public class TodoServiceTests
 
         _repositoryMock.Reset();
 
-        _repositoryMock.Setup(r => r.GetAllAsync())
+        _repositoryMock.Setup(r => r.GetTodosAsync())
             .ReturnsAsync(_getTodosResponse);
 
         _repositoryMock.Setup(r => r.GetByIdAsync(It.IsAny<int>()))
@@ -79,7 +79,7 @@ public class TodoServiceTests
         // Assert
         AssertEx.AreEqual(result, _getTodosResponse.Adapt<List<TodoDto>>());
 
-        _repositoryMock.Verify(r => r.GetAllAsync(), Times.Once);
+        _repositoryMock.Verify(r => r.GetTodosAsync(), Times.Once);
         _repositoryMock.VerifyNoOtherCalls();
     }
 

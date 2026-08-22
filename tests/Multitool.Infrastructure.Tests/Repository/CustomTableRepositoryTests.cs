@@ -1,8 +1,9 @@
-using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Multitool.Domain.Entities.CustomTable;
 using Multitool.Domain.Enums;
 using Multitool.Infrastructure.Repositories;
+using Multitool.Tests.Shared;
+using Multitool.Tests.Shared.Assertions;
 
 namespace Multitool.Infrastructure.Tests;
 
@@ -15,6 +16,34 @@ public class CustomTableRepositoryTests : RepositoryTestBase
         _sut = new CustomTableRepository(Context);
     }
 
+    private static Table CreateTable(string name)
+    {
+        var table = CustomTableTestData.DefaultTable;
+        table.TableId = 0;
+        table.Name = name;
+        return table;
+    }
+
+    private static Column CreateColumn(string name, int colOrder, CustomDataType dataType = CustomDataType.String)
+    {
+        var column = CustomTableTestData.DefaultColumn;
+        column.ColumnId = 0;
+        column.TableId = 0;
+        column.Name = name;
+        column.ColOrder = colOrder;
+        column.DataType = dataType;
+        return column;
+    }
+
+    private static Row CreateRow(int rowOrder)
+    {
+        var row = CustomTableTestData.DefaultRow;
+        row.RowId = 0;
+        row.TableId = 0;
+        row.RowOrder = rowOrder;
+        return row;
+    }
+
     // GetTableListAsync
 
     [Fact]
@@ -22,8 +51,8 @@ public class CustomTableRepositoryTests : RepositoryTestBase
     {
         // Arrange
         Context.CustomTables.AddRange(
-            new Table { Name = "B" },
-            new Table { Name = "A" }
+            CreateTable("B"),
+            CreateTable("A")
         );
         await Context.SaveChangesAsync();
 
@@ -31,9 +60,9 @@ public class CustomTableRepositoryTests : RepositoryTestBase
         var result = await _sut.GetTableListAsync();
 
         // Assert
-        result.Should().HaveCount(2);
-        result[0].Name.Should().Be("A");
-        result[1].Name.Should().Be("B");
+        AssertEx.AreEqual(2, result.Count);
+        AssertEx.AreEqual("A", result[0].Name);
+        AssertEx.AreEqual("B", result[1].Name);
     }
 
     // GetTableAsync
@@ -42,9 +71,9 @@ public class CustomTableRepositoryTests : RepositoryTestBase
     public async Task GetTableAsync_WhenTableExists_ReturnsTableWithColumnsAndRows()
     {
         // Arrange
-        var table = new Table { Name = "Complex Table" };
-        table.Columns.Add(new Column { Name = "Col 1", DataType = CustomDataType.String, ColOrder = 0 });
-        table.Rows.Add(new Row { RowOrder = 0 });
+        var table = CustomTableTestData.DefaultTable;
+        table.Columns.Add(CreateColumn("Col 1", 0));
+        table.Rows.Add(CreateRow(0));
         Context.CustomTables.Add(table);
         await Context.SaveChangesAsync();
 
@@ -52,10 +81,10 @@ public class CustomTableRepositoryTests : RepositoryTestBase
         var result = await _sut.GetTableAsync(table.TableId);
 
         // Assert
-        result.Should().NotBeNull();
-        result!.Name.Should().Be("Complex Table");
-        result.Columns.Should().HaveCount(1);
-        result.Rows.Should().HaveCount(1);
+        Assert.NotNull(result);
+        AssertEx.AreEqual(table.Name, result!.Name);
+        AssertEx.AreEqual(1, result.Columns.Count);
+        AssertEx.AreEqual(1, result.Rows.Count);
     }
 
     [Fact]
@@ -67,7 +96,7 @@ public class CustomTableRepositoryTests : RepositoryTestBase
         var result = await _sut.GetTableAsync(999);
 
         // Assert
-        result.Should().BeNull();
+        Assert.Null(result);
     }
 
     // CreateTableAsync
@@ -76,16 +105,16 @@ public class CustomTableRepositoryTests : RepositoryTestBase
     public async Task CreateTableAsync_WhenTableIsValid_AddsTableToDatabase()
     {
         // Arrange
-        var table = new Table { Name = "Test Table" };
+        var table = CreateTable("Test Table");
 
         // Act
         var id = await _sut.CreateTableAsync(table);
 
         // Assert
-        id.Should().BeGreaterThan(0);
-        var dbTable = await Context.CustomTables.FindAsync(id);
-        dbTable.Should().NotBeNull();
-        dbTable!.Name.Should().Be("Test Table");
+        Assert.True(id > 0);
+        var dbTable = await Context.CustomTables.AsNoTracking().FirstOrDefaultAsync(t => t.TableId == id);
+        Assert.NotNull(dbTable);
+        AssertEx.AreEqual("Test Table", dbTable!.Name);
     }
 
     // UpdateTableAsync
@@ -94,7 +123,7 @@ public class CustomTableRepositoryTests : RepositoryTestBase
     public async Task UpdateTableAsync_WhenTableExists_UpdatesName()
     {
         // Arrange
-        var table = new Table { Name = "Old" };
+        var table = CreateTable("Old");
         Context.CustomTables.Add(table);
         await Context.SaveChangesAsync();
 
@@ -104,8 +133,9 @@ public class CustomTableRepositoryTests : RepositoryTestBase
         await _sut.UpdateTableAsync(table);
 
         // Assert
-        var dbTable = await Context.CustomTables.FindAsync(table.TableId);
-        dbTable!.Name.Should().Be("New");
+        var dbTable = await Context.CustomTables.AsNoTracking().FirstOrDefaultAsync(t => t.TableId == table.TableId);
+        Assert.NotNull(dbTable);
+        AssertEx.AreEqual("New", dbTable!.Name);
     }
 
     // DeleteTableAsync
@@ -114,8 +144,8 @@ public class CustomTableRepositoryTests : RepositoryTestBase
     public async Task DeleteTableAsync_WhenTableExists_RemovesTableAndRelatedData()
     {
         // Arrange
-        var table = new Table { Name = "To Delete" };
-        var col = new Column { Name = "Col", DataType = CustomDataType.String, ColOrder = 0 };
+        var table = CreateTable("To Delete");
+        var col = CreateColumn("Col", 0);
         table.Columns.Add(col);
         Context.CustomTables.Add(table);
         await Context.SaveChangesAsync();
@@ -125,10 +155,10 @@ public class CustomTableRepositoryTests : RepositoryTestBase
         await _sut.DeleteTableAsync(table.TableId);
 
         // Assert
-        var dbTable = await Context.CustomTables.FindAsync(table.TableId);
-        dbTable.Should().BeNull();
-        var dbCol = await Context.CustomColumns.FindAsync(col.ColumnId);
-        dbCol.Should().BeNull();
+        var dbTable = await Context.CustomTables.AsNoTracking().FirstOrDefaultAsync(t => t.TableId == table.TableId);
+        Assert.Null(dbTable);
+        var dbCol = await Context.CustomColumns.AsNoTracking().FirstOrDefaultAsync(c => c.ColumnId == col.ColumnId);
+        Assert.Null(dbCol);
     }
 
     // CreateColumnAsync
@@ -137,8 +167,8 @@ public class CustomTableRepositoryTests : RepositoryTestBase
     public async Task CreateColumnAsync_WhenColumnsExist_AddsColumnWithNextOrder()
     {
         // Arrange
-        var table = new Table { Name = "Table" };
-        table.Columns.Add(new Column { Name = "Col 0", DataType = CustomDataType.String, ColOrder = 0 });
+        var table = CreateTable("Table");
+        table.Columns.Add(CreateColumn("Col 0", 0));
         Context.CustomTables.Add(table);
         await Context.SaveChangesAsync();
 
@@ -147,8 +177,8 @@ public class CustomTableRepositoryTests : RepositoryTestBase
 
         // Assert
         var dbCols = await Context.CustomColumns.Where(c => c.TableId == table.TableId).ToListAsync();
-        dbCols.Should().HaveCount(2);
-        dbCols.Should().Contain(c => c.Name == "Neue Spalte" && c.ColOrder == 1);
+        AssertEx.AreEqual(2, dbCols.Count);
+        Assert.Contains(dbCols, c => c.Name == "Neue Spalte" && c.ColOrder == 1);
     }
 
     // UpdateColumnAsync
@@ -157,15 +187,14 @@ public class CustomTableRepositoryTests : RepositoryTestBase
     public async Task UpdateColumnAsync_WhenTypeChanged_DeletesCells()
     {
         // Arrange
-        var table = new Table { Name = "Table" };
-        var col = new Column { Name = "Col", DataType = CustomDataType.String, ColOrder = 0 };
+        var table = CreateTable("Table");
+        var col = CreateColumn("Col", 0);
         table.Columns.Add(col);
-        var row = new Row { RowOrder = 0 };
-        table.Rows.Add(row);
+        table.Rows.Add(CreateRow(0));
         Context.CustomTables.Add(table);
         await Context.SaveChangesAsync();
 
-        var cell = new Cell { RowId = row.RowId, ColumnId = col.ColumnId, ValString = "Data" };
+        var cell = new Cell { RowId = table.Rows[0].RowId, ColumnId = col.ColumnId, ValString = "Data" };
         Context.CustomCells.Add(cell);
         await Context.SaveChangesAsync();
 
@@ -176,7 +205,7 @@ public class CustomTableRepositoryTests : RepositoryTestBase
 
         // Assert
         var dbCells = await Context.CustomCells.Where(c => c.ColumnId == col.ColumnId).ToListAsync();
-        dbCells.Should().BeEmpty();
+        Assert.Empty(dbCells);
     }
 
     // UpdateColumnOrderAsync
@@ -185,9 +214,9 @@ public class CustomTableRepositoryTests : RepositoryTestBase
     public async Task UpdateColumnOrderAsync_WhenColumnsExist_UpdatesOrders()
     {
         // Arrange
-        var table = new Table { Name = "Table" };
-        var c1 = new Column { Name = "C1", DataType = CustomDataType.String, ColOrder = 0 };
-        var c2 = new Column { Name = "C2", DataType = CustomDataType.String, ColOrder = 1 };
+        var table = CreateTable("Table");
+        var c1 = CreateColumn("C1", 0);
+        var c2 = CreateColumn("C2", 1);
         table.Columns.AddRange(c1, c2);
         Context.CustomTables.Add(table);
         await Context.SaveChangesAsync();
@@ -199,10 +228,12 @@ public class CustomTableRepositoryTests : RepositoryTestBase
         await _sut.UpdateColumnOrderAsync(new List<Column> { c1, c2 });
 
         // Assert
-        var dbC1 = await Context.CustomColumns.FindAsync(c1.ColumnId);
-        var dbC2 = await Context.CustomColumns.FindAsync(c2.ColumnId);
-        dbC1!.ColOrder.Should().Be(1);
-        dbC2!.ColOrder.Should().Be(0);
+        var dbC1 = await Context.CustomColumns.AsNoTracking().FirstOrDefaultAsync(c => c.ColumnId == c1.ColumnId);
+        var dbC2 = await Context.CustomColumns.AsNoTracking().FirstOrDefaultAsync(c => c.ColumnId == c2.ColumnId);
+        Assert.NotNull(dbC1);
+        Assert.NotNull(dbC2);
+        AssertEx.AreEqual(1, dbC1!.ColOrder);
+        AssertEx.AreEqual(0, dbC2!.ColOrder);
     }
 
     // DeleteColumnAsync
@@ -211,8 +242,8 @@ public class CustomTableRepositoryTests : RepositoryTestBase
     public async Task DeleteColumnAsync_WhenColumnExists_RemovesColumn()
     {
         // Arrange
-        var table = new Table { Name = "Table" };
-        var col = new Column { Name = "Col", DataType = CustomDataType.String, ColOrder = 0 };
+        var table = CreateTable("Table");
+        var col = CreateColumn("Col", 0);
         table.Columns.Add(col);
         Context.CustomTables.Add(table);
         await Context.SaveChangesAsync();
@@ -222,8 +253,8 @@ public class CustomTableRepositoryTests : RepositoryTestBase
         await _sut.DeleteColumnAsync(col.ColumnId);
 
         // Assert
-        var dbCol = await Context.CustomColumns.FindAsync(col.ColumnId);
-        dbCol.Should().BeNull();
+        var dbCol = await Context.CustomColumns.AsNoTracking().FirstOrDefaultAsync(c => c.ColumnId == col.ColumnId);
+        Assert.Null(dbCol);
     }
 
     // CreateRowAsync
@@ -232,8 +263,8 @@ public class CustomTableRepositoryTests : RepositoryTestBase
     public async Task CreateRowAsync_WhenRowsExist_AddsRowWithNextOrder()
     {
         // Arrange
-        var table = new Table { Name = "Table" };
-        table.Rows.Add(new Row { RowOrder = 0 });
+        var table = CreateTable("Table");
+        table.Rows.Add(CreateRow(0));
         Context.CustomTables.Add(table);
         await Context.SaveChangesAsync();
 
@@ -242,8 +273,8 @@ public class CustomTableRepositoryTests : RepositoryTestBase
 
         // Assert
         var dbRows = await Context.CustomRows.Where(r => r.TableId == table.TableId).ToListAsync();
-        dbRows.Should().HaveCount(2);
-        dbRows.Should().Contain(r => r.RowOrder == 1);
+        AssertEx.AreEqual(2, dbRows.Count);
+        Assert.Contains(dbRows, r => r.RowOrder == 1);
     }
 
     // UpdateRowOrderAsync
@@ -252,9 +283,9 @@ public class CustomTableRepositoryTests : RepositoryTestBase
     public async Task UpdateRowOrderAsync_WhenRowsExist_UpdatesOrders()
     {
         // Arrange
-        var table = new Table { Name = "Table" };
-        var r1 = new Row { RowOrder = 0 };
-        var r2 = new Row { RowOrder = 1 };
+        var table = CreateTable("Table");
+        var r1 = CreateRow(0);
+        var r2 = CreateRow(1);
         table.Rows.AddRange(r1, r2);
         Context.CustomTables.Add(table);
         await Context.SaveChangesAsync();
@@ -269,10 +300,12 @@ public class CustomTableRepositoryTests : RepositoryTestBase
         await _sut.UpdateRowOrderAsync(rowOrderMap);
 
         // Assert
-        var dbR1 = await Context.CustomRows.FindAsync(r1.RowId);
-        var dbR2 = await Context.CustomRows.FindAsync(r2.RowId);
-        dbR1!.RowOrder.Should().Be(1);
-        dbR2!.RowOrder.Should().Be(0);
+        var dbR1 = await Context.CustomRows.AsNoTracking().FirstOrDefaultAsync(r => r.RowId == r1.RowId);
+        var dbR2 = await Context.CustomRows.AsNoTracking().FirstOrDefaultAsync(r => r.RowId == r2.RowId);
+        Assert.NotNull(dbR1);
+        Assert.NotNull(dbR2);
+        AssertEx.AreEqual(1, dbR1!.RowOrder);
+        AssertEx.AreEqual(0, dbR2!.RowOrder);
     }
 
     // DeleteRowsAsync
@@ -281,9 +314,9 @@ public class CustomTableRepositoryTests : RepositoryTestBase
     public async Task DeleteRowsAsync_WhenRowIdsProvided_RemovesSpecificRows()
     {
         // Arrange
-        var table = new Table { Name = "Table" };
-        var r1 = new Row { RowOrder = 0 };
-        var r2 = new Row { RowOrder = 1 };
+        var table = CreateTable("Table");
+        var r1 = CreateRow(0);
+        var r2 = CreateRow(1);
         table.Rows.AddRange(r1, r2);
         Context.CustomTables.Add(table);
         await Context.SaveChangesAsync();
@@ -295,8 +328,8 @@ public class CustomTableRepositoryTests : RepositoryTestBase
 
         // Assert
         var dbRows = await Context.CustomRows.Where(r => r.TableId == table.TableId).ToListAsync();
-        dbRows.Should().HaveCount(1);
-        dbRows[0].RowId.Should().Be(r2.RowId);
+        AssertEx.AreEqual(1, dbRows.Count);
+        AssertEx.AreEqual(r2.RowId, dbRows[0].RowId);
     }
 
     // UpsertCellAsync
@@ -305,42 +338,40 @@ public class CustomTableRepositoryTests : RepositoryTestBase
     public async Task UpsertCellAsync_WhenCellExists_UpdatesValue()
     {
         // Arrange
-        var table = new Table { Name = "Table" };
-        var col = new Column { Name = "Col", DataType = CustomDataType.String, ColOrder = 0 };
+        var table = CreateTable("Table");
+        var col = CreateColumn("Col", 0);
         table.Columns.Add(col);
-        var row = new Row { RowOrder = 0 };
-        table.Rows.Add(row);
+        table.Rows.Add(CreateRow(0));
         Context.CustomTables.Add(table);
         await Context.SaveChangesAsync();
 
         // Act
-        await _sut.UpsertCellAsync(row.RowId, col.ColumnId, CustomDataType.String, "New Value");
+        await _sut.UpsertCellAsync(table.Rows[0].RowId, col.ColumnId, CustomDataType.String, "New Value");
 
         // Assert
-        var dbCell = await Context.CustomCells.FindAsync(row.RowId, col.ColumnId);
-        dbCell.Should().NotBeNull();
-        dbCell!.ValString.Should().Be("New Value");
+        var dbCell = await Context.CustomCells.FindAsync(table.Rows[0].RowId, col.ColumnId);
+        Assert.NotNull(dbCell);
+        AssertEx.AreEqual("New Value", dbCell!.ValString);
     }
 
     [Fact]
     public async Task UpsertCellAsync_WhenCellDoesNotExist_CreatesNewCell()
     {
         // Arrange
-        var table = new Table { Name = "Table" };
-        var col = new Column { Name = "Col", DataType = CustomDataType.String, ColOrder = 0 };
+        var table = CreateTable("Table");
+        var col = CreateColumn("Col", 0);
         table.Columns.Add(col);
-        var row = new Row { RowOrder = 0 };
-        table.Rows.Add(row);
+        table.Rows.Add(CreateRow(0));
         Context.CustomTables.Add(table);
         await Context.SaveChangesAsync();
 
         // Act
-        await _sut.UpsertCellAsync(row.RowId, col.ColumnId, CustomDataType.String, "First Value");
+        await _sut.UpsertCellAsync(table.Rows[0].RowId, col.ColumnId, CustomDataType.String, "First Value");
 
         // Assert
-        var dbCell = await Context.CustomCells.FindAsync(row.RowId, col.ColumnId);
-        dbCell.Should().NotBeNull();
-        dbCell!.ValString.Should().Be("First Value");
+        var dbCell = await Context.CustomCells.FindAsync(table.Rows[0].RowId, col.ColumnId);
+        Assert.NotNull(dbCell);
+        AssertEx.AreEqual("First Value", dbCell!.ValString);
     }
 
     [Theory]
@@ -350,31 +381,30 @@ public class CustomTableRepositoryTests : RepositoryTestBase
     public async Task UpsertCellAsync_WhenValueMatchesDataType_StoresParsedValue(CustomDataType dataType, string value)
     {
         // Arrange
-        var table = new Table { Name = "Table" };
-        var col = new Column { Name = "Col", DataType = dataType, ColOrder = 0 };
+        var table = CreateTable("Table");
+        var col = CreateColumn("Col", 0, dataType);
         table.Columns.Add(col);
-        var row = new Row { RowOrder = 0 };
-        table.Rows.Add(row);
+        table.Rows.Add(CreateRow(0));
         Context.CustomTables.Add(table);
         await Context.SaveChangesAsync();
 
         // Act
-        await _sut.UpsertCellAsync(row.RowId, col.ColumnId, dataType, value);
+        await _sut.UpsertCellAsync(table.Rows[0].RowId, col.ColumnId, dataType, value);
 
         // Assert
-        var dbCell = await Context.CustomCells.FindAsync(row.RowId, col.ColumnId);
-        dbCell.Should().NotBeNull();
+        var dbCell = await Context.CustomCells.FindAsync(table.Rows[0].RowId, col.ColumnId);
+        Assert.NotNull(dbCell);
 
         switch (dataType)
         {
             case CustomDataType.Int:
-                dbCell!.ValInt.Should().Be(42);
+                AssertEx.AreEqual(42L, dbCell!.ValInt);
                 break;
             case CustomDataType.Decimal:
-                dbCell!.ValDec.Should().Be(3.14m);
+                AssertEx.AreEqual(3.14m, dbCell!.ValDec);
                 break;
             case CustomDataType.Bool:
-                dbCell!.ValBool.Should().BeTrue();
+                Assert.True(dbCell!.ValBool);
                 break;
         }
     }
@@ -383,64 +413,63 @@ public class CustomTableRepositoryTests : RepositoryTestBase
     public async Task UpsertCellAsync_WhenDateValueIsValid_StoresDate()
     {
         // Arrange
-        var table = new Table { Name = "Table" };
-        var col = new Column { Name = "Col", DataType = CustomDataType.Date, ColOrder = 0 };
+        var table = CreateTable("Table");
+        var col = CreateColumn("Col", 0, CustomDataType.Date);
         table.Columns.Add(col);
-        var row = new Row { RowOrder = 0 };
-        table.Rows.Add(row);
+        table.Rows.Add(CreateRow(0));
         Context.CustomTables.Add(table);
         await Context.SaveChangesAsync();
 
         // Act
-        await _sut.UpsertCellAsync(row.RowId, col.ColumnId, CustomDataType.Date, "2026-06-12");
+        await _sut.UpsertCellAsync(table.Rows[0].RowId, col.ColumnId, CustomDataType.Date, "2026-06-12");
 
         // Assert
-        var dbCell = await Context.CustomCells.FindAsync(row.RowId, col.ColumnId);
-        dbCell!.ValDate.Should().Be(new DateTime(2026, 6, 12));
+        var dbCell = await Context.CustomCells.FindAsync(table.Rows[0].RowId, col.ColumnId);
+        Assert.NotNull(dbCell);
+        AssertEx.AreEqual((DateTime?)new DateTime(2026, 6, 12), dbCell!.ValDate);
     }
 
     [Fact]
     public async Task UpsertCellAsync_WhenValueDoesNotMatchDataType_StoresNoValue()
     {
         // Arrange
-        var table = new Table { Name = "Table" };
-        var col = new Column { Name = "Col", DataType = CustomDataType.Int, ColOrder = 0 };
+        var table = CreateTable("Table");
+        var col = CreateColumn("Col", 0, CustomDataType.Int);
         table.Columns.Add(col);
-        var row = new Row { RowOrder = 0 };
-        table.Rows.Add(row);
+        table.Rows.Add(CreateRow(0));
         Context.CustomTables.Add(table);
         await Context.SaveChangesAsync();
 
         // Act
-        await _sut.UpsertCellAsync(row.RowId, col.ColumnId, CustomDataType.Int, "not-a-number");
+        await _sut.UpsertCellAsync(table.Rows[0].RowId, col.ColumnId, CustomDataType.Int, "not-a-number");
 
         // Assert
-        var dbCell = await Context.CustomCells.FindAsync(row.RowId, col.ColumnId);
-        dbCell.Should().NotBeNull();
-        dbCell!.ValInt.Should().BeNull();
+        var dbCell = await Context.CustomCells.FindAsync(table.Rows[0].RowId, col.ColumnId);
+        Assert.NotNull(dbCell);
+        Assert.Null(dbCell!.ValInt);
     }
 
     [Fact]
     public async Task UpsertCellAsync_WhenChangingDataType_ClearsOtherValueFields()
     {
         // Arrange
-        var table = new Table { Name = "Table" };
-        var col = new Column { Name = "Col", DataType = CustomDataType.Int, ColOrder = 0 };
+        var table = CreateTable("Table");
+        var col = CreateColumn("Col", 0, CustomDataType.Int);
         table.Columns.Add(col);
-        var row = new Row { RowOrder = 0 };
-        table.Rows.Add(row);
+        table.Rows.Add(CreateRow(0));
         Context.CustomTables.Add(table);
         await Context.SaveChangesAsync();
 
         // Act
-        await _sut.UpsertCellAsync(row.RowId, col.ColumnId, CustomDataType.Int, "10");
+        await _sut.UpsertCellAsync(table.Rows[0].RowId, col.ColumnId, CustomDataType.Int, "10");
 
-        await _sut.UpsertCellAsync(row.RowId, col.ColumnId, CustomDataType.String, "Now a string");
+        await _sut.UpsertCellAsync(table.Rows[0].RowId, col.ColumnId, CustomDataType.String, "Now a string");
 
         // Assert
-        var dbCell = await Context.CustomCells.FindAsync(row.RowId, col.ColumnId);
-        dbCell!.ValInt.Should().BeNull();
-        dbCell.ValString.Should().Be("Now a string");
+        var dbCell = await Context.CustomCells.FindAsync(table.Rows[0].RowId, col.ColumnId);
+        Assert.NotNull(dbCell);
+        Assert.Null(dbCell!.ValInt);
+        AssertEx.AreEqual("Now a string", dbCell.ValString);
     }
 
     // TableExistsAsync
@@ -449,7 +478,7 @@ public class CustomTableRepositoryTests : RepositoryTestBase
     public async Task TableExistsAsync_WhenTableExists_ReturnsTrueAndFalseWhenMissing()
     {
         // Arrange
-        var table = new Table { Name = "Table" };
+        var table = CreateTable("Table");
         Context.CustomTables.Add(table);
         await Context.SaveChangesAsync();
 
@@ -458,8 +487,8 @@ public class CustomTableRepositoryTests : RepositoryTestBase
         var missing = await _sut.TableExistsAsync(999);
 
         // Assert
-        exists.Should().BeTrue();
-        missing.Should().BeFalse();
+        Assert.True(exists);
+        Assert.False(missing);
     }
 
     // GetExistingRowIdsAsync
@@ -468,22 +497,21 @@ public class CustomTableRepositoryTests : RepositoryTestBase
     public async Task GetExistingRowIdsAsync_WhenRowIdsProvided_ReturnsOnlyExistingRows()
     {
         // Arrange
-        var t1 = new Table { Name = "T1" };
-        var r1 = new Row { RowOrder = 0 };
-        t1.Rows.Add(r1);
-        var t2 = new Table { Name = "T2" };
-        var r2 = new Row { RowOrder = 0 };
-        t2.Rows.Add(r2);
+        var t1 = CreateTable("T1");
+        t1.Rows.Add(CreateRow(0));
+        var t2 = CreateTable("T2");
+        var t2Row = CreateRow(0);
+        t2.Rows.Add(t2Row);
         Context.CustomTables.AddRange(t1, t2);
         await Context.SaveChangesAsync();
 
-        var rowIds = new List<long> { r1.RowId, r2.RowId, 999 };
+        var rowIds = new List<long> { t1.Rows[0].RowId, t2Row.RowId, 999 };
 
         // Act
         var result = await _sut.GetExistingRowIdsAsync(t1.TableId, rowIds);
 
         // Assert
-        result.Should().HaveCount(1);
-        result.Should().Contain(r1.RowId);
+        AssertEx.AreEqual(1, result.Count);
+        Assert.Contains(t1.Rows[0].RowId, result);
     }
 }

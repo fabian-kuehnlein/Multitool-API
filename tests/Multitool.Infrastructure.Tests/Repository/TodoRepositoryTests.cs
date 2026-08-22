@@ -1,47 +1,64 @@
+using Microsoft.EntityFrameworkCore;
 using Multitool.Domain.Entities.Todo;
 using Multitool.Infrastructure.Repositories;
+using Multitool.Tests.Shared;
+using Multitool.Tests.Shared.Assertions;
 
 namespace Multitool.Infrastructure.Tests;
 
 public class TodoRepositoryTests : RepositoryTestBase
 {
-    private readonly TodoRepository _sut;
+    private readonly TodoRepository _todoRepository;
     private int _categoryId;
 
     public TodoRepositoryTests()
     {
-        _sut = new TodoRepository(Context);
+        _todoRepository = new TodoRepository(Context);
         SetupCategory();
     }
 
     private void SetupCategory()
     {
-        var category = new Multitool.Domain.Entities.Category.Category { Name = "Test Category", Color = "#000000" };
+        var category = TodoTestData.DefaultCategory;
         Context.Categories.Add(category);
         Context.SaveChanges();
         _categoryId = category.Id;
     }
 
-    // GetAllAsync
+    private Todo CreateTodo(string title, bool isDone = false)
+    {
+        var todo = TodoTestData.DefaultTodo;
+        todo.Id = 0;
+        todo.Title = title;
+        todo.CategoryId = _categoryId;
+        todo.IsDone = isDone;
+        return todo;
+    }
+
+    // GetTodosAsync
 
     [Fact]
-    public async Task GetAllAsync_WhenTodosExist_ReturnsSortedTodos()
+    public async Task GetTodosAsync_WhenTodosExist_ReturnsSortedTodos()
     {
         // Arrange
-        var t1 = new Todo { Title = "A", CategoryId = _categoryId, IsDone = true, CreationDateTime = DateTime.UtcNow.AddMinutes(-10) };
-        var t2 = new Todo { Title = "B", CategoryId = _categoryId, IsDone = false, CreationDateTime = DateTime.UtcNow.AddMinutes(-5) };
-        var t3 = new Todo { Title = "C", CategoryId = _categoryId, IsDone = false, CreationDateTime = DateTime.UtcNow, Priority = 1 };
+        var t1 = CreateTodo("A", true);
+        t1.CreationDateTime = DateTime.UtcNow.AddMinutes(-10);
+        var t2 = CreateTodo("B");
+        t2.CreationDateTime = DateTime.UtcNow.AddMinutes(-5);
+        var t3 = CreateTodo("C");
+        t3.CreationDateTime = DateTime.UtcNow;
+        t3.Priority = 1;
 
         Context.Todos.AddRange(t1, t2, t3);
         await Context.SaveChangesAsync();
 
         // Act
-        var result = await _sut.GetAllAsync();
+        var result = await _todoRepository.GetTodosAsync();
 
         // Assert
-        Assert.Equal(3, result.Count);
-        Assert.False(result[0].IsDone); // t3 or t2
-        Assert.True(result[2].IsDone); // t1 (done is last)
+        AssertEx.AreEqual(3, result.Count);
+        Assert.False(result[0].IsDone);
+        Assert.True(result[2].IsDone);
     }
 
     // GetByIdAsync
@@ -50,33 +67,33 @@ public class TodoRepositoryTests : RepositoryTestBase
     public async Task GetByIdAsync_WhenTodoExists_ReturnsTodo()
     {
         // Arrange
-        var todo = new Todo { Title = "Test", CategoryId = _categoryId, IsDone = false };
+        var todo = CreateTodo("Test");
         Context.Todos.Add(todo);
         await Context.SaveChangesAsync();
 
         // Act
-        var result = await _sut.GetByIdAsync(todo.Id);
+        var result = await _todoRepository.GetByIdAsync(todo.Id);
 
         // Assert
         Assert.NotNull(result);
-        Assert.Equal(todo.Id, result.Id);
+        AssertEx.AreEqual(result!.Id, todo.Id);
     }
 
-    // AddAsync
+    // CreateTodoAsync
 
     [Fact]
-    public async Task AddAsync_WhenTodoIsValid_AddsTodo()
+    public async Task CreateTodoAsync_WhenTodoIsValid_AddsTodo()
     {
         // Arrange
-        var todo = new Todo { Title = "New", CategoryId = _categoryId, IsDone = false };
+        var todo = CreateTodo("New");
 
         // Act
-        await _sut.CreateTodoAsync(todo);
+        await _todoRepository.CreateTodoAsync(todo);
 
         // Assert
-        var savedTodo = await Context.Todos.FindAsync(todo.Id);
+        var savedTodo = await Context.Todos.AsNoTracking().FirstOrDefaultAsync(t => t.Id == todo.Id);
         Assert.NotNull(savedTodo);
-        Assert.Equal("New", savedTodo.Title);
+        AssertEx.AreEqual("New", savedTodo.Title);
     }
 
     // UpdateAsync
@@ -85,19 +102,20 @@ public class TodoRepositoryTests : RepositoryTestBase
     public async Task UpdateAsync_WhenTodoExists_UpdatesTodo()
     {
         // Arrange
-        var todo = new Todo { Title = "Old", CategoryId = _categoryId, IsDone = false };
+        var todo = CreateTodo("Old");
         Context.Todos.Add(todo);
         await Context.SaveChangesAsync();
-        Context.Entry(todo).State = Microsoft.EntityFrameworkCore.EntityState.Detached;
+
+        Context.Entry(todo).State = EntityState.Detached;
 
         todo.Title = "Updated";
 
         // Act
-        await _sut.UpdateTodoAsync(todo);
+        await _todoRepository.UpdateTodoAsync(todo);
 
         // Assert
-        var updatedTodo = await Context.Todos.FindAsync(todo.Id);
-        Assert.Equal("Updated", updatedTodo!.Title);
+        var updatedTodo = await Context.Todos.AsNoTracking().FirstOrDefaultAsync(t => t.Id == todo.Id);
+        AssertEx.AreEqual("Updated", updatedTodo!.Title);
     }
 
     // DeleteAsync
@@ -106,12 +124,12 @@ public class TodoRepositoryTests : RepositoryTestBase
     public async Task DeleteAsync_WhenTodoExists_RemovesTodo()
     {
         // Arrange
-        var todo = new Todo { Title = "To Delete", CategoryId = _categoryId, IsDone = false };
+        var todo = CreateTodo("To Delete");
         Context.Todos.Add(todo);
         await Context.SaveChangesAsync();
 
         // Act
-        await _sut.DeleteTodoAsync(todo);
+        await _todoRepository.DeleteTodoAsync(todo);
 
         // Assert
         var deletedTodo = await Context.Todos.FindAsync(todo.Id);

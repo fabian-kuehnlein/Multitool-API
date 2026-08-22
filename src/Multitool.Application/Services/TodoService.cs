@@ -11,7 +11,7 @@ public class TodoService(ITodoRepository todoRepository) : ITodoService
 {
     public async Task<List<TodoDto>> GetTodosAsync()
     {
-        var todos = await todoRepository.GetAllAsync();
+        var todos = await todoRepository.GetTodosAsync();
         return todos.Adapt<List<TodoDto>>();
     }
 

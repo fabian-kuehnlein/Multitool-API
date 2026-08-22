@@ -1,6 +1,7 @@
-using FluentAssertions;
-using Multitool.Domain.Entities.WorkTimePlanner;
+using Microsoft.EntityFrameworkCore;
 using Multitool.Infrastructure.Repositories;
+using Multitool.Tests.Shared;
+using Multitool.Tests.Shared.Assertions;
 
 namespace Multitool.Infrastructure.Tests;
 
@@ -19,7 +20,7 @@ public class WorkTimeSettingsRepositoryTests : RepositoryTestBase
     public async Task GetAsync_WhenSettingsExist_ReturnsSettings()
     {
         // Arrange
-        var settings = new WorkTimeSettings { DailyTargetMinutes = 480 };
+        var settings = WorkTimePlannerTestData.DefaultSettings;
         Context.WorkTimeSettings.Add(settings);
         await Context.SaveChangesAsync();
 
@@ -27,18 +28,20 @@ public class WorkTimeSettingsRepositoryTests : RepositoryTestBase
         var result = await _sut.GetAsync();
 
         // Assert
-        result.Should().NotBeNull();
-        result!.DailyTargetMinutes.Should().Be(480);
+        Assert.NotNull(result);
+        AssertEx.AreEqual(settings.DailyTargetMinutes, result!.DailyTargetMinutes);
     }
 
     [Fact]
     public async Task GetAsync_WhenNoSettingsExist_ReturnsNull()
     {
+        // Arrange
+
         // Act
         var result = await _sut.GetAsync();
 
         // Assert
-        result.Should().BeNull();
+        Assert.Null(result);
     }
 
     // AddAsync
@@ -47,24 +50,22 @@ public class WorkTimeSettingsRepositoryTests : RepositoryTestBase
     public async Task AddAsync_WhenSettingsAreValid_AddsSettingsToDatabase()
     {
         // Arrange
-        var settings = new WorkTimeSettings
-        {
-            DailyTargetMinutes = 450,
-            BreakRule6h = 20,
-            BreakRule9h = 40,
-            HomeOfficeLimit = 15
-        };
+        var settings = WorkTimePlannerTestData.DefaultSettings;
+        settings.DailyTargetMinutes = 450;
+        settings.BreakRule6h = 20;
+        settings.BreakRule9h = 40;
+        settings.HomeOfficeLimit = 15;
 
         // Act
         await _sut.AddAsync(settings);
 
         // Assert
-        var dbSettings = await Context.WorkTimeSettings.FindAsync(settings.Id);
-        dbSettings.Should().NotBeNull();
-        dbSettings!.DailyTargetMinutes.Should().Be(450);
-        dbSettings.BreakRule6h.Should().Be(20);
-        dbSettings.BreakRule9h.Should().Be(40);
-        dbSettings.HomeOfficeLimit.Should().Be(15);
+        var dbSettings = await Context.WorkTimeSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Id == settings.Id);
+        Assert.NotNull(dbSettings);
+        AssertEx.AreEqual(450, dbSettings!.DailyTargetMinutes);
+        AssertEx.AreEqual(20, dbSettings.BreakRule6h);
+        AssertEx.AreEqual(40, dbSettings.BreakRule9h);
+        AssertEx.AreEqual(15, dbSettings.HomeOfficeLimit);
     }
 
     // UpdateAsync
@@ -73,22 +74,24 @@ public class WorkTimeSettingsRepositoryTests : RepositoryTestBase
     public async Task UpdateAsync_WhenSettingsExist_UpdatesAllFields()
     {
         // Arrange
-        var settings = new WorkTimeSettings { DailyTargetMinutes = 480, BreakRule6h = 30, BreakRule9h = 45, HomeOfficeLimit = 20 };
+        var settings = WorkTimePlannerTestData.DefaultSettings;
         Context.WorkTimeSettings.Add(settings);
         await Context.SaveChangesAsync();
 
-        // Act
         settings.DailyTargetMinutes = 450;
         settings.BreakRule6h = 20;
         settings.BreakRule9h = 40;
         settings.HomeOfficeLimit = 15;
+
+        // Act
         await _sut.UpdateAsync(settings);
 
         // Assert
-        var dbSettings = await Context.WorkTimeSettings.FindAsync(settings.Id);
-        dbSettings!.DailyTargetMinutes.Should().Be(450);
-        dbSettings.BreakRule6h.Should().Be(20);
-        dbSettings.BreakRule9h.Should().Be(40);
-        dbSettings.HomeOfficeLimit.Should().Be(15);
+        var dbSettings = await Context.WorkTimeSettings.AsNoTracking().FirstOrDefaultAsync(s => s.Id == settings.Id);
+        Assert.NotNull(dbSettings);
+        AssertEx.AreEqual(450, dbSettings!.DailyTargetMinutes);
+        AssertEx.AreEqual(20, dbSettings.BreakRule6h);
+        AssertEx.AreEqual(40, dbSettings.BreakRule9h);
+        AssertEx.AreEqual(15, dbSettings.HomeOfficeLimit);
     }
 }

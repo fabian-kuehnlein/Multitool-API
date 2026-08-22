@@ -128,9 +128,15 @@ _todoRepositoryMock.Verify(r => r.GetTodosWithDueDateInRangeAsync(start, end), T
 _todoRepositoryMock.VerifyNoOtherCalls();
 ```
 
+### Standard Assertion Rules (`AssertEx` vs xUnit `Assert`)
+The following assertion conventions apply **globally across all test projects and layers** (Controllers, Services, Repositories):
+- **`AssertEx.AreEqual(expected, actual)`**: Must be used uniformly across all tests for object, entity, DTO, property, and collection equality comparisons (provides deep comparison, preferred over standard `Assert.Equal`).
+- **Standard xUnit `Assert` Calls**: Simple boolean and null checks (`Assert.True(...)`, `Assert.False(...)`, `Assert.Null(...)`, `Assert.NotNull(...)`) that require no extra deep-comparison logic can be called directly from standard xUnit `Assert`.
+- **Specialized `AssertEx` Helpers**: HTTP responses use `AssertEx.Ok(...)`, `AssertEx.Created(...)`, `AssertEx.NoContent(...)`, etc. Exceptions use `AssertEx.Throws<TException>(...)`. Timestamps use `AssertEx.CloseTo(...)`. All custom assertion logic belongs in `AssertEx`.
+
 ### Comprehensive Assertions
 Unit tests must feature deep and thorough assertions in the `// Assert` block:
-- **Return Values**: Assert returned objects completely. Check properties, mapped fields, status flags, and timestamps.
+- **Return Values**: Assert returned objects completely. Check properties, mapped fields, status flags, and timestamps using `AssertEx.AreEqual`.
 - **Collections**: Assert count, exact ordering, and item properties (do not stop at simple `.Should().NotBeNull()`).
 - **Side Effects & State Changes**: Assert mutated properties on entities and verify state transitions explicitly.
 - **Exception Details**: For negative tests, assert the exception type as well as the exception message content.
@@ -540,6 +546,80 @@ public class TodoServiceTests
 
 The repository is tested **against a real (in-memory/SQLite) database** – no mocks.
 
+#### Standard Repository Test Class Structure
+
+All repository integration test classes (`*RepositoryTests.cs`) **must follow a standardized layout structure**:
+
+1. **Inherit `RepositoryTestBase`**: Test class inherits from `RepositoryTestBase` to access the database `Context`.
+2. **Direct Repository Instance (No `GetRepository()` method)**:
+   - Unlike Controller or Service tests, Repository tests **do NOT use a `GetRepository()` factory method** because there are no mocks to setup or reset.
+   - Declare a private field for the repository instance (`private readonly TodoRepository _todoRepository;`).
+   - Instantiate the repository directly in the test class constructor (`_todoRepository = new TodoRepository(Context);`).
+3. **Assertions**:
+   - **`AssertEx.AreEqual(expected, actual)`**: Use `AssertEx.AreEqual` for deep comparison of objects, entities, counts, or updated property values (preferred over `Assert.Equal`).
+   - **Standard xUnit Assertions**: Standard assertions requiring no extra deep-comparison logic (`Assert.True(...)`, `Assert.False(...)`, `Assert.Null(...)`, `Assert.NotNull(...)`) can be used directly. All other custom assertions are held in `AssertEx`.
+4. **Database State Verification (`AsNoTracking()`)**:
+   - After invoking repository mutation methods (`CreateTodoAsync`, `UpdateTodoAsync`, `DeleteTodoAsync`), assert the resulting DB state by querying `Context.<DbSet>.AsNoTracking().FirstOrDefaultAsync(...)` or calling `Context.ChangeTracker.Clear()` to avoid reading stale tracked entities.
+
+#### Example (Repository Test Layout)
+
+```csharp
+public class TodoRepositoryTests : RepositoryTestBase
+{
+    private readonly TodoRepository _todoRepository;
+    private int _categoryId;
+
+    public TodoRepositoryTests()
+    {
+        _todoRepository = new TodoRepository(Context);
+        SetupCategory();
+    }
+
+    private void SetupCategory()
+    {
+        var category = TodoTestData.DefaultCategory;
+        Context.Categories.Add(category);
+        Context.SaveChanges();
+        _categoryId = category.Id;
+    }
+
+    // GetTodoByIdAsync
+
+    [Fact]
+    public async Task GetTodoByIdAsync_WhenTodoExists_ReturnsTodo()
+    {
+        // Arrange
+        var todo = new Todo { Title = "Test", CategoryId = _categoryId, IsDone = false };
+        Context.Todos.Add(todo);
+        await Context.SaveChangesAsync();
+
+        // Act
+        var result = await _todoRepository.GetTodoByIdAsync(todo.Id);
+
+        // Assert
+        Assert.NotNull(result);
+        AssertEx.AreEqual(result!.Id, todo.Id);
+    }
+
+    // CreateTodoAsync
+
+    [Fact]
+    public async Task CreateTodoAsync_WhenTodoIsValid_AddsTodo()
+    {
+        // Arrange
+        var todo = new Todo { Title = "New", CategoryId = _categoryId, IsDone = false };
+
+        // Act
+        await _todoRepository.CreateTodoAsync(todo);
+
+        // Assert
+        var savedTodo = await Context.Todos.AsNoTracking().FirstOrDefaultAsync(t => t.Id == todo.Id);
+        Assert.NotNull(savedTodo);
+        AssertEx.AreEqual("New", savedTodo.Title);
+    }
+}
+```
+
 #### Always test
 - **Add/Insert:** the record exists in the DB afterwards
 - **GetById / GetBy...:** returns the correct record / returns null if not present
@@ -644,6 +724,7 @@ When reviewing, please check:
 - Are new or modified exception mappings in `GlobalExceptionHandler` updated in `tests/Multitool.Api.Tests/Exceptions/GlobalExceptionHandlerTests.cs`?
 - Do controller test classes follow the standard controller test layout (`GetController()` factory method, mock resets, default response fields, `AssertEx` assertions, and `.VerifyNoOtherCalls()`)?
 - Do service test classes follow the standard service test layout (`GetService()` factory method, mock resets, Mapster setup in constructor, `.Callback<T>` argument capture, `AssertEx.AreEqual`, `AssertEx.CloseTo` for `.UtcNow` timestamp setters, and `.VerifyNoOtherCalls()`)?
+- Do repository test classes follow the standard repository test layout (inherit `RepositoryTestBase`, instantiate repository directly without `GetRepository()`, use `AssertEx.AreEqual` for deep comparisons, standard `Assert.Null/NotNull/True/False`, and `AsNoTracking()` for DB state checks)?
 - Are unused `.Callback<T>(...)` setups and unused captured private fields omitted/removed if their data is not asserted on?
 - Are all expected mock method calls verified in the `// Assert` block using `.Verify(...)` (with `Times.Once` for expected calls and `Times.Never` for negative paths)?
 - When multiple mocks are verified in a test, is each mock fully completed (`.Verify(...)` + `.VerifyNoOtherCalls()`) before verifying the next mock?

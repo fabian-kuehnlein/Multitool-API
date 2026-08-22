@@ -4,7 +4,7 @@ namespace Multitool.Domain.Interfaces;
 
 public interface ITodoRepository
 {
-    Task<List<Todo>> GetAllAsync();
+    Task<List<Todo>> GetTodosAsync();
     Task<Todo?> GetByIdAsync(int id);
     Task<int> CreateTodoAsync(Todo todo);
     Task UpdateTodoAsync(Todo todo);

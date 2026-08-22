@@ -7,7 +7,7 @@ namespace Multitool.Infrastructure.Repositories;
 
 public class TodoRepository(AppDbContext db) : ITodoRepository
 {
-    public async Task<List<Todo>> GetAllAsync()
+    public async Task<List<Todo>> GetTodosAsync()
     {
         return await db.Todos
             .AsNoTracking()
