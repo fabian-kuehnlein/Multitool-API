@@ -1,6 +1,8 @@
-using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 using Multitool.Domain.Entities.WorkTimePlanner;
 using Multitool.Infrastructure.Repositories;
+using Multitool.Tests.Shared;
+using Multitool.Tests.Shared.Assertions;
 
 namespace Multitool.Infrastructure.Tests;
 
@@ -13,21 +15,31 @@ public class WeekSummaryRepositoryTests : RepositoryTestBase
         _sut = new WeekSummaryRepository(Context);
     }
 
+    private static WeekSummary CreateSummary(int year, int weekNumber, int totalOvertime)
+    {
+        var summary = WorkTimePlannerTestData.DefaultWeekSummary;
+        summary.Id = 0;
+        summary.Year = year;
+        summary.WeekNumber = weekNumber;
+        summary.TotalOvertime = totalOvertime;
+        return summary;
+    }
+
     // AddAsync
 
     [Fact]
     public async Task AddAsync_WhenSummaryIsValid_AddsSummaryToDatabase()
     {
         // Arrange
-        var summary = new WeekSummary { Year = 2026, WeekNumber = 23, TotalOvertime = 60 };
+        var summary = CreateSummary(2026, 23, 60);
 
         // Act
         await _sut.AddAsync(summary);
 
         // Assert
-        var dbSummary = await Context.WeekSummaries.FindAsync(summary.Id);
-        dbSummary.Should().NotBeNull();
-        dbSummary!.TotalOvertime.Should().Be(60);
+        var dbSummary = await Context.WeekSummaries.AsNoTracking().FirstOrDefaultAsync(s => s.Id == summary.Id);
+        Assert.NotNull(dbSummary);
+        AssertEx.AreEqual(60, dbSummary!.TotalOvertime);
     }
 
     // GetByYearAndWeekAsync
@@ -36,40 +48,41 @@ public class WeekSummaryRepositoryTests : RepositoryTestBase
     public async Task GetByYearAndWeekAsync_WhenSummaryExists_ReturnsSummary()
     {
         // Arrange
-        var summary = new WeekSummary { Year = 2026, WeekNumber = 23, TotalOvertime = 60 };
-        Context.WeekSummaries.Add(summary);
+        Context.WeekSummaries.Add(CreateSummary(2026, 23, 60));
         await Context.SaveChangesAsync();
 
         // Act
         var result = await _sut.GetByYearAndWeekAsync(2026, 23);
 
         // Assert
-        result.Should().NotBeNull();
-        result!.TotalOvertime.Should().Be(60);
+        Assert.NotNull(result);
+        AssertEx.AreEqual(60, result!.TotalOvertime);
     }
 
     [Fact]
     public async Task GetByYearAndWeekAsync_WhenSummaryDoesNotExist_ReturnsNull()
     {
+        // Arrange
+
         // Act
         var result = await _sut.GetByYearAndWeekAsync(2026, 23);
 
         // Assert
-        result.Should().BeNull();
+        Assert.Null(result);
     }
 
     [Fact]
     public async Task GetByYearAndWeekAsync_WhenOtherYearAndWeekExist_ReturnsNull()
     {
         // Arrange
-        Context.WeekSummaries.Add(new WeekSummary { Year = 2025, WeekNumber = 23, TotalOvertime = 60 });
+        Context.WeekSummaries.Add(CreateSummary(2025, 23, 60));
         await Context.SaveChangesAsync();
 
         // Act
         var result = await _sut.GetByYearAndWeekAsync(2026, 23);
 
         // Assert
-        result.Should().BeNull();
+        Assert.Null(result);
     }
 
     // GetPreviousWeekSummaryAsync
@@ -79,9 +92,9 @@ public class WeekSummaryRepositoryTests : RepositoryTestBase
     {
         // Arrange
         Context.WeekSummaries.AddRange(
-            new WeekSummary { Year = 2026, WeekNumber = 20, TotalOvertime = 10 },
-            new WeekSummary { Year = 2026, WeekNumber = 21, TotalOvertime = 20 },
-            new WeekSummary { Year = 2026, WeekNumber = 22, TotalOvertime = 30 }
+            CreateSummary(2026, 20, 10),
+            CreateSummary(2026, 21, 20),
+            CreateSummary(2026, 22, 30)
         );
         await Context.SaveChangesAsync();
 
@@ -89,39 +102,39 @@ public class WeekSummaryRepositoryTests : RepositoryTestBase
         var result = await _sut.GetPreviousWeekSummaryAsync(2026, 23);
 
         // Assert
-        result.Should().NotBeNull();
-        result!.WeekNumber.Should().Be(22);
-        result.TotalOvertime.Should().Be(30);
+        Assert.NotNull(result);
+        AssertEx.AreEqual(22, result!.WeekNumber);
+        AssertEx.AreEqual(30, result.TotalOvertime);
     }
 
     [Fact]
     public async Task GetPreviousWeekSummaryAsync_WhenPreviousWeekIsInPreviousYear_ReturnsPreviousYearSummary()
     {
         // Arrange
-        Context.WeekSummaries.Add(new WeekSummary { Year = 2025, WeekNumber = 52, TotalOvertime = 45 });
+        Context.WeekSummaries.Add(CreateSummary(2025, 52, 45));
         await Context.SaveChangesAsync();
 
         // Act
         var result = await _sut.GetPreviousWeekSummaryAsync(2026, 1);
 
         // Assert
-        result.Should().NotBeNull();
-        result!.Year.Should().Be(2025);
-        result.WeekNumber.Should().Be(52);
+        Assert.NotNull(result);
+        AssertEx.AreEqual(2025, result!.Year);
+        AssertEx.AreEqual(52, result.WeekNumber);
     }
 
     [Fact]
     public async Task GetPreviousWeekSummaryAsync_WhenNoSummaryExistsBefore_ReturnsNull()
     {
         // Arrange
-        Context.WeekSummaries.Add(new WeekSummary { Year = 2026, WeekNumber = 24, TotalOvertime = 60 });
+        Context.WeekSummaries.Add(CreateSummary(2026, 24, 60));
         await Context.SaveChangesAsync();
 
         // Act
         var result = await _sut.GetPreviousWeekSummaryAsync(2026, 23);
 
         // Assert
-        result.Should().BeNull();
+        Assert.Null(result);
     }
 
     // UpdateAsync
@@ -130,16 +143,18 @@ public class WeekSummaryRepositoryTests : RepositoryTestBase
     public async Task UpdateAsync_WhenSummaryExists_UpdatesTotalOvertime()
     {
         // Arrange
-        var summary = new WeekSummary { Year = 2026, WeekNumber = 23, TotalOvertime = 0 };
+        var summary = CreateSummary(2026, 23, 0);
         Context.WeekSummaries.Add(summary);
         await Context.SaveChangesAsync();
 
-        // Act
         summary.TotalOvertime = 120;
+
+        // Act
         await _sut.UpdateAsync(summary);
 
         // Assert
-        var dbSummary = await Context.WeekSummaries.FindAsync(summary.Id);
-        dbSummary!.TotalOvertime.Should().Be(120);
+        var dbSummary = await Context.WeekSummaries.AsNoTracking().FirstOrDefaultAsync(s => s.Id == summary.Id);
+        Assert.NotNull(dbSummary);
+        AssertEx.AreEqual(120, dbSummary!.TotalOvertime);
     }
 }

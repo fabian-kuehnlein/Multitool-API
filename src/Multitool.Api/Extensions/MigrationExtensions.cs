@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Multitool.Domain.Entities.Category;
 using Multitool.Infrastructure.Data;
 
 namespace Multitool.Api.Extensions;
@@ -10,5 +11,11 @@ public static class MigrationExtensions
         using var scope = app.ApplicationServices.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         db.Database.Migrate();
+
+        if (db.Categories.Any())
+        {
+            db.Categories.Add(new Category { Name = "Standard-Kategorie", Color = "#808080" });
+            db.SaveChanges();
+        }
     }
 }

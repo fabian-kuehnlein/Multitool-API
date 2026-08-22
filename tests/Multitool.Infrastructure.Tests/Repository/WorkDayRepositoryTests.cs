@@ -1,6 +1,8 @@
-using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 using Multitool.Domain.Entities.WorkTimePlanner;
 using Multitool.Infrastructure.Repositories;
+using Multitool.Tests.Shared;
+using Multitool.Tests.Shared.Assertions;
 
 namespace Multitool.Infrastructure.Tests;
 
@@ -13,25 +15,30 @@ public class WorkDayRepositoryTests : RepositoryTestBase
         _sut = new WorkDayRepository(Context);
     }
 
-    // AddAsync
+    private static WorkDay CreateWorkDay(DateTime date, DayStatus status = DayStatus.Normal)
+    {
+        var workDay = WorkTimePlannerTestData.DefaultWorkDay;
+        workDay.Id = 0;
+        workDay.Date = date;
+        workDay.Status = status;
+        return workDay;
+    }
+
+    // CreateWorkDayAsync
 
     [Fact]
-    public async Task AddAsync_WhenWorkDayIsValid_AddsWorkDayToDatabase()
+    public async Task CreateWorkDayAsync_WhenWorkDayIsValid_AddsWorkDayToDatabase()
     {
         // Arrange
-        var workDay = new WorkDay
-        {
-            Date = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc),
-            Status = DayStatus.Normal
-        };
+        var workDay = WorkTimePlannerTestData.DefaultWorkDay;
 
         // Act
-        await _sut.AddAsync(workDay);
+        await _sut.CreateWorkDayAsync(workDay);
 
         // Assert
-        var dbWorkDay = await Context.WorkDays.FindAsync(workDay.Id);
-        dbWorkDay.Should().NotBeNull();
-        dbWorkDay!.Date.Should().Be(workDay.Date);
+        var dbWorkDay = await Context.WorkDays.AsNoTracking().FirstOrDefaultAsync(w => w.Id == workDay.Id);
+        Assert.NotNull(dbWorkDay);
+        AssertEx.AreEqual(workDay.Date, dbWorkDay!.Date);
     }
 
     // GetByIdAsync
@@ -40,7 +47,7 @@ public class WorkDayRepositoryTests : RepositoryTestBase
     public async Task GetByIdAsync_WhenWorkDayExists_ReturnsWorkDay()
     {
         // Arrange
-        var workDay = new WorkDay { Date = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc), Status = DayStatus.Normal };
+        var workDay = WorkTimePlannerTestData.DefaultWorkDay;
         Context.WorkDays.Add(workDay);
         await Context.SaveChangesAsync();
 
@@ -48,18 +55,20 @@ public class WorkDayRepositoryTests : RepositoryTestBase
         var result = await _sut.GetByIdAsync(workDay.Id);
 
         // Assert
-        result.Should().NotBeNull();
-        result!.Id.Should().Be(workDay.Id);
+        Assert.NotNull(result);
+        AssertEx.AreEqual(workDay.Id, result!.Id);
     }
 
     [Fact]
     public async Task GetByIdAsync_WhenWorkDayDoesNotExist_ReturnsNull()
     {
+        // Arrange
+
         // Act
         var result = await _sut.GetByIdAsync(999);
 
         // Assert
-        result.Should().BeNull();
+        Assert.Null(result);
     }
 
     // GetByDateRangeAsync
@@ -70,9 +79,9 @@ public class WorkDayRepositoryTests : RepositoryTestBase
         // Arrange
         var start = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc);
         Context.WorkDays.AddRange(
-            new WorkDay { Date = start, Status = DayStatus.Normal },
-            new WorkDay { Date = start.AddDays(1), Status = DayStatus.Normal },
-            new WorkDay { Date = start.AddDays(7), Status = DayStatus.Normal }
+            CreateWorkDay(start),
+            CreateWorkDay(start.AddDays(1)),
+            CreateWorkDay(start.AddDays(7))
         );
         await Context.SaveChangesAsync();
 
@@ -80,7 +89,7 @@ public class WorkDayRepositoryTests : RepositoryTestBase
         var result = await _sut.GetByDateRangeAsync(start, start.AddDays(3));
 
         // Assert
-        result.Should().HaveCount(2);
+        AssertEx.AreEqual(2, result.Count);
     }
 
     [Fact]
@@ -88,14 +97,14 @@ public class WorkDayRepositoryTests : RepositoryTestBase
     {
         // Arrange
         var start = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc);
-        Context.WorkDays.Add(new WorkDay { Date = start.AddDays(3), Status = DayStatus.Normal });
+        Context.WorkDays.Add(CreateWorkDay(start.AddDays(3)));
         await Context.SaveChangesAsync();
 
         // Act
         var result = await _sut.GetByDateRangeAsync(start, start.AddDays(3));
 
         // Assert
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
 
     [Fact]
@@ -104,9 +113,9 @@ public class WorkDayRepositoryTests : RepositoryTestBase
         // Arrange
         var start = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc);
         Context.WorkDays.AddRange(
-            new WorkDay { Date = start.AddDays(2), Status = DayStatus.Normal },
-            new WorkDay { Date = start, Status = DayStatus.Normal },
-            new WorkDay { Date = start.AddDays(1), Status = DayStatus.Normal }
+            CreateWorkDay(start.AddDays(2)),
+            CreateWorkDay(start),
+            CreateWorkDay(start.AddDays(1))
         );
         await Context.SaveChangesAsync();
 
@@ -114,55 +123,49 @@ public class WorkDayRepositoryTests : RepositoryTestBase
         var result = await _sut.GetByDateRangeAsync(start, start.AddDays(7));
 
         // Assert
-        result.Should().BeInAscendingOrder(w => w.Date);
+        AssertEx.AreEqual(
+            new List<DateTime> { start, start.AddDays(1), start.AddDays(2) },
+            result.Select(w => w.Date).ToList());
     }
 
-    // UpdateAsync
+    // UpdateWorkDayAsync
 
     [Fact]
-    public async Task UpdateAsync_WhenWorkDayExists_UpdatesFields()
+    public async Task UpdateWorkDayAsync_WhenWorkDayExists_UpdatesFields()
     {
         // Arrange
-        var workDay = new WorkDay { Date = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc), Status = DayStatus.Normal };
+        var workDay = WorkTimePlannerTestData.DefaultWorkDay;
         Context.WorkDays.Add(workDay);
         await Context.SaveChangesAsync();
 
-        // Act
         workDay.Status = DayStatus.Sick;
         workDay.IsHomeOffice = true;
-        await _sut.UpdateAsync(workDay);
+
+        // Act
+        await _sut.UpdateWorkDayAsync(workDay);
 
         // Assert
-        var dbWorkDay = await Context.WorkDays.FindAsync(workDay.Id);
-        dbWorkDay!.Status.Should().Be(DayStatus.Sick);
-        dbWorkDay.IsHomeOffice.Should().BeTrue();
+        var dbWorkDay = await Context.WorkDays.AsNoTracking().FirstOrDefaultAsync(w => w.Id == workDay.Id);
+        Assert.NotNull(dbWorkDay);
+        AssertEx.AreEqual(DayStatus.Sick, dbWorkDay!.Status);
+        Assert.True(dbWorkDay.IsHomeOffice);
     }
 
-    // DeleteAsync
+    // DeleteWorkDayAsync
 
     [Fact]
-    public async Task DeleteAsync_WhenWorkDayExists_RemovesWorkDay()
+    public async Task DeleteWorkDayAsync_WhenWorkDayExists_RemovesWorkDay()
     {
         // Arrange
-        var workDay = new WorkDay { Date = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc), Status = DayStatus.Normal };
+        var workDay = WorkTimePlannerTestData.DefaultWorkDay;
         Context.WorkDays.Add(workDay);
         await Context.SaveChangesAsync();
 
         // Act
-        await _sut.DeleteAsync(workDay.Id);
+        await _sut.DeleteWorkDayAsync(workDay);
 
         // Assert
-        var dbWorkDay = await Context.WorkDays.FindAsync(workDay.Id);
-        dbWorkDay.Should().BeNull();
-    }
-
-    [Fact]
-    public async Task DeleteAsync_WhenWorkDayDoesNotExist_DoesNotThrow()
-    {
-        // Act
-        var act = () => _sut.DeleteAsync(999);
-
-        // Assert
-        await act.Should().NotThrowAsync();
+        var dbWorkDay = await Context.WorkDays.AsNoTracking().FirstOrDefaultAsync(w => w.Id == workDay.Id);
+        Assert.Null(dbWorkDay);
     }
 }

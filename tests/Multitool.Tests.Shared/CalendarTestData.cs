@@ -1,5 +1,4 @@
 using Multitool.Domain.Entities.Calendar;
-using Multitool.Domain.Entities.Category;
 using Multitool.Application.Models.Calendar;
 
 namespace Multitool.Tests.Shared;
@@ -56,8 +55,6 @@ public static class CalendarTestData
         new DateTime(2026, 6, 1, 9, 0, 0, DateTimeKind.Utc),
         new DateTime(2026, 6, 1, 10, 0, 0, DateTimeKind.Utc)
     );
-
-    public static Category DefaultCategory => new() { Id = 1, Name = "Arbeit", Color = "#FF0000" };
 
     public static Holiday DefaultHoliday => new() { Name = "Neujahr", Date = new DateTime(2026, 1, 1) };
 }

@@ -1,52 +1,242 @@
-using FluentAssertions;
 using Mapster;
 using Moq;
-using Multitool.Application.Models;
+using Multitool.Application.Mappings;
+using Multitool.Application.Models.Category;
 using Multitool.Application.Services;
 using Multitool.Domain.Entities.Category;
 using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
 using Multitool.Tests.Shared;
+using Multitool.Tests.Shared.Assertions;
 
 namespace Multitool.Application.Tests;
 
 public class CategoryServiceTests
 {
     private readonly Mock<ICategoryRepository> _repositoryMock;
-    private readonly CategoryService _sut;
+
+    private List<Category> _getCategoriesResponse;
+    private Category? _getByIdResponse;
+    private int _createCategoryResponse;
+
+    private static readonly int ID = CategoryTestData.DefaultCategory.Id;
+
+    private Category? _createdCategory;
+    private Category? _updatedCategory;
+    private Category? _deletedCategory;
 
     public CategoryServiceTests()
     {
+        TypeAdapterConfig.GlobalSettings.Apply(new MappingConfig());
+
         _repositoryMock = new Mock<ICategoryRepository>();
-        _sut = new CategoryService(_repositoryMock.Object);
+
+        _getCategoriesResponse = new List<Category>();
+        _getByIdResponse = CategoryTestData.DefaultCategory;
+        _createCategoryResponse = ID;
+    }
+
+    private CategoryService GetService()
+    {
+        _createdCategory = null;
+        _updatedCategory = null;
+        _deletedCategory = null;
+
+        _repositoryMock.Reset();
+
+        _repositoryMock.Setup(r => r.GetCategoriesAsync())
+            .ReturnsAsync(_getCategoriesResponse);
+
+        _repositoryMock.Setup(r => r.GetByIdAsync(It.IsAny<int>()))
+            .ReturnsAsync(_getByIdResponse);
+
+        _repositoryMock.Setup(r => r.CreateCategoryAsync(It.IsAny<Category>()))
+            .Callback<Category>(c => _createdCategory = c)
+            .ReturnsAsync(_createCategoryResponse);
+
+        _repositoryMock.Setup(r => r.UpdateCategoryAsync(It.IsAny<Category>()))
+            .Callback<Category>(c => _updatedCategory = c)
+            .Returns(Task.CompletedTask);
+
+        _repositoryMock.Setup(r => r.DeleteCategoryAsync(It.IsAny<Category>()))
+            .Callback<Category>(c => _deletedCategory = c)
+            .Returns(Task.CompletedTask);
+
+        return new CategoryService(_repositoryMock.Object);
     }
 
     // GetCategoriesAsync
-
     [Fact]
     public async Task GetCategoriesAsync_WhenCategoriesExist_ReturnsAllCategories()
     {
         // Arrange
-        var categories = new List<Category> { CalendarTestData.DefaultCategory };
-        _repositoryMock.Setup(r => r.GetCategoriesAsync()).ReturnsAsync(categories);
+        _getCategoriesResponse = new List<Category> { CategoryTestData.DefaultCategory };
+        var service = GetService();
 
         // Act
-        var result = await _sut.GetCategoriesAsync();
+        var result = await service.GetCategoriesAsync();
 
         // Assert
-        result.Should().BeEquivalentTo(categories.Adapt<List<CategoryDto>>());
+        AssertEx.AreEqual(result, _getCategoriesResponse.Adapt<List<CategoryDto>>());
+
+        _repositoryMock.Verify(r => r.GetCategoriesAsync(), Times.Once);
+        _repositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
-    public async Task GetCategoriesAsync_WhenNoCategoriesFound_ThrowsNotFoundException()
+    public async Task GetCategoriesAsync_WhenNoCategoriesExist_ThrowsNotFoundException()
     {
         // Arrange
-        _repositoryMock.Setup(r => r.GetCategoriesAsync()).ReturnsAsync(new List<Category>());
+        _getCategoriesResponse = new List<Category>();
+        var service = GetService();
 
         // Act
-        var act = () => _sut.GetCategoriesAsync();
+        Func<Task> act = async () => await service.GetCategoriesAsync();
 
         // Assert
-        await act.Should().ThrowAsync<NotFoundException>().WithMessage("No categories found");
+        await AssertEx.Throws<NotFoundException>(act);
+
+        _repositoryMock.Verify(r => r.GetCategoriesAsync(), Times.Once);
+        _repositoryMock.VerifyNoOtherCalls();
+    }
+
+    // CreateCategoryAsync
+    [Fact]
+    public async Task CreateCategoryAsync_WhenDtoIsValid_CallsRepositoryAdd()
+    {
+        // Arrange
+        var dto = CategoryTestData.DefaultCreateCategoryDto;
+        var service = GetService();
+
+        // Act
+        var result = await service.CreateCategoryAsync(dto);
+
+        // Assert
+        AssertEx.AreEqual(result, ID);
+        AssertEx.AreEqual(_createdCategory, new Category
+        {
+            Name = dto.Name,
+            Color = dto.Color
+        });
+
+        _repositoryMock.Verify(r => r.CreateCategoryAsync(It.Is<Category>(c =>
+            c.Name == dto.Name &&
+            c.Color == dto.Color
+        )), Times.Once);
+        _repositoryMock.VerifyNoOtherCalls();
+    }
+
+    // UpdateCategoryAsync
+    [Fact]
+    public async Task UpdateCategoryAsync_WhenCategoryExists_UpdatesAllFields()
+    {
+        // Arrange
+        var category = CategoryTestData.DefaultCategory;
+        var dto = CategoryTestData.DefaultUpdateCategoryDto;
+
+        _getByIdResponse = category;
+        var service = GetService();
+
+        // Act
+        await service.UpdateCategoryAsync(category.Id, dto);
+
+        // Assert
+        AssertEx.AreEqual(_updatedCategory, new Category
+        {
+            Id = category.Id,
+            Name = dto.Name,
+            Color = dto.Color
+        });
+
+        _repositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
+        _repositoryMock.Verify(r => r.UpdateCategoryAsync(It.Is<Category>(c =>
+            c.Id == ID &&
+            c.Name == dto.Name &&
+            c.Color == dto.Color
+        )), Times.Once);
+        _repositoryMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task UpdateCategoryAsync_WhenCategoryDoesNotExist_ThrowsNotFoundException()
+    {
+        // Arrange
+        _getByIdResponse = null;
+        var service = GetService();
+
+        // Act
+        Func<Task> act = async () => await service.UpdateCategoryAsync(ID, CategoryTestData.DefaultUpdateCategoryDto);
+
+        // Assert
+        await AssertEx.Throws<NotFoundException>(act);
+
+        _repositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
+        _repositoryMock.Verify(r => r.UpdateCategoryAsync(It.IsAny<Category>()), Times.Never);
+        _repositoryMock.VerifyNoOtherCalls();
+    }
+
+    // DeleteCategoryAsync
+    [Fact]
+    public async Task DeleteCategoryAsync_WhenMultipleCategoriesExist_CallsRepositoryDelete()
+    {
+        // Arrange
+        var otherCategory = CategoryTestData.DefaultCategory;
+        otherCategory.Id = 2;
+
+        _getCategoriesResponse = new List<Category> { CategoryTestData.DefaultCategory, otherCategory };
+        _getByIdResponse = CategoryTestData.DefaultCategory;
+        var service = GetService();
+
+        // Act
+        await service.DeleteCategoryAsync(ID);
+
+        // Assert
+        AssertEx.AreEqual(_deletedCategory, CategoryTestData.DefaultCategory);
+
+        _repositoryMock.Verify(r => r.GetCategoriesAsync(), Times.Once);
+        _repositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
+        _repositoryMock.Verify(r => r.DeleteCategoryAsync(It.Is<Category>(c => c.Id == ID)), Times.Once);
+        _repositoryMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task DeleteCategoryAsync_WhenOnlyOneCategoryExists_ThrowsCannotDeleteLastCategoryException()
+    {
+        // Arrange
+        _getCategoriesResponse = new List<Category> { CategoryTestData.DefaultCategory };
+        var service = GetService();
+
+        // Act
+        Func<Task> act = async () => await service.DeleteCategoryAsync(ID);
+
+        // Assert
+        await AssertEx.Throws<CannotDeleteLastCategoryException>(act);
+
+        _repositoryMock.Verify(r => r.GetCategoriesAsync(), Times.Once);
+        _repositoryMock.Verify(r => r.DeleteCategoryAsync(It.IsAny<Category>()), Times.Never);
+        _repositoryMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task DeleteCategoryAsync_WhenCategoryDoesNotExist_ThrowsNotFoundException()
+    {
+        // Arrange
+        var otherCategory = CategoryTestData.DefaultCategory;
+        otherCategory.Id = 2;
+
+        _getCategoriesResponse = new List<Category> { CategoryTestData.DefaultCategory, otherCategory };
+        _getByIdResponse = null;
+        var service = GetService();
+
+        // Act
+        Func<Task> act = async () => await service.DeleteCategoryAsync(ID);
+
+        // Assert
+        await AssertEx.Throws<NotFoundException>(act);
+
+        _repositoryMock.Verify(r => r.GetCategoriesAsync(), Times.Once);
+        _repositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
+        _repositoryMock.Verify(r => r.DeleteCategoryAsync(It.IsAny<Category>()), Times.Never);
+        _repositoryMock.VerifyNoOtherCalls();
     }
 }

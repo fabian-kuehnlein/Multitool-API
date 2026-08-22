@@ -1,17 +1,17 @@
 using System.Collections.Specialized;
 using System.Globalization;
 using System.Web;
-using FluentAssertions;
 using Mapster;
 using Moq;
-using Multitool.Tests.Shared;
 using Multitool.Application.Mappings;
 using Multitool.Application.Models.Calendar;
 using Multitool.Application.Services;
 using Multitool.Domain.Entities.Calendar;
+using Multitool.Domain.Entities.Todo;
 using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
-using Multitool.Domain.Entities.Todo;
+using Multitool.Tests.Shared;
+using Multitool.Tests.Shared.Assertions;
 
 namespace Multitool.Application.Tests;
 
@@ -20,7 +20,19 @@ public class CalendarServiceTests
     private readonly Mock<ICalendarRepository> _calendarRepositoryMock;
     private readonly Mock<ITodoRepository> _todoRepositoryMock;
     private readonly Mock<ICalendarApiClient> _apiClientMock;
-    private readonly CalendarService _sut;
+
+    private List<CalendarEvent> _getEventsByRangeResponse;
+    private List<Todo> _getTodosInRangeResponse;
+    private List<CalendarEvent> _searchCalendarEventsResponse;
+    private long _createEventResponse;
+    private CalendarEvent? _getByIdResponse;
+    private List<Holiday> _getHolidaysResponse;
+    private List<CalendarEvent> _getEventsOlderThanResponse;
+
+    private static readonly int ID = CalendarTestData.DefaultEvent.Id;
+
+    private CalendarEvent? _createdEvent;
+    private CalendarEvent? _updatedEvent;
 
     public CalendarServiceTests()
     {
@@ -29,11 +41,61 @@ public class CalendarServiceTests
         _calendarRepositoryMock = new Mock<ICalendarRepository>();
         _todoRepositoryMock = new Mock<ITodoRepository>();
         _apiClientMock = new Mock<ICalendarApiClient>();
-        _sut = new CalendarService(_calendarRepositoryMock.Object, _todoRepositoryMock.Object, _apiClientMock.Object);
+
+        _getEventsByRangeResponse = new List<CalendarEvent>();
+        _getTodosInRangeResponse = new List<Todo>();
+        _searchCalendarEventsResponse = new List<CalendarEvent>();
+        _createEventResponse = 1L;
+        _getByIdResponse = CalendarTestData.DefaultEvent;
+        _getHolidaysResponse = new List<Holiday>();
+        _getEventsOlderThanResponse = new List<CalendarEvent>();
+    }
+
+    private CalendarService GetService()
+    {
+        _createdEvent = null;
+        _updatedEvent = null;
+
+        _calendarRepositoryMock.Reset();
+        _todoRepositoryMock.Reset();
+        _apiClientMock.Reset();
+
+        _calendarRepositoryMock.Setup(r => r.GetEventsByRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<string>()))
+            .ReturnsAsync(_getEventsByRangeResponse);
+
+        _todoRepositoryMock.Setup(r => r.GetTodosWithDueDateInRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
+            .ReturnsAsync(_getTodosInRangeResponse);
+
+        _calendarRepositoryMock.Setup(r => r.SearchCalendarEventsAsync(It.IsAny<string>()))
+            .ReturnsAsync(_searchCalendarEventsResponse);
+
+        _calendarRepositoryMock.Setup(r => r.CreateEventAsync(It.IsAny<CalendarEvent>()))
+            .Callback<CalendarEvent>(e => _createdEvent = e)
+            .ReturnsAsync(_createEventResponse);
+
+        _calendarRepositoryMock.Setup(r => r.GetByIdAsync(It.IsAny<int>()))
+            .ReturnsAsync(_getByIdResponse);
+
+        _calendarRepositoryMock.Setup(r => r.UpdateEventAsync(It.IsAny<CalendarEvent>()))
+            .Callback<CalendarEvent>(e => _updatedEvent = e)
+            .Returns(Task.CompletedTask);
+
+        _calendarRepositoryMock.Setup(r => r.DeleteEventAsync(It.IsAny<int>()))
+            .Returns(Task.CompletedTask);
+
+        _calendarRepositoryMock.Setup(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()))
+            .ReturnsAsync(_getEventsOlderThanResponse);
+
+        _apiClientMock.Setup(a => a.GetHolidaysAsync(It.IsAny<string>()))
+            .ReturnsAsync(_getHolidaysResponse);
+
+        return new CalendarService(
+            _calendarRepositoryMock.Object,
+            _todoRepositoryMock.Object,
+            _apiClientMock.Object);
     }
 
     // GetEventsByRangeAsync
-
     [Fact]
     public async Task GetEventsByRangeAsync_WhenEventsAndTodosExist_ReturnsMergedList()
     {
@@ -41,44 +103,36 @@ public class CalendarServiceTests
         var events = new List<CalendarEvent> { CalendarTestData.DefaultEvent };
         var todos = new List<Todo> { TodoTestData.DefaultTodo };
 
-        _calendarRepositoryMock
-            .Setup(r => r.GetEventsByRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<string>()))
-            .ReturnsAsync(events);
-        _todoRepositoryMock
-            .Setup(r => r.GetTodosWithDueDateInRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
-            .ReturnsAsync(todos);
+        var expected = events.Adapt<List<CalendarEventDto>>();
+        expected.Add(new CalendarEventDto
+        {
+            Id = $"todo-{TodoTestData.DefaultTodo.Id}",
+            Title = TodoTestData.DefaultTodo.Title,
+            Note = TodoTestData.DefaultTodo.Description,
+            StartDateTime = TodoTestData.DefaultTodo.DueDate!.Value,
+            EndDateTime = TodoTestData.DefaultTodo.DueDate.Value.Date.AddDays(1),
+            IsAllDay = true,
+            CategoryId = TodoTestData.DefaultTodo.CategoryId,
+            RecurrenceRule = null,
+            RecurrenceEnd = null,
+            IsTodo = true
+        });
+
+        _getEventsByRangeResponse = events;
+        _getTodosInRangeResponse = todos;
+        var service = GetService();
 
         // Act
-        var result = await _sut.GetEventsByRangeAsync(DateTime.UtcNow, DateTime.UtcNow.AddDays(7), "");
+        var result = await service.GetEventsByRangeAsync(DateTime.UtcNow, DateTime.UtcNow.AddDays(7), "");
 
         // Assert
-        result.Should().HaveCount(2);
-    }
+        AssertEx.AreEqual(result, expected);
 
-    [Fact]
-    public async Task GetEventsByRangeAsync_WhenTodoIsIncluded_MapsTodoFieldsCorrectly()
-    {
-        // Arrange
-        var todo = TodoTestData.DefaultTodo;
-        _calendarRepositoryMock
-            .Setup(r => r.GetEventsByRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<string>()))
-            .ReturnsAsync(new List<CalendarEvent>());
-        _todoRepositoryMock
-            .Setup(r => r.GetTodosWithDueDateInRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
-            .ReturnsAsync(new List<Todo> { todo });
+        _calendarRepositoryMock.Verify(r => r.GetEventsByRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>(), ""), Times.Once);
+        _calendarRepositoryMock.VerifyNoOtherCalls();
 
-        // Act
-        var result = await _sut.GetEventsByRangeAsync(DateTime.UtcNow, DateTime.UtcNow.AddDays(7), "");
-
-        // Assert
-        var todoEvent = result.Should().ContainSingle().Subject;
-        todoEvent.Id.Should().Be($"todo-{todo.Id}");
-        todoEvent.Title.Should().Be(todo.Title);
-        todoEvent.Note.Should().Be(todo.Description);
-        todoEvent.StartDateTime.Should().Be(todo.DueDate!.Value);
-        todoEvent.IsAllDay.Should().BeTrue();
-        todoEvent.IsTodo.Should().BeTrue();
-        todoEvent.CategoryId.Should().Be(todo.CategoryId);
+        _todoRepositoryMock.Verify(r => r.GetTodosWithDueDateInRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()), Times.Once);
+        _todoRepositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
@@ -86,243 +140,281 @@ public class CalendarServiceTests
     {
         // Arrange
         var events = new List<CalendarEvent> { CalendarTestData.DefaultEvent };
-        _calendarRepositoryMock
-            .Setup(r => r.GetEventsByRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<string>()))
-            .ReturnsAsync(events);
-        _todoRepositoryMock
-            .Setup(r => r.GetTodosWithDueDateInRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
-            .ReturnsAsync(new List<Todo>());
+        _getEventsByRangeResponse = events;
+        var service = GetService();
 
         // Act
-        var result = await _sut.GetEventsByRangeAsync(DateTime.UtcNow, DateTime.UtcNow.AddDays(7), "");
+        var result = await service.GetEventsByRangeAsync(DateTime.UtcNow, DateTime.UtcNow.AddDays(7), "");
 
         // Assert
-        result.Should().ContainSingle();
-        result[0].IsTodo.Should().BeFalse();
+        AssertEx.AreEqual(result, events.Adapt<List<CalendarEventDto>>());
+
+        _calendarRepositoryMock.Verify(r => r.GetEventsByRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>(), ""), Times.Once);
+        _calendarRepositoryMock.VerifyNoOtherCalls();
+
+        _todoRepositoryMock.Verify(r => r.GetTodosWithDueDateInRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()), Times.Once);
+        _todoRepositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
-    public async Task GetEventsByRangeAsync_WhenTodoHasDueDate_SetsEndDateTimeToNextDay()
+    public async Task GetEventsByRangeAsync_WhenTodoIsIncluded_MapsTodoFieldsCorrectly()
     {
         // Arrange
         var todo = TodoTestData.DefaultTodo;
-        _calendarRepositoryMock
-            .Setup(r => r.GetEventsByRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<string>()))
-            .ReturnsAsync(new List<CalendarEvent>());
-        _todoRepositoryMock
-            .Setup(r => r.GetTodosWithDueDateInRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
-            .ReturnsAsync(new List<Todo> { todo });
+        _getTodosInRangeResponse = new List<Todo> { todo };
+        var service = GetService();
 
         // Act
-        var result = await _sut.GetEventsByRangeAsync(DateTime.UtcNow, DateTime.UtcNow.AddDays(7), "");
+        var result = await service.GetEventsByRangeAsync(DateTime.UtcNow, DateTime.UtcNow.AddDays(7), "");
 
         // Assert
-        var todoEvent = result.Should().ContainSingle().Subject;
-        todoEvent.EndDateTime.Should().Be(todo.DueDate!.Value.Date.AddDays(1));
+        AssertEx.AreEqual(result, new List<CalendarEventDto>
+        {
+            new()
+            {
+                Id = $"todo-{todo.Id}",
+                Title = todo.Title,
+                Note = todo.Description,
+                StartDateTime = todo.DueDate!.Value,
+                EndDateTime = todo.DueDate.Value.Date.AddDays(1),
+                IsAllDay = true,
+                CategoryId = todo.CategoryId,
+                RecurrenceRule = null,
+                RecurrenceEnd = null,
+                IsTodo = true
+            }
+        });
+
+        _calendarRepositoryMock.Verify(r => r.GetEventsByRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>(), ""), Times.Once);
+        _calendarRepositoryMock.VerifyNoOtherCalls();
+        
+        _todoRepositoryMock.Verify(r => r.GetTodosWithDueDateInRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()), Times.Once);
+        _todoRepositoryMock.VerifyNoOtherCalls();
     }
 
     // SearchCalendarEventsAsync
-
     [Fact]
     public async Task SearchCalendarEventsAsync_WhenEventsExist_ReturnsMappedEventSearchResponses()
     {
         // Arrange
-        _calendarRepositoryMock
-            .Setup(r => r.SearchCalendarEventsAsync("Meeting"))
-            .ReturnsAsync(new List<CalendarEvent> { CalendarTestData.DefaultEvent });
+        var events = new List<CalendarEvent> { CalendarTestData.DefaultEvent };
+        _searchCalendarEventsResponse = events;
+        var service = GetService();
 
         // Act
-        var result = await _sut.SearchCalendarEventsAsync("Meeting");
+        var result = await service.SearchCalendarEventsAsync("Meeting");
 
         // Assert
-        result.Should().HaveCount(1);
-        result[0].EventTitle.Should().Be(CalendarTestData.DefaultEvent.Title);
+        AssertEx.AreEqual(result, events.Adapt<List<EventSearchResponseDto>>());
+
+        _calendarRepositoryMock.Verify(r => r.SearchCalendarEventsAsync("Meeting"), Times.Once);
+        _calendarRepositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
     public async Task SearchCalendarEventsAsync_WhenRepositoryReturnsNoResults_ReturnsEmptyList()
     {
         // Arrange
-        _calendarRepositoryMock
-            .Setup(r => r.SearchCalendarEventsAsync(It.IsAny<string>()))
-            .ReturnsAsync(new List<CalendarEvent>());
+        _searchCalendarEventsResponse = new List<CalendarEvent>();
+        var service = GetService();
 
         // Act
-        var result = await _sut.SearchCalendarEventsAsync("nonexistent");
+        var result = await service.SearchCalendarEventsAsync("nonexistent");
 
         // Assert
-        result.Should().BeEmpty();
+        AssertEx.AreEqual(result, new List<EventSearchResponseDto>());
+
+        _calendarRepositoryMock.Verify(r => r.SearchCalendarEventsAsync("nonexistent"), Times.Once);
+        _calendarRepositoryMock.VerifyNoOtherCalls();
     }
 
-    // InsertEventAsync
-
+    // CreateEventAsync
     [Fact]
-    public async Task InsertEventAsync_WhenEventIsValid_ReturnsIdFromRepository()
+    public async Task CreateEventAsync_WhenDtoIsValid_CallsRepositoryAdd()
     {
         // Arrange
         const long expectedId = 99L;
-        _calendarRepositoryMock
-            .Setup(r => r.InsertEventAsync(It.IsAny<CalendarEvent>()))
-            .ReturnsAsync(expectedId);
+        var dto = CalendarTestData.DefaultCreateEvent;
+        _createEventResponse = expectedId;
+        var service = GetService();
 
         // Act
-        var result = await _sut.InsertEventAsync(CalendarTestData.DefaultCreateEvent);
+        var result = await service.CreateEventAsync(dto);
 
         // Assert
-        result.Should().Be(expectedId);
-    }
+        AssertEx.AreEqual(result, expectedId);
+        AssertEx.AreEqual(_createdEvent, new CalendarEvent
+        {
+            Title = dto.Title,
+            Note = dto.Note,
+            StartDateTime = dto.StartDateTime,
+            EndDateTime = dto.EndDateTime,
+            IsAllDay = dto.IsAllDay,
+            CategoryId = dto.CategoryId,
+            RecurrenceRule = dto.RecurrenceRule,
+            RecurrenceEnd = dto.RecurrenceEnd
+        });
 
-    [Fact]
-    public async Task InsertEventAsync_WhenEventIsValid_MapsToCalendarEvent()
-    {
-        // Arrange
-        CalendarEvent? captured = null;
-        _calendarRepositoryMock
-            .Setup(r => r.InsertEventAsync(It.IsAny<CalendarEvent>()))
-            .Callback<CalendarEvent>(e => captured = e)
-            .ReturnsAsync(1L);
-
-        // Act
-        await _sut.InsertEventAsync(CalendarTestData.DefaultCreateEvent);
-
-        // Assert
-        captured.Should().NotBeNull();
-        captured!.Title.Should().Be(CalendarTestData.DefaultCreateEvent.Title);
-        captured.StartDateTime.Should().Be(CalendarTestData.DefaultCreateEvent.StartDateTime);
+        _calendarRepositoryMock.Verify(r => r.CreateEventAsync(It.Is<CalendarEvent>(e =>
+            e.Title == dto.Title &&
+            e.StartDateTime == dto.StartDateTime &&
+            e.EndDateTime == dto.EndDateTime &&
+            e.CategoryId == dto.CategoryId
+        )), Times.Once);
+        _calendarRepositoryMock.VerifyNoOtherCalls();
     }
 
     // UpdateEventAsync
-
     [Fact]
-    public async Task UpdateEventAsync_WhenEventExists_DelegatesToRepository()
+    public async Task UpdateEventAsync_WhenEventExists_UpdatesAllFields()
     {
         // Arrange
+        var existing = CalendarTestData.DefaultEvent;
         var dto = CalendarTestData.DefaultUpdateEvent;
-        var existingEvent = new CalendarEvent
-        {
-            Id = CalendarTestData.DefaultEvent.Id,
-            Title = "Old Title",
-            StartDateTime = DateTime.UtcNow,
-            IsAllDay = false,
-            CategoryId = 1
-        };
-        _calendarRepositoryMock
-            .Setup(r => r.GetByIdAsync(existingEvent.Id))
-            .ReturnsAsync(existingEvent);
-        _calendarRepositoryMock
-            .Setup(r => r.UpdateEventAsync(existingEvent))
-            .Returns(Task.CompletedTask);
+
+        _getByIdResponse = existing;
+        var service = GetService();
 
         // Act
-        await _sut.UpdateEventAsync(existingEvent.Id, dto);
+        await service.UpdateEventAsync(existing.Id, dto);
 
         // Assert
-        _calendarRepositoryMock.Verify(r => r.UpdateEventAsync(existingEvent), Times.Once);
-        existingEvent.Title.Should().Be(dto.Title);
+        AssertEx.AreEqual(_updatedEvent, new CalendarEvent
+        {
+            Id = existing.Id,
+            Title = dto.Title,
+            Note = dto.Note,
+            StartDateTime = dto.StartDateTime,
+            EndDateTime = dto.EndDateTime,
+            IsAllDay = dto.IsAllDay,
+            CategoryId = dto.CategoryId,
+            RecurrenceRule = dto.RecurrenceRule,
+            RecurrenceEnd = dto.RecurrenceEnd
+        });
+
+        _calendarRepositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
+        _calendarRepositoryMock.Verify(r => r.UpdateEventAsync(It.Is<CalendarEvent>(e =>
+            e.Id == ID &&
+            e.Title == dto.Title &&
+            e.CategoryId == dto.CategoryId
+        )), Times.Once);
+        _calendarRepositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
     public async Task UpdateEventAsync_WhenEventDoesNotExist_ThrowsNotFoundException()
     {
         // Arrange
-        _calendarRepositoryMock
-            .Setup(r => r.GetByIdAsync(It.IsAny<int>()))
-            .ReturnsAsync((CalendarEvent?)null);
+        _getByIdResponse = null;
+        var service = GetService();
 
         // Act
-        var act = () => _sut.UpdateEventAsync(99, CalendarTestData.DefaultUpdateEvent);
+        Func<Task> act = async () => await service.UpdateEventAsync(99, CalendarTestData.DefaultUpdateEvent);
 
         // Assert
-        await act.Should().ThrowAsync<NotFoundException>();
+        await AssertEx.Throws<NotFoundException>(act);
+
+        _calendarRepositoryMock.Verify(r => r.GetByIdAsync(99), Times.Once);
         _calendarRepositoryMock.Verify(r => r.UpdateEventAsync(It.IsAny<CalendarEvent>()), Times.Never);
+        _calendarRepositoryMock.VerifyNoOtherCalls();
     }
 
     // DeleteEventAsync
-
     [Fact]
-    public async Task DeleteEventAsync_WhenEventExists_DelegatesToRepository_WithCorrectId()
+    public async Task DeleteEventAsync_WhenEventExists_CallsRepositoryDelete()
     {
         // Arrange
-        _calendarRepositoryMock
-            .Setup(r => r.GetByIdAsync(CalendarTestData.DefaultEvent.Id))
-            .ReturnsAsync(CalendarTestData.DefaultEvent);
-        _calendarRepositoryMock
-            .Setup(r => r.DeleteEventAsync(CalendarTestData.DefaultEvent.Id))
-            .Returns(Task.CompletedTask);
+        _getByIdResponse = CalendarTestData.DefaultEvent;
+        var service = GetService();
 
         // Act
-        await _sut.DeleteEventAsync(CalendarTestData.DefaultEvent.Id);
+        await service.DeleteEventAsync(ID);
 
         // Assert
-        _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(CalendarTestData.DefaultEvent.Id), Times.Once);
+        _calendarRepositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
+        _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(ID), Times.Once);
+        _calendarRepositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
     public async Task DeleteEventAsync_WhenEventDoesNotExist_ThrowsNotFoundException()
     {
         // Arrange
-        _calendarRepositoryMock
-            .Setup(r => r.GetByIdAsync(It.IsAny<int>()))
-            .ReturnsAsync((CalendarEvent?)null);
+        _getByIdResponse = null;
+        var service = GetService();
 
         // Act
-        var act = () => _sut.DeleteEventAsync(CalendarTestData.DefaultEvent.Id);
+        Func<Task> act = async () => await service.DeleteEventAsync(ID);
 
         // Assert
-        await act.Should().ThrowAsync<NotFoundException>();
+        await AssertEx.Throws<NotFoundException>(act);
+
+        _calendarRepositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
         _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(It.IsAny<int>()), Times.Never);
+        _calendarRepositoryMock.VerifyNoOtherCalls();
     }
 
     // GetHolidaysAsync
-
     [Fact]
-    public async Task GetHolidaysAsync_DelegatesToApiClient_NotRepository()
+    public async Task GetHolidaysAsync_WhenHolidaysExist_ReturnsMappedHolidays()
     {
         // Arrange
         var holidays = new List<Holiday> { CalendarTestData.DefaultHoliday };
-        _apiClientMock.Setup(a => a.GetHolidaysAsync("2026")).ReturnsAsync(holidays);
+        _getHolidaysResponse = holidays;
+        var service = GetService();
 
         // Act
-        var result = await _sut.GetHolidaysAsync("2026");
+        var result = await service.GetHolidaysAsync("2026");
 
         // Assert
-        result.Should().BeEquivalentTo(holidays.Adapt<List<HolidayDto>>());
+        AssertEx.AreEqual(result, holidays.Adapt<List<HolidayDto>>());
+
         _apiClientMock.Verify(a => a.GetHolidaysAsync("2026"), Times.Once);
+        _apiClientMock.VerifyNoOtherCalls();
         _calendarRepositoryMock.VerifyNoOtherCalls();
+        _todoRepositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
     public async Task GetHolidaysAsync_WhenApiReturnsNoHolidays_ThrowsNotFoundException()
     {
         // Arrange
-        _apiClientMock
-            .Setup(a => a.GetHolidaysAsync(It.IsAny<string>()))
-            .ReturnsAsync(new List<Holiday>());
+        _getHolidaysResponse = new List<Holiday>();
+        var service = GetService();
 
         // Act
-        var act = () => _sut.GetHolidaysAsync("2026");
+        Func<Task> act = async () => await service.GetHolidaysAsync("2026");
 
         // Assert
-        await act.Should().ThrowAsync<NotFoundException>();
+        await AssertEx.Throws<NotFoundException>(act);
+
+        _apiClientMock.Verify(a => a.GetHolidaysAsync("2026"), Times.Once);
+        _apiClientMock.VerifyNoOtherCalls();
+        _calendarRepositoryMock.VerifyNoOtherCalls();
+        _todoRepositoryMock.VerifyNoOtherCalls();
     }
 
     // GetICalLinkAsync
-
     [Fact]
     public async Task GetICalLinkAsync_WhenEndDateTimeIsSet_ReturnsLinkWithAllQueryParameters()
     {
         // Arrange
         var calendarEvent = CalendarTestData.DefaultICalLinkEvent;
+        var service = GetService();
 
         // Act
-        var result = await _sut.GetICalLinkAsync(calendarEvent);
+        var result = await service.GetICalLinkAsync(calendarEvent);
 
         // Assert
         var query = ParseQuery(result);
-        query["title"].Should().Be("Team Meeting");
-        query["start"].Should().Be("2026-06-01T09:00:00.0000000Z");
-        query["end"].Should().Be("2026-06-01T10:00:00.0000000Z");
-        query["description"].Should().Be("Besprechung Projekt Updates");
+        AssertEx.AreEqual("Team Meeting", query["title"]);
+        AssertEx.AreEqual("2026-06-01T09:00:00.0000000Z", query["start"]);
+        AssertEx.AreEqual("2026-06-01T10:00:00.0000000Z", query["end"]);
+        AssertEx.AreEqual("Besprechung Projekt Updates", query["description"]);
+
+        _calendarRepositoryMock.VerifyNoOtherCalls();
+        _todoRepositoryMock.VerifyNoOtherCalls();
+        _apiClientMock.VerifyNoOtherCalls();
     }
 
     [Fact]
@@ -330,14 +422,19 @@ public class CalendarServiceTests
     {
         // Arrange
         var calendarEvent = CalendarTestData.DefaultICalLinkEvent with { EndDateTime = null };
+        var service = GetService();
 
         // Act
-        var result = await _sut.GetICalLinkAsync(calendarEvent);
+        var result = await service.GetICalLinkAsync(calendarEvent);
 
         // Assert
         var query = ParseQuery(result);
-        query["start"].Should().Be("2026-06-01T09:00:00.0000000Z");
-        query["end"].Should().Be("2026-06-01T10:00:00.0000000Z");
+        AssertEx.AreEqual("2026-06-01T09:00:00.0000000Z", query["start"]);
+        AssertEx.AreEqual("2026-06-01T10:00:00.0000000Z", query["end"]);
+
+        _calendarRepositoryMock.VerifyNoOtherCalls();
+        _todoRepositoryMock.VerifyNoOtherCalls();
+        _apiClientMock.VerifyNoOtherCalls();
     }
 
     [Fact]
@@ -348,14 +445,19 @@ public class CalendarServiceTests
         {
             EndDateTime = CalendarTestData.DefaultICalLinkEvent.StartDateTime
         };
+        var service = GetService();
 
         // Act
-        var result = await _sut.GetICalLinkAsync(calendarEvent);
+        var result = await service.GetICalLinkAsync(calendarEvent);
 
         // Assert
         var query = ParseQuery(result);
-        query["start"].Should().Be("2026-06-01T09:00:00.0000000Z");
-        query["end"].Should().Be("2026-06-01T10:00:00.0000000Z");
+        AssertEx.AreEqual("2026-06-01T09:00:00.0000000Z", query["start"]);
+        AssertEx.AreEqual("2026-06-01T10:00:00.0000000Z", query["end"]);
+
+        _calendarRepositoryMock.VerifyNoOtherCalls();
+        _todoRepositoryMock.VerifyNoOtherCalls();
+        _apiClientMock.VerifyNoOtherCalls();
     }
 
     [Fact]
@@ -363,14 +465,19 @@ public class CalendarServiceTests
     {
         // Arrange
         var calendarEvent = CalendarTestData.DefaultICalLinkEvent with { Note = null };
+        var service = GetService();
 
         // Act
-        var result = await _sut.GetICalLinkAsync(calendarEvent);
+        var result = await service.GetICalLinkAsync(calendarEvent);
 
         // Assert
         var query = ParseQuery(result);
-        query["description"].Should().BeEmpty();
-        query["title"].Should().Be("Team Meeting");
+        AssertEx.AreEqual(string.Empty, query["description"]);
+        AssertEx.AreEqual("Team Meeting", query["title"]);
+
+        _calendarRepositoryMock.VerifyNoOtherCalls();
+        _todoRepositoryMock.VerifyNoOtherCalls();
+        _apiClientMock.VerifyNoOtherCalls();
     }
 
     [Fact]
@@ -381,14 +488,19 @@ public class CalendarServiceTests
         {
             EndDateTime = CalendarTestData.DefaultICalLinkEvent.StartDateTime.AddMinutes(-30)
         };
+        var service = GetService();
 
         // Act
-        var result = await _sut.GetICalLinkAsync(calendarEvent);
+        var result = await service.GetICalLinkAsync(calendarEvent);
 
         // Assert
         var query = ParseQuery(result);
-        query["start"].Should().Be("2026-06-01T09:00:00.0000000Z");
-        query["end"].Should().Be("2026-06-01T09:30:00.0000000Z");
+        AssertEx.AreEqual("2026-06-01T09:00:00.0000000Z", query["start"]);
+        AssertEx.AreEqual("2026-06-01T09:30:00.0000000Z", query["end"]);
+
+        _calendarRepositoryMock.VerifyNoOtherCalls();
+        _todoRepositoryMock.VerifyNoOtherCalls();
+        _apiClientMock.VerifyNoOtherCalls();
     }
 
     [Fact]
@@ -400,152 +512,170 @@ public class CalendarServiceTests
             StartDateTime = new DateTime(2026, 6, 1, 9, 0, 0, DateTimeKind.Local),
             EndDateTime = new DateTime(2026, 6, 1, 10, 0, 0, DateTimeKind.Local)
         };
+        var service = GetService();
 
         // Act
-        var result = await _sut.GetICalLinkAsync(calendarEvent);
+        var result = await service.GetICalLinkAsync(calendarEvent);
 
         // Assert
         var query = ParseQuery(result);
-        query["start"].Should().EndWith("Z");
-        query["end"].Should().EndWith("Z");
-        DateTime.Parse(query["start"]!, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal)
-            .Should()
-            .Be(calendarEvent.StartDateTime.ToUniversalTime());
+        AssertEx.AreEqual(true, query["start"]!.EndsWith("Z"));
+        AssertEx.AreEqual(true, query["end"]!.EndsWith("Z"));
+        AssertEx.AreEqual(
+            calendarEvent.StartDateTime.ToUniversalTime(),
+            DateTime.Parse(query["start"]!, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal));
+
+        _calendarRepositoryMock.VerifyNoOtherCalls();
+        _todoRepositoryMock.VerifyNoOtherCalls();
+        _apiClientMock.VerifyNoOtherCalls();
     }
 
     // DeletePastEventsAsync
-
     [Fact]
-    public async Task DeletePastEventsAsync_WhenEventIsNonRecurring_AndOldEnough_DeletesEvent()
+    public async Task DeletePastEventsAsync_WhenNonRecurringEventIsOldEnough_DeletesEvent()
     {
         // Arrange
-        var threshold = DateTime.UtcNow.AddMonths(-3);
+        var threshold = DateTime.Now.AddMonths(-3);
         var oldEvent = CalendarTestData.DefaultEvent;
         oldEvent.StartDateTime = threshold.AddDays(-10);
         oldEvent.EndDateTime = threshold.AddDays(-5);
         oldEvent.RecurrenceRule = null;
 
-        _calendarRepositoryMock.Setup(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()))
-            .ReturnsAsync(new List<CalendarEvent> { oldEvent });
+        _getEventsOlderThanResponse = new List<CalendarEvent> { oldEvent };
+        var service = GetService();
 
         // Act
-        await _sut.DeletePastEventsAsync(3);
+        await service.DeletePastEventsAsync(3);
 
         // Assert
+        _calendarRepositoryMock.Verify(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()), Times.Once);
         _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(oldEvent.Id), Times.Once);
+        _calendarRepositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
-    public async Task DeletePastEventsAsync_WhenEventIsNonRecurring_AndNotOldEnough_DoesNotDelete()
+    public async Task DeletePastEventsAsync_WhenNonRecurringEventIsNotOldEnough_DoesNotDelete()
     {
         // Arrange
-        var threshold = DateTime.UtcNow.AddMonths(-3);
+        var threshold = DateTime.Now.AddMonths(-3);
         var recentEvent = CalendarTestData.DefaultEvent;
         recentEvent.StartDateTime = threshold.AddDays(5);
         recentEvent.EndDateTime = threshold.AddDays(10);
         recentEvent.RecurrenceRule = null;
 
-        _calendarRepositoryMock.Setup(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()))
-            .ReturnsAsync(new List<CalendarEvent> { recentEvent });
+        _getEventsOlderThanResponse = new List<CalendarEvent> { recentEvent };
+        var service = GetService();
 
         // Act
-        await _sut.DeletePastEventsAsync(3);
+        await service.DeletePastEventsAsync(3);
 
         // Assert
+        _calendarRepositoryMock.Verify(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()), Times.Once);
         _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(It.IsAny<int>()), Times.Never);
+        _calendarRepositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
     public async Task DeletePastEventsAsync_WhenEventHasNoEndDate_UsesStartDateAsThreshold()
     {
         // Arrange
-        var threshold = DateTime.UtcNow.AddMonths(-3);
+        var threshold = DateTime.Now.AddMonths(-3);
         var eventWithoutEnd = CalendarTestData.DefaultEvent;
         eventWithoutEnd.StartDateTime = threshold.AddDays(-1);
         eventWithoutEnd.EndDateTime = null;
         eventWithoutEnd.RecurrenceRule = null;
 
-        _calendarRepositoryMock.Setup(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()))
-            .ReturnsAsync(new List<CalendarEvent> { eventWithoutEnd });
+        _getEventsOlderThanResponse = new List<CalendarEvent> { eventWithoutEnd };
+        var service = GetService();
 
         // Act
-        await _sut.DeletePastEventsAsync(3);
+        await service.DeletePastEventsAsync(3);
 
         // Assert
+        _calendarRepositoryMock.Verify(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()), Times.Once);
         _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(eventWithoutEnd.Id), Times.Once);
+        _calendarRepositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
-    public async Task DeletePastEventsAsync_WhenRecurringEvent_AndNoRecurrenceEnd_DoesNotDelete()
+    public async Task DeletePastEventsAsync_WhenRecurringEventHasNoRecurrenceEnd_DoesNotDelete()
     {
         // Arrange
         var oldEvent = CalendarTestData.DefaultEvent;
-        oldEvent.StartDateTime = DateTime.UtcNow.AddYears(-2);
+        oldEvent.StartDateTime = DateTime.Now.AddYears(-2);
         oldEvent.RecurrenceRule = "FREQ=WEEKLY";
         oldEvent.RecurrenceEnd = null;
 
-        _calendarRepositoryMock.Setup(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()))
-            .ReturnsAsync(new List<CalendarEvent> { oldEvent });
+        _getEventsOlderThanResponse = new List<CalendarEvent> { oldEvent };
+        var service = GetService();
 
         // Act
-        await _sut.DeletePastEventsAsync(3);
+        await service.DeletePastEventsAsync(3);
 
         // Assert
+        _calendarRepositoryMock.Verify(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()), Times.Once);
         _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(It.IsAny<int>()), Times.Never);
+        _calendarRepositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
-    public async Task DeletePastEventsAsync_WhenRecurringEvent_AndRecurrenceEndIsOldEnough_DeletesEvent()
+    public async Task DeletePastEventsAsync_WhenRecurrenceEndIsOldEnough_DeletesRecurringEvent()
     {
         // Arrange
-        var threshold = DateTime.UtcNow.AddMonths(-3);
+        var threshold = DateTime.Now.AddMonths(-3);
         var oldRecurring = CalendarTestData.DefaultEvent;
         oldRecurring.StartDateTime = threshold.AddYears(-1);
         oldRecurring.RecurrenceRule = "FREQ=WEEKLY";
         oldRecurring.RecurrenceEnd = threshold.AddDays(-1);
 
-        _calendarRepositoryMock.Setup(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()))
-            .ReturnsAsync(new List<CalendarEvent> { oldRecurring });
+        _getEventsOlderThanResponse = new List<CalendarEvent> { oldRecurring };
+        var service = GetService();
 
         // Act
-        await _sut.DeletePastEventsAsync(3);
+        await service.DeletePastEventsAsync(3);
 
         // Assert
+        _calendarRepositoryMock.Verify(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()), Times.Once);
         _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(oldRecurring.Id), Times.Once);
+        _calendarRepositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
-    public async Task DeletePastEventsAsync_WhenRecurringEvent_AndRecurrenceEndIsNotOldEnough_DoesNotDelete()
+    public async Task DeletePastEventsAsync_WhenRecurrenceEndIsNotOldEnough_DoesNotDelete()
     {
         // Arrange
-        var threshold = DateTime.UtcNow.AddMonths(-3);
+        var threshold = DateTime.Now.AddMonths(-3);
         var activeRecurring = CalendarTestData.DefaultEvent;
         activeRecurring.StartDateTime = threshold.AddYears(-1);
         activeRecurring.RecurrenceRule = "FREQ=WEEKLY";
         activeRecurring.RecurrenceEnd = threshold.AddDays(10);
 
-        _calendarRepositoryMock.Setup(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()))
-            .ReturnsAsync(new List<CalendarEvent> { activeRecurring });
+        _getEventsOlderThanResponse = new List<CalendarEvent> { activeRecurring };
+        var service = GetService();
 
         // Act
-        await _sut.DeletePastEventsAsync(3);
+        await service.DeletePastEventsAsync(3);
 
         // Assert
+        _calendarRepositoryMock.Verify(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()), Times.Once);
         _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(It.IsAny<int>()), Times.Never);
+        _calendarRepositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
     public async Task DeletePastEventsAsync_WhenNoEventsExist_DoesNotCallDelete()
     {
         // Arrange
-        _calendarRepositoryMock.Setup(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()))
-            .ReturnsAsync(new List<CalendarEvent>());
+        _getEventsOlderThanResponse = new List<CalendarEvent>();
+        var service = GetService();
 
         // Act
-        await _sut.DeletePastEventsAsync(3);
+        await service.DeletePastEventsAsync(3);
 
         // Assert
+        _calendarRepositoryMock.Verify(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()), Times.Once);
         _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(It.IsAny<int>()), Times.Never);
+        _calendarRepositoryMock.VerifyNoOtherCalls();
     }
 
     private static NameValueCollection ParseQuery(string link)

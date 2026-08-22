@@ -36,6 +36,7 @@ public class GlobalExceptionHandlerTests
     [InlineData(typeof(NotFoundException), StatusCodes.Status404NotFound)]
     [InlineData(typeof(KeyNotFoundException), StatusCodes.Status404NotFound)]
     [InlineData(typeof(UserAlreadyExistsException), StatusCodes.Status409Conflict)]
+    [InlineData(typeof(CannotDeleteLastCategoryException), StatusCodes.Status409Conflict)]
     [InlineData(typeof(Exception), StatusCodes.Status500InternalServerError)]
     public async Task TryHandleAsync_WhenExceptionOccurs_SetsCorrectStatusCode(Type exceptionType, int expectedStatus)
     {

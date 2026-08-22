@@ -1,24 +1,50 @@
-using FluentAssertions;
-using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Multitool.Api.Controllers;
 using Multitool.Application.Interfaces;
 using Multitool.Application.Models;
 using Multitool.Tests.Shared;
+using Multitool.Tests.Shared.Assertions;
 
 namespace Multitool.Api.Tests.Controllers;
 
 public class TodoControllerTests
 {
-    private readonly Mock<ITodoService> _serviceMock;
-    private readonly TodoController _sut;
+    private readonly Mock<ITodoService> _todoServiceMock;
 
-    private static readonly int DefaultTodoId = TodoTestData.DefaultTodo.Id;
+    private List<TodoDto> _getTodosResponse;
+    private int _createTodoResponse;
+
+    private static readonly int ID = TodoTestData.DefaultTodo.Id;
 
     public TodoControllerTests()
     {
-        _serviceMock = new Mock<ITodoService>();
-        _sut = new TodoController(_serviceMock.Object);
+        _todoServiceMock = new Mock<ITodoService>();
+
+        // Default responses
+        _getTodosResponse = new List<TodoDto>() { TodoTestData.DefaultTodoDto };
+        _createTodoResponse = TodoTestData.DefaultTodo.Id;
+    }
+
+    private TodoController GetController()
+    {
+        _todoServiceMock.Reset();
+
+        _todoServiceMock.Setup(s => s.GetTodosAsync())
+            .ReturnsAsync(_getTodosResponse);
+
+        _todoServiceMock.Setup(s => s.CreateTodoAsync(It.IsAny<CreateTodoDto>()))
+            .ReturnsAsync(_createTodoResponse);
+
+        _todoServiceMock.Setup(s => s.UpdateTodoAsync(It.IsAny<int>(), It.IsAny<UpdateTodoDto>()))
+            .Returns(Task.CompletedTask);
+
+        _todoServiceMock.Setup(s => s.DeleteTodoAsync(It.IsAny<int>()))
+            .Returns(Task.CompletedTask);
+
+        _todoServiceMock.Setup(s => s.ToggleDoneAsync(It.IsAny<int>()))
+            .Returns(Task.CompletedTask);
+
+        return new TodoController(_todoServiceMock.Object);
     }
 
     // GET api/Todo
@@ -27,36 +53,35 @@ public class TodoControllerTests
     public async Task GetTodos_WhenTodosExist_ReturnsOkWithTodos()
     {
         // Arrange
-        var todos = new List<TodoDto> { TodoTestData.DefaultTodoDto };
-        _serviceMock.Setup(s => s.GetAllTodosAsync()).ReturnsAsync(todos);
+        var controller = GetController();
 
         // Act
-        var result = await _sut.GetTodos();
+        var result = await controller.GetTodos();
 
         // Assert
-        var ok = result.Should().BeOfType<OkObjectResult>().Subject;
-        ok.Value.Should().BeEquivalentTo(todos);
+        AssertEx.Ok(result, _getTodosResponse);
+
+        _todoServiceMock.Verify(s => s.GetTodosAsync(), Times.Once);
+        _todoServiceMock.VerifyNoOtherCalls();
     }
 
     // POST api/Todo
 
     [Fact]
-    public async Task CreateTodo_WhenDtoIsValid_ReturnsCreatedAtAction()
+    public async Task CreateTodo_WhenDtoIsValid_ReturnsCreatedWithId()
     {
         // Arrange
-        var dto = TodoTestData.DefaultCreateTodoDto;
-        var createdTodo = TodoTestData.DefaultTodoDto;
-        _serviceMock
-            .Setup(s => s.CreateTodoAsync(dto))
-            .ReturnsAsync(createdTodo);
+        var newTodo = TodoTestData.DefaultCreateTodoDto;
+        var controller = GetController();
 
         // Act
-        var result = await _sut.CreateTodo(dto);
+        var result = await controller.CreateTodo(newTodo);
 
         // Assert
-        var created = result.Should().BeOfType<CreatedAtActionResult>().Subject;
-        created.Value.Should().BeEquivalentTo(createdTodo);
-        created.ActionName.Should().Be(nameof(_sut.GetTodos));
+        AssertEx.Created(result, _createTodoResponse);
+
+        _todoServiceMock.Verify(s => s.CreateTodoAsync(newTodo), Times.Once);
+        _todoServiceMock.VerifyNoOtherCalls();
     }
 
     // PUT api/Todo/{id}
@@ -65,31 +90,17 @@ public class TodoControllerTests
     public async Task UpdateTodo_WhenTodoExists_ReturnsNoContent()
     {
         // Arrange
-        var dto = TodoTestData.DefaultUpdateTodoDto;
-        _serviceMock.Setup(s => s.UpdateTodoAsync(DefaultTodoId, dto))
-            .Returns(Task.CompletedTask);
+        var newTodo = TodoTestData.DefaultUpdateTodoDto;
+        var controller = GetController();
 
         // Act
-        var result = await _sut.UpdateTodo(DefaultTodoId, dto);
+        var result = await controller.UpdateTodo(ID, newTodo);
 
         // Assert
-        result.Should().BeOfType<NoContentResult>();
-    }
+        AssertEx.NoContent(result);
 
-    // DELETE api/Todo/{id}
-
-    [Fact]
-    public async Task DeleteTodo_WhenTodoExists_ReturnsNoContent()
-    {
-        // Arrange
-        _serviceMock.Setup(s => s.DeleteTodoAsync(DefaultTodoId))
-            .Returns(Task.CompletedTask);
-
-        // Act
-        var result = await _sut.DeleteTodo(DefaultTodoId);
-
-        // Assert
-        result.Should().BeOfType<NoContentResult>();
+        _todoServiceMock.Verify(s => s.UpdateTodoAsync(ID, newTodo), Times.Once);
+        _todoServiceMock.VerifyNoOtherCalls();
     }
 
     // PATCH api/Todo/{id}/toggle
@@ -98,13 +109,33 @@ public class TodoControllerTests
     public async Task ToggleTodo_WhenTodoExists_ReturnsNoContent()
     {
         // Arrange
-        _serviceMock.Setup(s => s.ToggleDoneAsync(DefaultTodoId))
-            .Returns(Task.CompletedTask);
+        var controller = GetController();
 
         // Act
-        var result = await _sut.ToggleTodo(DefaultTodoId);
+        var result = await controller.ToggleTodo(ID);
 
         // Assert
-        result.Should().BeOfType<NoContentResult>();
+        AssertEx.NoContent(result);
+
+        _todoServiceMock.Verify(s => s.ToggleDoneAsync(ID), Times.Once);
+        _todoServiceMock.VerifyNoOtherCalls();
+    }
+
+    // DELETE api/Todo/{id}
+
+    [Fact]
+    public async Task DeleteTodo_WhenTodoExists_ReturnsNoContent()
+    {
+        // Arrange
+        var controller = GetController();
+
+        // Act
+        var result = await controller.DeleteTodo(ID);
+
+        // Assert
+        AssertEx.NoContent(result);
+
+        _todoServiceMock.Verify(s => s.DeleteTodoAsync(ID), Times.Once);
+        _todoServiceMock.VerifyNoOtherCalls();
     }
 }

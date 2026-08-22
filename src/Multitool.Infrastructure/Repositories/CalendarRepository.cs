@@ -53,7 +53,7 @@ public class CalendarRepository(AppDbContext db) : ICalendarRepository
         return results;
     }
 
-    public async Task<long> InsertEventAsync(CalendarEvent entity)
+    public async Task<long> CreateEventAsync(CalendarEvent entity)
     {
         db.CalendarEvents.Add(entity);
         await db.SaveChangesAsync();

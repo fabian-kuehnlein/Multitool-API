@@ -1,7 +1,7 @@
-using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
-using Multitool.Domain.Entities.Config;
 using Multitool.Infrastructure.Repositories;
+using Multitool.Tests.Shared;
+using Multitool.Tests.Shared.Assertions;
 
 namespace Multitool.Infrastructure.Tests;
 
@@ -20,15 +20,16 @@ public class UserRepositoryTests : RepositoryTestBase
     public async Task AddAsync_WhenUserIsValid_AddsUserToDatabase()
     {
         // Arrange
-        var user = new User { Username = "test", PasswordHash = "hash" };
+        var user = AuthTestData.DefaultUser;
+        user.Username = "test";
 
         // Act
         await _sut.AddAsync(user);
 
         // Assert
-        var dbUser = await Context.Users.FirstOrDefaultAsync(u => u.Username == "test");
-        dbUser.Should().NotBeNull();
-        dbUser!.PasswordHash.Should().Be("hash");
+        var dbUser = await Context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Username == "test");
+        Assert.NotNull(dbUser);
+        AssertEx.AreEqual(user.PasswordHash, dbUser!.PasswordHash);
     }
 
     // GetByUsernameAsync
@@ -37,7 +38,8 @@ public class UserRepositoryTests : RepositoryTestBase
     public async Task GetByUsernameAsync_WhenUserExists_ReturnsUser()
     {
         // Arrange
-        var user = new User { Username = "findme", PasswordHash = "hash" };
+        var user = AuthTestData.DefaultUser;
+        user.Username = "findme";
         Context.Users.Add(user);
         await Context.SaveChangesAsync();
 
@@ -45,17 +47,19 @@ public class UserRepositoryTests : RepositoryTestBase
         var result = await _sut.GetByUsernameAsync("findme");
 
         // Assert
-        result.Should().NotBeNull();
-        result!.Username.Should().Be("findme");
+        Assert.NotNull(result);
+        AssertEx.AreEqual("findme", result!.Username);
     }
 
     [Fact]
     public async Task GetByUsernameAsync_WhenUserDoesNotExist_ReturnsNull()
     {
+        // Arrange
+
         // Act
         var result = await _sut.GetByUsernameAsync("nobody");
 
         // Assert
-        result.Should().BeNull();
+        Assert.Null(result);
     }
 }

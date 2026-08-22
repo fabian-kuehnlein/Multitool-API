@@ -37,12 +37,12 @@ public sealed class GlobalExceptionHandler(IProblemDetailsService problemDetails
                 Detail = exception.Message
             },
 
-            UserAlreadyExistsException => new ProblemDetails
+            UserAlreadyExistsException or CannotDeleteLastCategoryException => new ProblemDetails
             {
                 Type = "https://httpstatuses.com/409",
                 Title = "Conflict",
                 Status = StatusCodes.Status409Conflict,
-                Detail = "User already exists."
+                Detail = exception.Message
             },
 
             _ => new ProblemDetails

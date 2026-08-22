@@ -9,9 +9,9 @@ namespace Multitool.Application.Services;
 
 public class TodoService(ITodoRepository todoRepository) : ITodoService
 {
-    public async Task<List<TodoDto>> GetAllTodosAsync()
+    public async Task<List<TodoDto>> GetTodosAsync()
     {
-        var todos = await todoRepository.GetAllAsync();
+        var todos = await todoRepository.GetTodosAsync();
         return todos.Adapt<List<TodoDto>>();
     }
 
@@ -21,12 +21,11 @@ public class TodoService(ITodoRepository todoRepository) : ITodoService
         return todo?.Adapt<TodoDto>();
     }
 
-    public async Task<TodoDto> CreateTodoAsync(CreateTodoDto createTodoDto)
+    public async Task<int> CreateTodoAsync(CreateTodoDto createTodoDto)
     {
         var todo = createTodoDto.Adapt<Todo>();
 
-        await todoRepository.AddAsync(todo);
-        return todo.Adapt<TodoDto>();
+        return await todoRepository.CreateTodoAsync(todo);
     }
 
     public async Task UpdateTodoAsync(int id, UpdateTodoDto updateTodoDto)
@@ -43,12 +42,13 @@ public class TodoService(ITodoRepository todoRepository) : ITodoService
         existingTodo.Priority = updateTodoDto.Priority;
         existingTodo.DueDate = updateTodoDto.DueDate;
 
-        await todoRepository.UpdateAsync(existingTodo);
+        await todoRepository.UpdateTodoAsync(existingTodo);
     }
 
     public async Task ToggleDoneAsync(int id)
     {
         var todo = await todoRepository.GetByIdAsync(id);
+
         if (todo == null)
         {
             throw new NotFoundException($"Todo with ID {id} not found.");
@@ -57,29 +57,30 @@ public class TodoService(ITodoRepository todoRepository) : ITodoService
         todo.IsDone = !todo.IsDone;
         todo.CompletedDateTime = todo.IsDone ? DateTime.Now : null;
 
-        await todoRepository.UpdateAsync(todo);
+        await todoRepository.UpdateTodoAsync(todo);
     }
 
     public async Task DeleteTodoAsync(int id)
     {
         var existingTodo = await todoRepository.GetByIdAsync(id);
+
         if (existingTodo == null)
         {
             throw new NotFoundException($"Todo with ID {id} not found.");
         }
 
-        await todoRepository.DeleteAsync(id);
+        await todoRepository.DeleteTodoAsync(existingTodo);
     }
 
     public async Task DeletePastTodosAsync(int days)
     {
         var threshold = DateTime.Now.AddDays(-days);
 
-        var todos = await todoRepository.GetTodosOlderThanAsync(threshold);
+        var todosToDelete = await todoRepository.GetTodosOlderThanAsync(threshold);
 
-        foreach (var todo in todos)
+        foreach (var todo in todosToDelete)
         {
-            await todoRepository.DeleteAsync(todo.Id);
+            await todoRepository.DeleteTodoAsync(todo);
         }
     }
 }

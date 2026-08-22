@@ -7,7 +7,7 @@ namespace Multitool.Infrastructure.Repositories;
 
 public class TodoRepository(AppDbContext db) : ITodoRepository
 {
-    public async Task<List<Todo>> GetAllAsync()
+    public async Task<List<Todo>> GetTodosAsync()
     {
         return await db.Todos
             .AsNoTracking()
@@ -24,26 +24,24 @@ public class TodoRepository(AppDbContext db) : ITodoRepository
         return await db.Todos.FindAsync(id);
     }
 
-    public async Task AddAsync(Todo todo)
+    public async Task<int> CreateTodoAsync(Todo todo)
     {
         await db.Todos.AddAsync(todo);
         await db.SaveChangesAsync();
+
+        return todo.Id;
     }
 
-    public async Task UpdateAsync(Todo todo)
+    public async Task UpdateTodoAsync(Todo todo)
     {
         db.Todos.Update(todo);
         await db.SaveChangesAsync();
     }
 
-    public async Task DeleteAsync(int id)
+    public async Task DeleteTodoAsync(Todo todo)
     {
-        var todo = await db.Todos.FindAsync(id);
-        if (todo != null)
-        {
-            db.Todos.Remove(todo);
-            await db.SaveChangesAsync();
-        }
+        db.Todos.Remove(todo);
+        await db.SaveChangesAsync();
     }
 
     public async Task<List<Todo>> GetTodosWithDueDateInRangeAsync(DateTime start, DateTime end)

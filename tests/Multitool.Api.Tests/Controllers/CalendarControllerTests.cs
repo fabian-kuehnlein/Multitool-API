@@ -1,25 +1,65 @@
-using FluentAssertions;
-using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Multitool.Api.Controllers;
 using Multitool.Application.Interfaces;
-using Multitool.Tests.Shared;
 using Multitool.Application.Models.Calendar;
+using Multitool.Tests.Shared;
+using Multitool.Tests.Shared.Assertions;
 
 namespace Multitool.Api.Tests.Controllers;
 
 public class CalendarControllerTests
 {
-    private readonly Mock<ICalendarService> _serviceMock;
-    private readonly CalendarController _sut;
+    private readonly Mock<ICalendarService> _calendarServiceMock;
+
+    private List<CalendarEventDto> _getEventsByRangeResponse;
+    private List<EventSearchResponseDto> _searchEventsResponse;
+    private int _createEventResponse;
+    private List<HolidayDto> _getHolidaysResponse;
+    private string _getICalLinkResponse;
 
     private static readonly DateTime Start = CalendarTestData.DefaultEvent.StartDateTime;
     private static readonly DateTime End = CalendarTestData.DefaultEvent.EndDateTime!.Value;
+    private static readonly int ID = CalendarTestData.DefaultEvent.Id;
 
     public CalendarControllerTests()
     {
-        _serviceMock = new Mock<ICalendarService>();
-        _sut = new CalendarController(_serviceMock.Object);
+        _calendarServiceMock = new Mock<ICalendarService>();
+
+        // Default responses
+        var defaultEvent = CalendarTestData.DefaultEvent;
+        _getEventsByRangeResponse = [CalendarTestData.DefaultEventDto];
+        _searchEventsResponse = [new EventSearchResponseDto(defaultEvent.Id, defaultEvent.Title, null, defaultEvent.StartDateTime, null, null)];
+        _createEventResponse = defaultEvent.Id;
+        _getHolidaysResponse = [new HolidayDto { Name = CalendarTestData.DefaultHoliday.Name, Date = CalendarTestData.DefaultHoliday.Date }];
+        _getICalLinkResponse = "https://api.getcal.link/event.ics?title=Team+Meeting";
+    }
+
+    private CalendarController GetController()
+    {
+        _calendarServiceMock.Reset();
+
+        _calendarServiceMock.Setup(s => s.GetEventsByRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<string>()))
+            .ReturnsAsync(_getEventsByRangeResponse);
+
+        _calendarServiceMock.Setup(s => s.SearchCalendarEventsAsync(It.IsAny<string>()))
+            .ReturnsAsync(_searchEventsResponse);
+
+        _calendarServiceMock.Setup(s => s.CreateEventAsync(It.IsAny<CreateCalendarEventDto>()))
+            .ReturnsAsync(_createEventResponse);
+
+        _calendarServiceMock.Setup(s => s.UpdateEventAsync(It.IsAny<int>(), It.IsAny<UpdateCalendarEventDto>()))
+            .Returns(Task.CompletedTask);
+
+        _calendarServiceMock.Setup(s => s.DeleteEventAsync(It.IsAny<int>()))
+            .Returns(Task.CompletedTask);
+
+        _calendarServiceMock.Setup(s => s.GetHolidaysAsync(It.IsAny<string>()))
+            .ReturnsAsync(_getHolidaysResponse);
+
+        _calendarServiceMock.Setup(s => s.GetICalLinkAsync(It.IsAny<GetICalLinkDto>()))
+            .ReturnsAsync(_getICalLinkResponse);
+
+        return new CalendarController(_calendarServiceMock.Object);
     }
 
     // GET api/Calendar/events
@@ -28,32 +68,33 @@ public class CalendarControllerTests
     public async Task GetEventsByRange_WhenEventsExist_ReturnsOkWithEvents()
     {
         // Arrange
-        var events = new List<CalendarEventDto> { CalendarTestData.DefaultEventDto };
-        _serviceMock
-            .Setup(s => s.GetEventsByRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<string>()))
-            .ReturnsAsync(events);
+        const string categories = "Arbeit";
+        var controller = GetController();
 
         // Act
-        var result = await _sut.GetEventsByRange(Start, End, null);
+        var result = await controller.GetEventsByRange(Start, End, categories);
 
         // Assert
-        var ok = result.Should().BeOfType<OkObjectResult>().Subject;
-        ok.Value.Should().BeEquivalentTo(events);
+        AssertEx.Ok(result, _getEventsByRangeResponse);
+
+        _calendarServiceMock.Verify(s => s.GetEventsByRangeAsync(Start, End, categories), Times.Once);
+        _calendarServiceMock.VerifyNoOtherCalls();
     }
 
     [Fact]
     public async Task GetEventsByRange_WhenCategoriesIsNull_PassesEmptyStringToService()
     {
         // Arrange
-        _serviceMock
-            .Setup(s => s.GetEventsByRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>(), string.Empty))
-            .ReturnsAsync(new List<CalendarEventDto>());
+        var controller = GetController();
 
         // Act
-        await _sut.GetEventsByRange(Start, End, null);
+        var result = await controller.GetEventsByRange(Start, End, null);
 
         // Assert
-        _serviceMock.Verify(s => s.GetEventsByRangeAsync(Start, End, string.Empty), Times.Once);
+        AssertEx.Ok(result, _getEventsByRangeResponse);
+
+        _calendarServiceMock.Verify(s => s.GetEventsByRangeAsync(Start, End, string.Empty), Times.Once);
+        _calendarServiceMock.VerifyNoOtherCalls();
     }
 
     // GET api/Calendar/events/search
@@ -62,37 +103,36 @@ public class CalendarControllerTests
     public async Task SearchEvents_WhenMatchesExist_ReturnsOkWithResults()
     {
         // Arrange
-        var results = new List<EventSearchResponseDto> { new(1, CalendarTestData.DefaultEvent.Title, null, Start, null, null) };
-        _serviceMock
-            .Setup(s => s.SearchCalendarEventsAsync("Meeting"))
-            .ReturnsAsync(results);
+        const string searchString = "Meeting";
+        var controller = GetController();
 
         // Act
-        var result = await _sut.SearchEvents("Meeting");
+        var result = await controller.SearchEvents(searchString);
 
         // Assert
-        var ok = result.Should().BeOfType<OkObjectResult>().Subject;
-        ok.Value.Should().BeEquivalentTo(results);
+        AssertEx.Ok(result, _searchEventsResponse);
+
+        _calendarServiceMock.Verify(s => s.SearchCalendarEventsAsync(searchString), Times.Once);
+        _calendarServiceMock.VerifyNoOtherCalls();
     }
 
     // POST api/Calendar/events
 
     [Fact]
-    public async Task InsertEvent_WhenEventIsValid_ReturnsOkWithId()
+    public async Task CreateEvent_WhenEventIsValid_ReturnsCreatedWithId()
     {
         // Arrange
-        var createEvent = CalendarTestData.DefaultCreateEvent;
-        const long expectedId = 2;
-        _serviceMock
-            .Setup(s => s.InsertEventAsync(createEvent))
-            .ReturnsAsync(expectedId);
+        var newEvent = CalendarTestData.DefaultCreateEvent;
+        var controller = GetController();
 
         // Act
-        var result = await _sut.InsertEvent(createEvent);
+        var result = await controller.CreateEvent(newEvent);
 
         // Assert
-        var ok = result.Should().BeOfType<OkObjectResult>().Subject;
-        ok.Value.Should().Be(expectedId);
+        AssertEx.Created(result, _createEventResponse);
+
+        _calendarServiceMock.Verify(s => s.CreateEventAsync(newEvent), Times.Once);
+        _calendarServiceMock.VerifyNoOtherCalls();
     }
 
     // PUT api/Calendar/events/{id}
@@ -101,17 +141,17 @@ public class CalendarControllerTests
     public async Task UpdateEvent_WhenUpdateSucceeds_ReturnsNoContent()
     {
         // Arrange
-        var dto = CalendarTestData.DefaultUpdateEvent;
-        const int eventId = 1;
-        _serviceMock
-            .Setup(s => s.UpdateEventAsync(eventId, dto))
-            .Returns(Task.CompletedTask);
+        var updateEvent = CalendarTestData.DefaultUpdateEvent;
+        var controller = GetController();
 
         // Act
-        var result = await _sut.UpdateEvent(eventId, dto);
+        var result = await controller.UpdateEvent(ID, updateEvent);
 
         // Assert
-        result.Should().BeOfType<NoContentResult>();
+        AssertEx.NoContent(result);
+
+        _calendarServiceMock.Verify(s => s.UpdateEventAsync(ID, updateEvent), Times.Once);
+        _calendarServiceMock.VerifyNoOtherCalls();
     }
 
     // DELETE api/Calendar/events/{id}
@@ -120,16 +160,16 @@ public class CalendarControllerTests
     public async Task DeleteEvent_WhenDeletionSucceeds_ReturnsNoContent()
     {
         // Arrange
-        var eventId = CalendarTestData.DefaultEvent.Id;
-        _serviceMock
-            .Setup(s => s.DeleteEventAsync(eventId))
-            .Returns(Task.CompletedTask);
+        var controller = GetController();
 
         // Act
-        var result = await _sut.DeleteEvent(eventId);
+        var result = await controller.DeleteEvent(ID);
 
         // Assert
-        result.Should().BeOfType<NoContentResult>();
+        AssertEx.NoContent(result);
+
+        _calendarServiceMock.Verify(s => s.DeleteEventAsync(ID), Times.Once);
+        _calendarServiceMock.VerifyNoOtherCalls();
     }
 
     // GET api/Calendar/holidays/{year}
@@ -138,16 +178,17 @@ public class CalendarControllerTests
     public async Task GetHolidays_WhenHolidaysExist_ReturnsOkWithHolidays()
     {
         // Arrange
-        var holidays = new List<HolidayDto> { new() { Name = "Neujahr", Date = new DateTime(2026, 1, 1) } };
         const string year = "2026";
-        _serviceMock.Setup(s => s.GetHolidaysAsync(year)).ReturnsAsync(holidays);
+        var controller = GetController();
 
         // Act
-        var result = await _sut.GetHolidays(year);
+        var result = await controller.GetHolidays(year);
 
         // Assert
-        var ok = result.Should().BeOfType<OkObjectResult>().Subject;
-        ok.Value.Should().BeEquivalentTo(holidays);
+        AssertEx.Ok(result, _getHolidaysResponse);
+
+        _calendarServiceMock.Verify(s => s.GetHolidaysAsync(year), Times.Once);
+        _calendarServiceMock.VerifyNoOtherCalls();
     }
 
     // POST api/Calendar/events/ical-link
@@ -157,16 +198,15 @@ public class CalendarControllerTests
     {
         // Arrange
         var calendarEvent = CalendarTestData.DefaultICalLinkEvent;
-        const string expectedLink = "https://api.getcal.link/event.ics?title=Team+Meeting";
-        _serviceMock
-            .Setup(s => s.GetICalLinkAsync(calendarEvent))
-            .ReturnsAsync(expectedLink);
+        var controller = GetController();
 
         // Act
-        var result = await _sut.GetICalLink(calendarEvent);
+        var result = await controller.GetICalLink(calendarEvent);
 
         // Assert
-        var ok = result.Should().BeOfType<OkObjectResult>().Subject;
-        ok.Value.Should().Be(expectedLink);
+        AssertEx.Ok(result, _getICalLinkResponse);
+
+        _calendarServiceMock.Verify(s => s.GetICalLinkAsync(calendarEvent), Times.Once);
+        _calendarServiceMock.VerifyNoOtherCalls();
     }
 }

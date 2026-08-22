@@ -19,7 +19,7 @@ public class TodoController(ITodoService todoService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetTodos()
     {
-        var todos = await todoService.GetAllTodosAsync();
+        var todos = await todoService.GetTodosAsync();
         return Ok(todos);
     }
 
@@ -30,12 +30,11 @@ public class TodoController(ITodoService todoService) : ControllerBase
     [HttpPost]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> CreateTodo([FromBody] CreateTodoDto createTodoDto)
     {
-        var createdTodo = await todoService.CreateTodoAsync(createTodoDto);
-        return CreatedAtAction(nameof(GetTodos), new { id = createdTodo.Id }, createdTodo);
+        var id = await todoService.CreateTodoAsync(createTodoDto);
+        return StatusCode(StatusCodes.Status201Created, id);
     }
 
     /// <summary>

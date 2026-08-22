@@ -6,7 +6,7 @@ public interface IWorkTimePlannerService
 {
     Task<List<WorkDayDto>> GetWorkDaysAsync(DateTime startDate, DateTime endDate);
     Task<WorkDayDto?> GetWorkDayByIdAsync(int id);
-    Task<WorkDayDto> CreateWorkDayAsync(CreateWorkDayDto dto);
+    Task<int> CreateWorkDayAsync(CreateWorkDayDto dto);
     Task UpdateWorkDayAsync(int id, UpdateWorkDayDto dto);
     Task DeleteWorkDayAsync(int id);
 

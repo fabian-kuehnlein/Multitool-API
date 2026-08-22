@@ -4,11 +4,11 @@ namespace Multitool.Domain.Interfaces;
 
 public interface ITodoRepository
 {
-    Task<List<Todo>> GetAllAsync();
+    Task<List<Todo>> GetTodosAsync();
     Task<Todo?> GetByIdAsync(int id);
-    Task AddAsync(Todo todo);
-    Task UpdateAsync(Todo todo);
-    Task DeleteAsync(int id);
+    Task<int> CreateTodoAsync(Todo todo);
+    Task UpdateTodoAsync(Todo todo);
+    Task DeleteTodoAsync(Todo todo);
     Task<List<Todo>> GetTodosWithDueDateInRangeAsync(DateTime start, DateTime end);
     Task<List<Todo>> GetTodosOlderThanAsync(DateTime date);
 }
