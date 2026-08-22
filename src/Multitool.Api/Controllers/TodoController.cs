@@ -19,7 +19,7 @@ public class TodoController(ITodoService todoService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetTodos()
     {
-        var todos = await todoService.GetAllTodosAsync();
+        var todos = await todoService.GetTodosAsync();
         return Ok(todos);
     }
 

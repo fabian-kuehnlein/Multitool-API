@@ -14,5 +14,6 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.10" />
+    <PackageReference Include="FluentAssertions" Version="8.10.0" />
   </ItemGroup>
 </Project>

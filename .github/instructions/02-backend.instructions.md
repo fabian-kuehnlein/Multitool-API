@@ -204,7 +204,28 @@ Every action method in a controller should be "decorated" as follows:
    and `500 Internal Server Error`; where applicable also `400`, `401`, `404` etc., if these can actually occur).
 6. The method itself stays slim: call the service, return the result. No `try/catch`.
 
-### Example
+### Return values for Creation (POST) actions
+
+For POST / creation action methods in controllers, **do NOT use `Created()`, `CreatedAtAction()`, or `CreatedAtRoute()`** (as these require passing action string context).
+Instead, explicitly return `StatusCode(StatusCodes.Status201Created, id)`:
+
+```csharp
+/// <summary>
+/// Creates a new todo.
+/// </summary>
+[Authorize]
+[HttpPost]
+[Produces("application/json")]
+[ProducesResponseType(StatusCodes.Status201Created)]
+[ProducesResponseType(StatusCodes.Status500InternalServerError)]
+public async Task<IActionResult> CreateTodo([FromBody] CreateTodoDto createTodoDto)
+{
+    var id = await todoService.CreateTodoAsync(createTodoDto);
+    return StatusCode(StatusCodes.Status201Created, id);
+}
+```
+
+### Example (Read Endpoint)
 
 ```csharp
 /// <summary>
@@ -226,5 +247,6 @@ When reviewing, please check:
 
 - Is the `<summary>` comment missing?
 - Are relevant `[ProducesResponseType]` attributes missing?
+- Does a POST creation method use `Created()` or `CreatedAtAction()` instead of `StatusCode(StatusCodes.Status201Created, ...)`? → Violation.
 - Does the method contain a `try/catch` block? → This is a violation; error handling belongs in the service layer.
 - Is the method itself still slim (no business logic in the controller)?

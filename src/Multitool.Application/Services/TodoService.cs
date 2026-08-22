@@ -9,7 +9,7 @@ namespace Multitool.Application.Services;
 
 public class TodoService(ITodoRepository todoRepository) : ITodoService
 {
-    public async Task<List<TodoDto>> GetAllTodosAsync()
+    public async Task<List<TodoDto>> GetTodosAsync()
     {
         var todos = await todoRepository.GetAllAsync();
         return todos.Adapt<List<TodoDto>>();
@@ -48,7 +48,7 @@ public class TodoService(ITodoRepository todoRepository) : ITodoService
     public async Task ToggleDoneAsync(int id)
     {
         var todo = await todoRepository.GetByIdAsync(id);
-        
+
         if (todo == null)
         {
             throw new NotFoundException($"Todo with ID {id} not found.");

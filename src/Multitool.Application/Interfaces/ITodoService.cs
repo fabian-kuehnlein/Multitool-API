@@ -4,7 +4,7 @@ namespace Multitool.Application.Interfaces;
 
 public interface ITodoService
 {
-    Task<List<TodoDto>> GetAllTodosAsync();
+    Task<List<TodoDto>> GetTodosAsync();
     Task<TodoDto?> GetTodoByIdAsync(int id);
     Task<int> CreateTodoAsync(CreateTodoDto createTodoDto);
     Task UpdateTodoAsync(int id, UpdateTodoDto updateTodoDto);
