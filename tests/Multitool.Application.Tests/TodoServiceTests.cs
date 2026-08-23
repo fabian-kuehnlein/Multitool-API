@@ -216,6 +216,27 @@ public class TodoServiceTests
         _repositoryMock.VerifyNoOtherCalls();
     }
 
+    [Fact]
+    public async Task CreateTodoAsync_WhenCategoryIsDeleted_ThrowsCategoryNotAvailableForModuleException()
+    {
+        // Arrange
+        _getCategoryByIdResponse = CategoryTestData.DeletedCategory;
+        var dto = TodoTestData.DefaultCreateTodoDto;
+        var service = GetService();
+
+        // Act
+        Func<Task> act = async () => await service.CreateTodoAsync(dto);
+
+        // Assert
+        await AssertEx.Throws<CategoryNotAvailableForModuleException>(act);
+
+        _categoryRepositoryMock.Verify(r => r.GetByIdAsync(dto.CategoryId), Times.Once);
+        _categoryRepositoryMock.VerifyNoOtherCalls();
+
+        _repositoryMock.Verify(r => r.CreateTodoAsync(It.IsAny<Todo>()), Times.Never);
+        _repositoryMock.VerifyNoOtherCalls();
+    }
+
     // UpdateTodoAsync
     [Fact]
     public async Task UpdateTodoAsync_WhenTodoExists_UpdatesAllFields()

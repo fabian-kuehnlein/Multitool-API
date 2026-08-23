@@ -5,7 +5,7 @@
 namespace Multitool.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class AddCategoryApplicableModules : Migration
+    public partial class AddCategoryApplicableModulesAndDeletedFlag : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -17,6 +17,14 @@ namespace Multitool.Infrastructure.Migrations
                 type: "text[]",
                 nullable: false,
                 defaultValue: new string[0]);
+
+            migrationBuilder.AddColumn<bool>(
+                name: "is_deleted",
+                schema: "public",
+                table: "categories",
+                type: "boolean",
+                nullable: false,
+                defaultValue: false);
         }
 
         /// <inheritdoc />
@@ -24,6 +32,11 @@ namespace Multitool.Infrastructure.Migrations
         {
             migrationBuilder.DropColumn(
                 name: "applicable_modules",
+                schema: "public",
+                table: "categories");
+
+            migrationBuilder.DropColumn(
+                name: "is_deleted",
                 schema: "public",
                 table: "categories");
         }

@@ -7,5 +7,6 @@ public record CategoryDto
     int Id,
     string Name,
     string Color,
-    List<AppModule> ApplicableModules
+    List<AppModule> ApplicableModules,
+    bool IsDeleted
 );

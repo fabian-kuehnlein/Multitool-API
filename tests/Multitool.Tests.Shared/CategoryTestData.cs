@@ -13,10 +13,20 @@ public static class CategoryTestData
         Id = 1,
         Name = "Arbeit",
         Color = "#FF0000",
-        ApplicableModules = DefaultApplicableModules
+        ApplicableModules = DefaultApplicableModules,
+        IsDeleted = false
     };
 
-    public static CategoryDto DefaultCategoryDto => new(DefaultCategory.Id, DefaultCategory.Name, DefaultCategory.Color, DefaultApplicableModules);
+    public static Category DeletedCategory => new()
+    {
+        Id = 3,
+        Name = "Gelöscht",
+        Color = "#0000FF",
+        ApplicableModules = DefaultApplicableModules,
+        IsDeleted = true
+    };
+
+    public static CategoryDto DefaultCategoryDto => new(DefaultCategory.Id, DefaultCategory.Name, DefaultCategory.Color, DefaultApplicableModules, false);
 
     public static CreateCategoryDto DefaultCreateCategoryDto => new(DefaultCategory.Name, DefaultCategory.Color, DefaultApplicableModules);
 

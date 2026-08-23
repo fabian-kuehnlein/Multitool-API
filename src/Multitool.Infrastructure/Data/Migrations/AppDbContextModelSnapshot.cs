@@ -94,6 +94,10 @@ namespace Multitool.Infrastructure.Migrations
                         .HasColumnType("character varying(9)")
                         .HasColumnName("color");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text")

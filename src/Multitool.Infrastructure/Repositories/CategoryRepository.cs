@@ -33,10 +33,4 @@ public class CategoryRepository(AppDbContext db) : ICategoryRepository
         db.Categories.Update(category);
         await db.SaveChangesAsync();
     }
-
-    public async Task DeleteCategoryAsync(Category category)
-    {
-        db.Categories.Remove(category);
-        await db.SaveChangesAsync();
-    }
 }

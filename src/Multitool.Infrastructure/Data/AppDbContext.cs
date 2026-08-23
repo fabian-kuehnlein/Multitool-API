@@ -61,6 +61,7 @@ public class AppDbContext : DbContext
             e.Property(c => c.Id).HasColumnName("category_id").ValueGeneratedOnAdd();
             e.Property(c => c.Name).HasColumnName("category_name").IsRequired();
             e.Property(c => c.Color).HasMaxLength(9).IsRequired();
+            e.Property(c => c.IsDeleted).HasColumnName("is_deleted").IsRequired();
             e.PrimitiveCollection(c => c.ApplicableModules)
                 .IsRequired()
                 .HasColumnName("applicable_modules")

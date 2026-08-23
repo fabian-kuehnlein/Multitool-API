@@ -40,7 +40,7 @@ public class CategoryService(ICategoryRepository categoryRepository) : ICategory
     {
         var categories = await categoryRepository.GetCategoriesAsync();
 
-        if (categories.Count == 1)
+        if (categories.Count(c => !c.IsDeleted) <= 1)
             throw new CannotDeleteLastCategoryException("Cannot delete the last remaining category.");
 
         var category = await categoryRepository.GetByIdAsync(id);
@@ -48,6 +48,8 @@ public class CategoryService(ICategoryRepository categoryRepository) : ICategory
         if (category is null)
             throw new NotFoundException($"Category with id {id} not found");
 
-        await categoryRepository.DeleteCategoryAsync(category);
+        category.IsDeleted = true;
+
+        await categoryRepository.UpdateCategoryAsync(category);
     }
 }

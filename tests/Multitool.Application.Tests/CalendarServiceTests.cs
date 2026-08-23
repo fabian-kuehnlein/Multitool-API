@@ -7,6 +7,7 @@ using Multitool.Application.Mappings;
 using Multitool.Application.Models.Calendar;
 using Multitool.Application.Services;
 using Multitool.Domain.Entities.Calendar;
+using Multitool.Domain.Entities.Category;
 using Multitool.Domain.Entities.Todo;
 using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
@@ -19,6 +20,7 @@ public class CalendarServiceTests
 {
     private readonly Mock<ICalendarRepository> _calendarRepositoryMock;
     private readonly Mock<ITodoRepository> _todoRepositoryMock;
+    private readonly Mock<ICategoryRepository> _categoryRepositoryMock;
     private readonly Mock<ICalendarApiClient> _apiClientMock;
 
     private List<CalendarEvent> _getEventsByRangeResponse;
@@ -28,6 +30,7 @@ public class CalendarServiceTests
     private CalendarEvent? _getByIdResponse;
     private List<Holiday> _getHolidaysResponse;
     private List<CalendarEvent> _getEventsOlderThanResponse;
+    private Category? _categoryGetByIdResponse;
 
     private static readonly int ID = CalendarTestData.DefaultEvent.Id;
 
@@ -40,6 +43,7 @@ public class CalendarServiceTests
 
         _calendarRepositoryMock = new Mock<ICalendarRepository>();
         _todoRepositoryMock = new Mock<ITodoRepository>();
+        _categoryRepositoryMock = new Mock<ICategoryRepository>();
         _apiClientMock = new Mock<ICalendarApiClient>();
 
         _getEventsByRangeResponse = new List<CalendarEvent>();
@@ -49,6 +53,7 @@ public class CalendarServiceTests
         _getByIdResponse = CalendarTestData.DefaultEvent;
         _getHolidaysResponse = new List<Holiday>();
         _getEventsOlderThanResponse = new List<CalendarEvent>();
+        _categoryGetByIdResponse = CategoryTestData.DefaultCategory;
     }
 
     private CalendarService GetService()
@@ -58,6 +63,7 @@ public class CalendarServiceTests
 
         _calendarRepositoryMock.Reset();
         _todoRepositoryMock.Reset();
+        _categoryRepositoryMock.Reset();
         _apiClientMock.Reset();
 
         _calendarRepositoryMock.Setup(r => r.GetEventsByRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>(), It.IsAny<string>()))
@@ -86,12 +92,16 @@ public class CalendarServiceTests
         _calendarRepositoryMock.Setup(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()))
             .ReturnsAsync(_getEventsOlderThanResponse);
 
+        _categoryRepositoryMock.Setup(r => r.GetByIdAsync(It.IsAny<int>()))
+            .ReturnsAsync(_categoryGetByIdResponse);
+
         _apiClientMock.Setup(a => a.GetHolidaysAsync(It.IsAny<string>()))
             .ReturnsAsync(_getHolidaysResponse);
 
         return new CalendarService(
             _calendarRepositoryMock.Object,
             _todoRepositoryMock.Object,
+            _categoryRepositoryMock.Object,
             _apiClientMock.Object);
     }
 
@@ -262,6 +272,51 @@ public class CalendarServiceTests
             e.CategoryId == dto.CategoryId
         )), Times.Once);
         _calendarRepositoryMock.VerifyNoOtherCalls();
+
+        _categoryRepositoryMock.Verify(r => r.GetByIdAsync(dto.CategoryId), Times.Once);
+        _categoryRepositoryMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task CreateEventAsync_WhenCategoryDoesNotExist_ThrowsNotFoundException()
+    {
+        // Arrange
+        _categoryGetByIdResponse = null;
+        var service = GetService();
+
+        // Act
+        Func<Task> act = async () => await service.CreateEventAsync(CalendarTestData.DefaultCreateEvent);
+
+        // Assert
+        await AssertEx.Throws<NotFoundException>(act);
+
+        _calendarRepositoryMock.Verify(r => r.CreateEventAsync(It.IsAny<CalendarEvent>()), Times.Never);
+        _calendarRepositoryMock.VerifyNoOtherCalls();
+
+        _categoryRepositoryMock.Verify(r => r.GetByIdAsync(CalendarTestData.DefaultCreateEvent.CategoryId), Times.Once);
+        _categoryRepositoryMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task CreateEventAsync_WhenCategoryIsNotAvailableForCalendarModule_ThrowsCategoryNotAvailableForModuleException()
+    {
+        // Arrange
+        var category = CategoryTestData.DefaultCategory;
+        category.ApplicableModules = [Multitool.Domain.Enums.AppModule.Todo];
+        _categoryGetByIdResponse = category;
+        var service = GetService();
+
+        // Act
+        Func<Task> act = async () => await service.CreateEventAsync(CalendarTestData.DefaultCreateEvent);
+
+        // Assert
+        await AssertEx.Throws<CategoryNotAvailableForModuleException>(act);
+
+        _calendarRepositoryMock.Verify(r => r.CreateEventAsync(It.IsAny<CalendarEvent>()), Times.Never);
+        _calendarRepositoryMock.VerifyNoOtherCalls();
+
+        _categoryRepositoryMock.Verify(r => r.GetByIdAsync(CalendarTestData.DefaultCreateEvent.CategoryId), Times.Once);
+        _categoryRepositoryMock.VerifyNoOtherCalls();
     }
 
     // UpdateEventAsync
@@ -299,6 +354,9 @@ public class CalendarServiceTests
             e.CategoryId == dto.CategoryId
         )), Times.Once);
         _calendarRepositoryMock.VerifyNoOtherCalls();
+
+        _categoryRepositoryMock.Verify(r => r.GetByIdAsync(dto.CategoryId), Times.Once);
+        _categoryRepositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
@@ -317,6 +375,29 @@ public class CalendarServiceTests
         _calendarRepositoryMock.Verify(r => r.GetByIdAsync(99), Times.Once);
         _calendarRepositoryMock.Verify(r => r.UpdateEventAsync(It.IsAny<CalendarEvent>()), Times.Never);
         _calendarRepositoryMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task UpdateEventAsync_WhenCategoryIsNotAvailableForCalendarModule_ThrowsCategoryNotAvailableForModuleException()
+    {
+        // Arrange
+        var category = CategoryTestData.DefaultCategory;
+        category.ApplicableModules = [Multitool.Domain.Enums.AppModule.Todo];
+        _categoryGetByIdResponse = category;
+        var service = GetService();
+
+        // Act
+        Func<Task> act = async () => await service.UpdateEventAsync(ID, CalendarTestData.DefaultUpdateEvent);
+
+        // Assert
+        await AssertEx.Throws<CategoryNotAvailableForModuleException>(act);
+
+        _calendarRepositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
+        _calendarRepositoryMock.Verify(r => r.UpdateEventAsync(It.IsAny<CalendarEvent>()), Times.Never);
+        _calendarRepositoryMock.VerifyNoOtherCalls();
+
+        _categoryRepositoryMock.Verify(r => r.GetByIdAsync(CalendarTestData.DefaultUpdateEvent.CategoryId), Times.Once);
+        _categoryRepositoryMock.VerifyNoOtherCalls();
     }
 
     // DeleteEventAsync

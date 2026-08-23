@@ -8,5 +8,6 @@ public class Category
     public required string Name { get; set; }
     public required string Color { get; set; }
     public List<AppModule> ApplicableModules { get; set; } = [];
+    public bool IsDeleted { get; set; }
 }
 

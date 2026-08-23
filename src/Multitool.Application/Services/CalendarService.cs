@@ -1,6 +1,8 @@
 using Mapster;
+using Multitool.Application.Extensions;
 using Multitool.Application.Interfaces;
 using Multitool.Domain.Entities.Calendar;
+using Multitool.Domain.Enums;
 using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
 using Multitool.Application.Models.Calendar;
@@ -8,7 +10,11 @@ using System.Web;
 
 namespace Multitool.Application.Services;
 
-public class CalendarService(ICalendarRepository calendarRepository, ITodoRepository todoRepository, ICalendarApiClient calendarApiClient) : ICalendarService
+public class CalendarService(
+    ICalendarRepository calendarRepository,
+    ITodoRepository todoRepository,
+    ICategoryRepository categoryRepository,
+    ICalendarApiClient calendarApiClient) : ICalendarService
 {
     public async Task<List<CalendarEventDto>> GetEventsByRangeAsync(DateTime start, DateTime end, string categories)
     {
@@ -44,7 +50,11 @@ public class CalendarService(ICalendarRepository calendarRepository, ITodoReposi
     }
 
     public async Task<long> CreateEventAsync(CreateCalendarEventDto newEvent)
-        => await calendarRepository.CreateEventAsync(newEvent.Adapt<CalendarEvent>());
+    {
+        await categoryRepository.GetApplicableCategoryAsync(newEvent.CategoryId, AppModule.Calendar);
+
+        return await calendarRepository.CreateEventAsync(newEvent.Adapt<CalendarEvent>());
+    }
 
     public async Task UpdateEventAsync(int id, UpdateCalendarEventDto updateCalendarEventDto)
     {
@@ -52,6 +62,8 @@ public class CalendarService(ICalendarRepository calendarRepository, ITodoReposi
 
         if (existing == null)
             throw new NotFoundException($"Event with Id {id} not found");
+
+        await categoryRepository.GetApplicableCategoryAsync(updateCalendarEventDto.CategoryId, AppModule.Calendar);
 
         existing.Title = updateCalendarEventDto.Title;
         existing.Note = updateCalendarEventDto.Note;

@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Multitool.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260823061720_AddCategoryApplicableModules")]
-    partial class AddCategoryApplicableModules
+    [Migration("20260823100105_AddCategoryApplicableModulesAndDeletedFlag")]
+    partial class AddCategoryApplicableModulesAndDeletedFlag
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -96,6 +96,10 @@ namespace Multitool.Infrastructure.Migrations
                         .HasMaxLength(9)
                         .HasColumnType("character varying(9)")
                         .HasColumnName("color");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_deleted");
 
                     b.Property<string>("Name")
                         .IsRequired()
