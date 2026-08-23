@@ -1,14 +1,11 @@
 using System.Reflection;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using System.Threading.RateLimiting;
 using Multitool.Api.Exceptions;
 using Multitool.Api.Extensions;
 using Multitool.Application;
-using Multitool.Domain.Exceptions;
 using Multitool.Infrastructure;
 using Multitool.Api.BackgroundJobs;
 using Multitool.Api.Configuration;
@@ -31,15 +28,7 @@ public class Program
             .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: false)
             .AddEnvironmentVariables();
 
-        builder.Services.AddProblemDetails(configure =>
-        {
-            configure.CustomizeProblemDetails = context =>
-            {
-                context.ProblemDetails.Extensions.TryAdd("requestId", context.HttpContext.TraceIdentifier);
-            };
-        });
-
-        builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+        builder.Services.AddExceptionHandling();
 
         var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
@@ -100,25 +89,7 @@ public class Program
         builder.Logging.ClearProviders();
         builder.Logging.AddConsole();
 
-        var jwtSettings = builder.Configuration.GetSection("Jwt");
-        var jwtKey = builder.Configuration["Jwt:Key"]
-            ?? throw new JwtMissingException("JWT key is missing.");
-
-        builder.Services
-            .AddAuthentication("Bearer")
-            .AddJwtBearer("Bearer", options =>
-            {
-                options.TokenValidationParameters = new()
-                {
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true,
-                    ValidIssuer = jwtSettings["Issuer"],
-                    ValidAudience = jwtSettings["Audience"],
-                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
-                };
-            });
+        builder.Services.AddApiAuthentication(builder.Configuration, builder.Environment);
 
         builder.Services.AddRateLimiter(options =>
         {
