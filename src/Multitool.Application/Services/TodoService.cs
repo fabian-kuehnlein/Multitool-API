@@ -2,12 +2,13 @@ using Mapster;
 using Multitool.Application.Interfaces;
 using Multitool.Application.Models;
 using Multitool.Domain.Entities.Todo;
+using Multitool.Domain.Enums;
 using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
 
 namespace Multitool.Application.Services;
 
-public class TodoService(ITodoRepository todoRepository) : ITodoService
+public class TodoService(ITodoRepository todoRepository, ICategoryRepository categoryRepository) : ITodoService
 {
     public async Task<List<TodoDto>> GetTodosAsync()
     {
@@ -23,6 +24,8 @@ public class TodoService(ITodoRepository todoRepository) : ITodoService
 
     public async Task<int> CreateTodoAsync(CreateTodoDto createTodoDto)
     {
+        await ValidateCategoryIsAvailableForTodoModuleAsync(createTodoDto.CategoryId);
+
         var todo = createTodoDto.Adapt<Todo>();
 
         return await todoRepository.CreateTodoAsync(todo);
@@ -35,6 +38,8 @@ public class TodoService(ITodoRepository todoRepository) : ITodoService
         {
             throw new NotFoundException($"Todo with ID {id} not found.");
         }
+
+        await ValidateCategoryIsAvailableForTodoModuleAsync(updateTodoDto.CategoryId);
 
         existingTodo.Title = updateTodoDto.Title;
         existingTodo.Description = updateTodoDto.Description;
@@ -82,5 +87,17 @@ public class TodoService(ITodoRepository todoRepository) : ITodoService
         {
             await todoRepository.DeleteTodoAsync(todo);
         }
+    }
+
+    private async Task ValidateCategoryIsAvailableForTodoModuleAsync(int categoryId)
+    {
+        var category = await categoryRepository.GetByIdAsync(categoryId);
+
+        if (category is null)
+            throw new NotFoundException($"Category with ID {categoryId} not found.");
+
+        if (!category.ApplicableModules.Contains(AppModule.Todo))
+            throw new CategoryNotAvailableForModuleException(
+                $"Category '{category.Name}' is not available for the Todo module.");
     }
 }

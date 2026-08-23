@@ -31,6 +31,7 @@ public class CategoryService(ICategoryRepository categoryRepository) : ICategory
 
         existing.Name = updateCategoryDto.Name;
         existing.Color = updateCategoryDto.Color;
+        existing.ApplicableModules = updateCategoryDto.ApplicableModules;
 
         await categoryRepository.UpdateCategoryAsync(existing);
     }

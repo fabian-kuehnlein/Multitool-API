@@ -35,6 +35,7 @@ public class GlobalExceptionHandlerTests
     [InlineData(typeof(InvalidCredentialException), StatusCodes.Status401Unauthorized)]
     [InlineData(typeof(NotFoundException), StatusCodes.Status404NotFound)]
     [InlineData(typeof(KeyNotFoundException), StatusCodes.Status404NotFound)]
+    [InlineData(typeof(CategoryNotAvailableForModuleException), StatusCodes.Status400BadRequest)]
     [InlineData(typeof(UserAlreadyExistsException), StatusCodes.Status409Conflict)]
     [InlineData(typeof(CannotDeleteLastCategoryException), StatusCodes.Status409Conflict)]
     [InlineData(typeof(Exception), StatusCodes.Status500InternalServerError)]

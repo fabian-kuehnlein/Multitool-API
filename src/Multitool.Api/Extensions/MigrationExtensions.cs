@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Multitool.Domain.Entities.Category;
+using Multitool.Domain.Enums;
 using Multitool.Infrastructure.Data;
 
 namespace Multitool.Api.Extensions;
@@ -14,7 +15,12 @@ public static class MigrationExtensions
 
         if (!db.Categories.Any())
         {
-            db.Categories.Add(new Category { Name = "Standard-Kategorie", Color = "#808080" });
+            db.Categories.Add(new Category
+            {
+                Name = "Standard-Kategorie",
+                Color = "#808080",
+                ApplicableModules = [AppModule.Todo, AppModule.Calendar]
+            });
             db.SaveChanges();
         }
     }

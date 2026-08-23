@@ -116,12 +116,14 @@ public class CategoryServiceTests
         AssertEx.AreEqual(_createdCategory, new Category
         {
             Name = dto.Name,
-            Color = dto.Color
+            Color = dto.Color,
+            ApplicableModules = dto.ApplicableModules
         });
 
         _repositoryMock.Verify(r => r.CreateCategoryAsync(It.Is<Category>(c =>
             c.Name == dto.Name &&
-            c.Color == dto.Color
+            c.Color == dto.Color &&
+            c.ApplicableModules.SequenceEqual(dto.ApplicableModules)
         )), Times.Once);
         _repositoryMock.VerifyNoOtherCalls();
     }
@@ -145,14 +147,16 @@ public class CategoryServiceTests
         {
             Id = category.Id,
             Name = dto.Name,
-            Color = dto.Color
+            Color = dto.Color,
+            ApplicableModules = dto.ApplicableModules
         });
 
         _repositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
         _repositoryMock.Verify(r => r.UpdateCategoryAsync(It.Is<Category>(c =>
             c.Id == ID &&
             c.Name == dto.Name &&
-            c.Color == dto.Color
+            c.Color == dto.Color &&
+            c.ApplicableModules.SequenceEqual(dto.ApplicableModules)
         )), Times.Once);
         _repositoryMock.VerifyNoOtherCalls();
     }
