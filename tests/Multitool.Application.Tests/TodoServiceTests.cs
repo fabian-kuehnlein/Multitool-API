@@ -3,7 +3,9 @@ using Moq;
 using Multitool.Application.Mappings;
 using Multitool.Application.Models;
 using Multitool.Application.Services;
+using Multitool.Domain.Entities.Category;
 using Multitool.Domain.Entities.Todo;
+using Multitool.Domain.Enums;
 using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
 using Multitool.Tests.Shared;
@@ -14,10 +16,12 @@ namespace Multitool.Application.Tests;
 public class TodoServiceTests
 {
     private readonly Mock<ITodoRepository> _repositoryMock;
+    private readonly Mock<ICategoryRepository> _categoryRepositoryMock;
 
     private List<Todo> _getTodosResponse;
     private Todo? _getByIdResponse;
     private int _createTodoResponse;
+    private Category? _getCategoryByIdResponse;
 
     private static readonly int ID = TodoTestData.DefaultTodo.Id;
 
@@ -30,10 +34,12 @@ public class TodoServiceTests
         TypeAdapterConfig.GlobalSettings.Apply(new MappingConfig());
 
         _repositoryMock = new Mock<ITodoRepository>();
+        _categoryRepositoryMock = new Mock<ICategoryRepository>();
 
         _getTodosResponse = new List<Todo>();
         _getByIdResponse = TodoTestData.DefaultTodo;
         _createTodoResponse = ID;
+        _getCategoryByIdResponse = TodoTestData.DefaultCategory;
     }
 
     private TodoService GetService()
@@ -43,6 +49,7 @@ public class TodoServiceTests
         _deletedTodo = null;
 
         _repositoryMock.Reset();
+        _categoryRepositoryMock.Reset();
 
         _repositoryMock.Setup(r => r.GetTodosAsync())
             .ReturnsAsync(_getTodosResponse);
@@ -62,7 +69,10 @@ public class TodoServiceTests
             .Callback<Todo>(t => _deletedTodo = t)
             .Returns(Task.CompletedTask);
 
-        return new TodoService(_repositoryMock.Object);
+        _categoryRepositoryMock.Setup(r => r.GetByIdAsync(It.IsAny<int>()))
+            .ReturnsAsync(_getCategoryByIdResponse);
+
+        return new TodoService(_repositoryMock.Object, _categoryRepositoryMock.Object);
     }
 
     // GetTodosAsync
@@ -81,6 +91,8 @@ public class TodoServiceTests
 
         _repositoryMock.Verify(r => r.GetTodosAsync(), Times.Once);
         _repositoryMock.VerifyNoOtherCalls();
+
+        _categoryRepositoryMock.VerifyNoOtherCalls();
     }
 
     // GetTodoByIdAsync
@@ -99,6 +111,8 @@ public class TodoServiceTests
 
         _repositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
         _repositoryMock.VerifyNoOtherCalls();
+
+        _categoryRepositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
@@ -116,6 +130,8 @@ public class TodoServiceTests
 
         _repositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
         _repositoryMock.VerifyNoOtherCalls();
+
+        _categoryRepositoryMock.VerifyNoOtherCalls();
     }
 
     // CreateTodoAsync
@@ -143,6 +159,9 @@ public class TodoServiceTests
         });
         AssertEx.CloseTo(_createdTodo!.CreationDateTime, DateTime.Now, TimeSpan.FromSeconds(5));
 
+        _categoryRepositoryMock.Verify(r => r.GetByIdAsync(todo.CategoryId), Times.Once);
+        _categoryRepositoryMock.VerifyNoOtherCalls();
+
         _repositoryMock.Verify(r => r.CreateTodoAsync(It.Is<Todo>(createdTodo =>
             createdTodo.Title == todo.Title &&
             createdTodo.Description == todo.Description &&
@@ -155,6 +174,69 @@ public class TodoServiceTests
         _repositoryMock.VerifyNoOtherCalls();
     }
 
+    [Fact]
+    public async Task CreateTodoAsync_WhenCategoryIsNotAvailableForTodoModule_ThrowsCategoryNotAvailableForModuleException()
+    {
+        // Arrange
+        _getCategoryByIdResponse = TodoTestData.CalendarOnlyCategory;
+        var dto = TodoTestData.DefaultCreateTodoDto;
+        var service = GetService();
+
+        // Act
+        Func<Task> act = async () => await service.CreateTodoAsync(dto);
+
+        // Assert
+        await AssertEx.Throws<CategoryNotAvailableForModuleException>(act);
+
+        _categoryRepositoryMock.Verify(r => r.GetByIdAsync(dto.CategoryId), Times.Once);
+        _categoryRepositoryMock.VerifyNoOtherCalls();
+
+        _repositoryMock.Verify(r => r.CreateTodoAsync(It.IsAny<Todo>()), Times.Never);
+        _repositoryMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task CreateTodoAsync_WhenCategoryDoesNotExist_ThrowsNotFoundException()
+    {
+        // Arrange
+        _getCategoryByIdResponse = null;
+        var dto = TodoTestData.DefaultCreateTodoDto;
+        var service = GetService();
+
+        // Act
+        Func<Task> act = async () => await service.CreateTodoAsync(dto);
+
+        // Assert
+        await AssertEx.Throws<NotFoundException>(act);
+
+        _categoryRepositoryMock.Verify(r => r.GetByIdAsync(dto.CategoryId), Times.Once);
+        _categoryRepositoryMock.VerifyNoOtherCalls();
+
+        _repositoryMock.Verify(r => r.CreateTodoAsync(It.IsAny<Todo>()), Times.Never);
+        _repositoryMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task CreateTodoAsync_WhenCategoryIsDeleted_ThrowsCategoryNotAvailableForModuleException()
+    {
+        // Arrange
+        _getCategoryByIdResponse = CategoryTestData.DeletedCategory;
+        var dto = TodoTestData.DefaultCreateTodoDto;
+        var service = GetService();
+
+        // Act
+        Func<Task> act = async () => await service.CreateTodoAsync(dto);
+
+        // Assert
+        await AssertEx.Throws<CategoryNotAvailableForModuleException>(act);
+
+        _categoryRepositoryMock.Verify(r => r.GetByIdAsync(dto.CategoryId), Times.Once);
+        _categoryRepositoryMock.VerifyNoOtherCalls();
+
+        _repositoryMock.Verify(r => r.CreateTodoAsync(It.IsAny<Todo>()), Times.Never);
+        _repositoryMock.VerifyNoOtherCalls();
+    }
+
     // UpdateTodoAsync
     [Fact]
     public async Task UpdateTodoAsync_WhenTodoExists_UpdatesAllFields()
@@ -164,6 +246,7 @@ public class TodoServiceTests
         var dto = TodoTestData.DefaultUpdateTodoDto;
 
         _getByIdResponse = todo;
+        _getCategoryByIdResponse = TodoTestData.SecondCategory;
         var service = GetService();
 
         // Act
@@ -181,6 +264,9 @@ public class TodoServiceTests
             IsDone = todo.IsDone,
             CreationDateTime = todo.CreationDateTime
         });
+
+        _categoryRepositoryMock.Verify(r => r.GetByIdAsync(dto.CategoryId), Times.Once);
+        _categoryRepositoryMock.VerifyNoOtherCalls();
 
         _repositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
         _repositoryMock.Verify(r => r.UpdateTodoAsync(It.Is<Todo>(t =>
@@ -205,6 +291,30 @@ public class TodoServiceTests
 
         // Assert
         await AssertEx.Throws<NotFoundException>(act);
+
+        _categoryRepositoryMock.VerifyNoOtherCalls();
+
+        _repositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
+        _repositoryMock.Verify(r => r.UpdateTodoAsync(It.IsAny<Todo>()), Times.Never);
+        _repositoryMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task UpdateTodoAsync_WhenCategoryIsNotAvailableForTodoModule_ThrowsCategoryNotAvailableForModuleException()
+    {
+        // Arrange
+        var dto = TodoTestData.DefaultUpdateTodoDto;
+        _getCategoryByIdResponse = TodoTestData.CalendarOnlyCategory;
+        var service = GetService();
+
+        // Act
+        Func<Task> act = async () => await service.UpdateTodoAsync(ID, dto);
+
+        // Assert
+        await AssertEx.Throws<CategoryNotAvailableForModuleException>(act);
+
+        _categoryRepositoryMock.Verify(r => r.GetByIdAsync(dto.CategoryId), Times.Once);
+        _categoryRepositoryMock.VerifyNoOtherCalls();
 
         _repositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
         _repositoryMock.Verify(r => r.UpdateTodoAsync(It.IsAny<Todo>()), Times.Never);
@@ -243,6 +353,8 @@ public class TodoServiceTests
         _repositoryMock.Verify(r => r.GetByIdAsync(todo.Id), Times.Once);
         _repositoryMock.Verify(r => r.UpdateTodoAsync(It.Is<Todo>(t => t.IsDone == true)), Times.Once);
         _repositoryMock.VerifyNoOtherCalls();
+
+        _categoryRepositoryMock.VerifyNoOtherCalls();
     }
 
     // DeleteTodoAsync
@@ -264,5 +376,7 @@ public class TodoServiceTests
         _repositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
         _repositoryMock.Verify(r => r.DeleteTodoAsync(todo), Times.Once);
         _repositoryMock.VerifyNoOtherCalls();
+
+        _categoryRepositoryMock.VerifyNoOtherCalls();
     }
 }

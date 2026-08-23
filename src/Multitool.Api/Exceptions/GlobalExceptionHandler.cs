@@ -37,6 +37,14 @@ public sealed class GlobalExceptionHandler(IProblemDetailsService problemDetails
                 Detail = exception.Message
             },
 
+            CategoryNotAvailableForModuleException => new ProblemDetails
+            {
+                Type = "https://httpstatuses.com/400",
+                Title = "Bad request",
+                Status = StatusCodes.Status400BadRequest,
+                Detail = exception.Message
+            },
+
             UserAlreadyExistsException or CannotDeleteLastCategoryException => new ProblemDetails
             {
                 Type = "https://httpstatuses.com/409",

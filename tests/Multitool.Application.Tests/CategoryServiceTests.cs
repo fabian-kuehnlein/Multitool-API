@@ -23,7 +23,6 @@ public class CategoryServiceTests
 
     private Category? _createdCategory;
     private Category? _updatedCategory;
-    private Category? _deletedCategory;
 
     public CategoryServiceTests()
     {
@@ -40,7 +39,6 @@ public class CategoryServiceTests
     {
         _createdCategory = null;
         _updatedCategory = null;
-        _deletedCategory = null;
 
         _repositoryMock.Reset();
 
@@ -56,10 +54,6 @@ public class CategoryServiceTests
 
         _repositoryMock.Setup(r => r.UpdateCategoryAsync(It.IsAny<Category>()))
             .Callback<Category>(c => _updatedCategory = c)
-            .Returns(Task.CompletedTask);
-
-        _repositoryMock.Setup(r => r.DeleteCategoryAsync(It.IsAny<Category>()))
-            .Callback<Category>(c => _deletedCategory = c)
             .Returns(Task.CompletedTask);
 
         return new CategoryService(_repositoryMock.Object);
@@ -116,12 +110,14 @@ public class CategoryServiceTests
         AssertEx.AreEqual(_createdCategory, new Category
         {
             Name = dto.Name,
-            Color = dto.Color
+            Color = dto.Color,
+            ApplicableModules = dto.ApplicableModules
         });
 
         _repositoryMock.Verify(r => r.CreateCategoryAsync(It.Is<Category>(c =>
             c.Name == dto.Name &&
-            c.Color == dto.Color
+            c.Color == dto.Color &&
+            c.ApplicableModules.SequenceEqual(dto.ApplicableModules)
         )), Times.Once);
         _repositoryMock.VerifyNoOtherCalls();
     }
@@ -145,14 +141,16 @@ public class CategoryServiceTests
         {
             Id = category.Id,
             Name = dto.Name,
-            Color = dto.Color
+            Color = dto.Color,
+            ApplicableModules = dto.ApplicableModules
         });
 
         _repositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
         _repositoryMock.Verify(r => r.UpdateCategoryAsync(It.Is<Category>(c =>
             c.Id == ID &&
             c.Name == dto.Name &&
-            c.Color == dto.Color
+            c.Color == dto.Color &&
+            c.ApplicableModules.SequenceEqual(dto.ApplicableModules)
         )), Times.Once);
         _repositoryMock.VerifyNoOtherCalls();
     }
@@ -177,7 +175,7 @@ public class CategoryServiceTests
 
     // DeleteCategoryAsync
     [Fact]
-    public async Task DeleteCategoryAsync_WhenMultipleCategoriesExist_CallsRepositoryDelete()
+    public async Task DeleteCategoryAsync_WhenMultipleActiveCategoriesExist_SoftDeletesCategory()
     {
         // Arrange
         var otherCategory = CategoryTestData.DefaultCategory;
@@ -191,19 +189,29 @@ public class CategoryServiceTests
         await service.DeleteCategoryAsync(ID);
 
         // Assert
-        AssertEx.AreEqual(_deletedCategory, CategoryTestData.DefaultCategory);
+        AssertEx.AreEqual(_updatedCategory, new Category
+        {
+            Id = ID,
+            Name = CategoryTestData.DefaultCategory.Name,
+            Color = CategoryTestData.DefaultCategory.Color,
+            ApplicableModules = CategoryTestData.DefaultApplicableModules,
+            IsDeleted = true
+        });
 
         _repositoryMock.Verify(r => r.GetCategoriesAsync(), Times.Once);
         _repositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
-        _repositoryMock.Verify(r => r.DeleteCategoryAsync(It.Is<Category>(c => c.Id == ID)), Times.Once);
+        _repositoryMock.Verify(r => r.UpdateCategoryAsync(It.Is<Category>(c =>
+            c.Id == ID &&
+            c.IsDeleted
+        )), Times.Once);
         _repositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
-    public async Task DeleteCategoryAsync_WhenOnlyOneCategoryExists_ThrowsCannotDeleteLastCategoryException()
+    public async Task DeleteCategoryAsync_WhenOnlyOneActiveCategoryExists_ThrowsCannotDeleteLastCategoryException()
     {
         // Arrange
-        _getCategoriesResponse = new List<Category> { CategoryTestData.DefaultCategory };
+        _getCategoriesResponse = new List<Category> { CategoryTestData.DefaultCategory, CategoryTestData.DeletedCategory };
         var service = GetService();
 
         // Act
@@ -213,7 +221,8 @@ public class CategoryServiceTests
         await AssertEx.Throws<CannotDeleteLastCategoryException>(act);
 
         _repositoryMock.Verify(r => r.GetCategoriesAsync(), Times.Once);
-        _repositoryMock.Verify(r => r.DeleteCategoryAsync(It.IsAny<Category>()), Times.Never);
+        _repositoryMock.Verify(r => r.GetByIdAsync(It.IsAny<int>()), Times.Never);
+        _repositoryMock.Verify(r => r.UpdateCategoryAsync(It.IsAny<Category>()), Times.Never);
         _repositoryMock.VerifyNoOtherCalls();
     }
 
@@ -236,7 +245,7 @@ public class CategoryServiceTests
 
         _repositoryMock.Verify(r => r.GetCategoriesAsync(), Times.Once);
         _repositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
-        _repositoryMock.Verify(r => r.DeleteCategoryAsync(It.IsAny<Category>()), Times.Never);
+        _repositoryMock.Verify(r => r.UpdateCategoryAsync(It.IsAny<Category>()), Times.Never);
         _repositoryMock.VerifyNoOtherCalls();
     }
 }

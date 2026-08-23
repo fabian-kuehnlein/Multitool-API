@@ -6,6 +6,7 @@ using Multitool.Domain.Entities.Config;
 using Multitool.Domain.Entities.CustomTable;
 using Multitool.Domain.Entities.Todo;
 using Multitool.Domain.Entities.WorkTimePlanner;
+using Multitool.Domain.Enums;
 
 namespace Multitool.Infrastructure.Data;
 
@@ -60,6 +61,12 @@ public class AppDbContext : DbContext
             e.Property(c => c.Id).HasColumnName("category_id").ValueGeneratedOnAdd();
             e.Property(c => c.Name).HasColumnName("category_name").IsRequired();
             e.Property(c => c.Color).HasMaxLength(9).IsRequired();
+            e.Property(c => c.IsDeleted).HasColumnName("is_deleted").IsRequired();
+            e.PrimitiveCollection(c => c.ApplicableModules)
+                .IsRequired()
+                .HasColumnName("applicable_modules")
+                .ElementType()
+                .HasConversion<AppModuleToStringConverter>();
         });
 
         // ---------- TODO ----------
@@ -227,6 +234,16 @@ public class AppDbContext : DbContext
                     property.SetColumnType("timestamp without time zone");
                 }
             }
+        }
+    }
+
+    private sealed class AppModuleToStringConverter : ValueConverter<AppModule, string>
+    {
+        public AppModuleToStringConverter()
+            : base(
+                v => v.ToString().ToLowerInvariant(),
+                v => Enum.Parse<AppModule>(v, ignoreCase: true))
+        {
         }
     }
 

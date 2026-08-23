@@ -1,13 +1,15 @@
 using Mapster;
+using Multitool.Application.Extensions;
 using Multitool.Application.Interfaces;
 using Multitool.Application.Models;
 using Multitool.Domain.Entities.Todo;
+using Multitool.Domain.Enums;
 using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
 
 namespace Multitool.Application.Services;
 
-public class TodoService(ITodoRepository todoRepository) : ITodoService
+public class TodoService(ITodoRepository todoRepository, ICategoryRepository categoryRepository) : ITodoService
 {
     public async Task<List<TodoDto>> GetTodosAsync()
     {
@@ -23,6 +25,8 @@ public class TodoService(ITodoRepository todoRepository) : ITodoService
 
     public async Task<int> CreateTodoAsync(CreateTodoDto createTodoDto)
     {
+        await categoryRepository.GetApplicableCategoryAsync(createTodoDto.CategoryId, AppModule.Todo);
+
         var todo = createTodoDto.Adapt<Todo>();
 
         return await todoRepository.CreateTodoAsync(todo);
@@ -35,6 +39,8 @@ public class TodoService(ITodoRepository todoRepository) : ITodoService
         {
             throw new NotFoundException($"Todo with ID {id} not found.");
         }
+
+        await categoryRepository.GetApplicableCategoryAsync(updateTodoDto.CategoryId, AppModule.Todo);
 
         existingTodo.Title = updateTodoDto.Title;
         existingTodo.Description = updateTodoDto.Description;
