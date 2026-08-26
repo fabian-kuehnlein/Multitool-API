@@ -19,6 +19,7 @@ public class TodoServiceTests
     private readonly Mock<ICategoryRepository> _categoryRepositoryMock;
 
     private List<Todo> _getTodosResponse;
+    private List<Todo> _getTodosOlderThanResponse;
     private Todo? _getByIdResponse;
     private int _createTodoResponse;
     private Category? _getCategoryByIdResponse;
@@ -37,6 +38,7 @@ public class TodoServiceTests
         _categoryRepositoryMock = new Mock<ICategoryRepository>();
 
         _getTodosResponse = new List<Todo>();
+        _getTodosOlderThanResponse = new List<Todo>();
         _getByIdResponse = TodoTestData.DefaultTodo;
         _createTodoResponse = ID;
         _getCategoryByIdResponse = TodoTestData.DefaultCategory;
@@ -68,6 +70,9 @@ public class TodoServiceTests
         _repositoryMock.Setup(r => r.DeleteTodoAsync(It.IsAny<Todo>()))
             .Callback<Todo>(t => _deletedTodo = t)
             .Returns(Task.CompletedTask);
+
+        _repositoryMock.Setup(r => r.GetTodosOlderThanAsync(It.IsAny<DateTime>()))
+            .ReturnsAsync(_getTodosOlderThanResponse);
 
         _categoryRepositoryMock.Setup(r => r.GetByIdAsync(It.IsAny<int>()))
             .ReturnsAsync(_getCategoryByIdResponse);
@@ -321,6 +326,50 @@ public class TodoServiceTests
         _repositoryMock.VerifyNoOtherCalls();
     }
 
+    [Fact]
+    public async Task UpdateTodoAsync_WhenCategoryDoesNotExist_ThrowsNotFoundException()
+    {
+        // Arrange
+        var dto = TodoTestData.DefaultUpdateTodoDto;
+        _getCategoryByIdResponse = null;
+        var service = GetService();
+
+        // Act
+        Func<Task> act = async () => await service.UpdateTodoAsync(ID, dto);
+
+        // Assert
+        await AssertEx.Throws<NotFoundException>(act);
+
+        _categoryRepositoryMock.Verify(r => r.GetByIdAsync(dto.CategoryId), Times.Once);
+        _categoryRepositoryMock.VerifyNoOtherCalls();
+
+        _repositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
+        _repositoryMock.Verify(r => r.UpdateTodoAsync(It.IsAny<Todo>()), Times.Never);
+        _repositoryMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task UpdateTodoAsync_WhenCategoryIsDeleted_ThrowsCategoryNotAvailableForModuleException()
+    {
+        // Arrange
+        var dto = TodoTestData.DefaultUpdateTodoDto;
+        _getCategoryByIdResponse = CategoryTestData.DeletedCategory;
+        var service = GetService();
+
+        // Act
+        Func<Task> act = async () => await service.UpdateTodoAsync(ID, dto);
+
+        // Assert
+        await AssertEx.Throws<CategoryNotAvailableForModuleException>(act);
+
+        _categoryRepositoryMock.Verify(r => r.GetByIdAsync(dto.CategoryId), Times.Once);
+        _categoryRepositoryMock.VerifyNoOtherCalls();
+
+        _repositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
+        _repositoryMock.Verify(r => r.UpdateTodoAsync(It.IsAny<Todo>()), Times.Never);
+        _repositoryMock.VerifyNoOtherCalls();
+    }
+
     // ToggleDoneAsync
     [Fact]
     public async Task ToggleDoneAsync_WhenTodoIsFalse_SetsIsDoneToTrue()
@@ -357,6 +406,61 @@ public class TodoServiceTests
         _categoryRepositoryMock.VerifyNoOtherCalls();
     }
 
+    [Fact]
+    public async Task ToggleDoneAsync_WhenTodoIsTrue_SetsIsDoneToFalse()
+    {
+        // Arrange
+        var todo = TodoTestData.DefaultTodo;
+        todo.IsDone = true;
+        todo.CompletedDateTime = DateTime.Now;
+        _getByIdResponse = todo;
+
+        var service = GetService();
+
+        // Act
+        await service.ToggleDoneAsync(todo.Id);
+
+        // Assert
+        AssertEx.AreEqual(_updatedTodo, new Todo
+        {
+            Id = todo.Id,
+            Title = todo.Title,
+            Description = todo.Description,
+            CategoryId = todo.CategoryId,
+            Priority = todo.Priority,
+            DueDate = todo.DueDate,
+            IsDone = false,
+            CreationDateTime = todo.CreationDateTime,
+            CompletedDateTime = null
+        });
+
+        _repositoryMock.Verify(r => r.GetByIdAsync(todo.Id), Times.Once);
+        _repositoryMock.Verify(r => r.UpdateTodoAsync(It.Is<Todo>(t => t.IsDone == false && t.CompletedDateTime == null)), Times.Once);
+        _repositoryMock.VerifyNoOtherCalls();
+
+        _categoryRepositoryMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task ToggleDoneAsync_WhenTodoDoesNotExist_ThrowsNotFoundException()
+    {
+        // Arrange
+        _getByIdResponse = null;
+        var service = GetService();
+
+        // Act
+        Func<Task> act = async () => await service.ToggleDoneAsync(ID);
+
+        // Assert
+        await AssertEx.Throws<NotFoundException>(act);
+
+        _repositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
+        _repositoryMock.Verify(r => r.UpdateTodoAsync(It.IsAny<Todo>()), Times.Never);
+        _repositoryMock.VerifyNoOtherCalls();
+
+        _categoryRepositoryMock.VerifyNoOtherCalls();
+    }
+
     // DeleteTodoAsync
     [Fact]
     public async Task DeleteTodoAsync_WhenTodoExists_CallsRepositoryDelete()
@@ -375,6 +479,78 @@ public class TodoServiceTests
 
         _repositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
         _repositoryMock.Verify(r => r.DeleteTodoAsync(todo), Times.Once);
+        _repositoryMock.VerifyNoOtherCalls();
+
+        _categoryRepositoryMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task DeleteTodoAsync_WhenTodoDoesNotExist_ThrowsNotFoundException()
+    {
+        // Arrange
+        _getByIdResponse = null;
+        var service = GetService();
+
+        // Act
+        Func<Task> act = async () => await service.DeleteTodoAsync(ID);
+
+        // Assert
+        await AssertEx.Throws<NotFoundException>(act);
+
+        _repositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
+        _repositoryMock.Verify(r => r.DeleteTodoAsync(It.IsAny<Todo>()), Times.Never);
+        _repositoryMock.VerifyNoOtherCalls();
+
+        _categoryRepositoryMock.VerifyNoOtherCalls();
+    }
+
+    // DeletePastTodosAsync
+    [Fact]
+    public async Task DeletePastTodosAsync_WhenTodosExist_DeletesTodos()
+    {
+        // Arrange
+        var todo1 = TodoTestData.DefaultTodo;
+        var todo2 = new Todo
+        {
+            Id = 2,
+            Title = "Old Todo",
+            Description = "Old",
+            CategoryId = 1,
+            IsDone = false,
+            Priority = 1,
+            DueDate = DateTime.Now.AddDays(-10),
+            CreationDateTime = DateTime.Now.AddDays(-10)
+        };
+        _getTodosOlderThanResponse = new List<Todo> { todo1, todo2 };
+        var service = GetService();
+        const int days = 7;
+
+        // Act
+        await service.DeletePastTodosAsync(days);
+
+        // Assert
+        _repositoryMock.Verify(r => r.GetTodosOlderThanAsync(It.Is<DateTime>(d => d <= DateTime.Now.AddDays(-days).AddSeconds(5) && d >= DateTime.Now.AddDays(-days).AddSeconds(-5))), Times.Once);
+        _repositoryMock.Verify(r => r.DeleteTodoAsync(todo1), Times.Once);
+        _repositoryMock.Verify(r => r.DeleteTodoAsync(todo2), Times.Once);
+        _repositoryMock.VerifyNoOtherCalls();
+
+        _categoryRepositoryMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task DeletePastTodosAsync_WhenNoTodosExist_DoesNotCallDelete()
+    {
+        // Arrange
+        _getTodosOlderThanResponse = new List<Todo>();
+        var service = GetService();
+        const int days = 7;
+
+        // Act
+        await service.DeletePastTodosAsync(days);
+
+        // Assert
+        _repositoryMock.Verify(r => r.GetTodosOlderThanAsync(It.Is<DateTime>(d => d <= DateTime.Now.AddDays(-days).AddSeconds(5) && d >= DateTime.Now.AddDays(-days).AddSeconds(-5))), Times.Once);
+        _repositoryMock.Verify(r => r.DeleteTodoAsync(It.IsAny<Todo>()), Times.Never);
         _repositoryMock.VerifyNoOtherCalls();
 
         _categoryRepositoryMock.VerifyNoOtherCalls();
