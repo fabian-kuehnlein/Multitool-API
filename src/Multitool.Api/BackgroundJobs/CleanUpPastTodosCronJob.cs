@@ -1,34 +1,24 @@
-using Cronos;
 using Microsoft.Extensions.Options;
 using Multitool.Api.Configuration;
 using Multitool.Application.Interfaces;
 
 namespace Multitool.Api.BackgroundJobs;
 
-public class CleanupPastTodosCronJob(
-    IServiceProvider serviceProvider,
-    IOptions<CronJobSettings> cronSettings) : BackgroundService
+public class CleanupPastTodosCronJob : CronJobBackgroundService
 {
-    private readonly CronExpression cron = CronExpression.Parse(cronSettings.Value.CleanUpPastTodos);
+    private readonly int _days;
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    public CleanupPastTodosCronJob(
+        IServiceProvider serviceProvider,
+        IOptions<CronJobSettings> cronSettings)
+        : base(serviceProvider, cronSettings.Value.CleanUpPastTodos)
     {
-        while (!stoppingToken.IsCancellationRequested)
-        {
-            var next = cron.GetNextOccurrence(DateTime.UtcNow);
+        _days = cronSettings.Value.CleanUpPastTodosDays;
+    }
 
-            if (next.HasValue)
-            {
-                var delay = next.Value - DateTime.UtcNow;
-
-                if (delay > TimeSpan.Zero)
-                    await Task.Delay(delay, stoppingToken);
-            }
-
-            using var scope = serviceProvider.CreateScope();
-            var todoService = scope.ServiceProvider.GetRequiredService<ITodoService>();
-
-            await todoService.DeletePastTodosAsync(cronSettings.Value.CleanUpPastTodosDays);
-        }
+    protected override async Task ExecuteJobAsync(IServiceScope scope, CancellationToken cancellationToken)
+    {
+        var todoService = scope.ServiceProvider.GetRequiredService<ITodoService>();
+        await todoService.DeletePastTodosAsync(_days);
     }
 }

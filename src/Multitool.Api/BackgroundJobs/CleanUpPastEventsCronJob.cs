@@ -1,34 +1,24 @@
-using Cronos;
 using Microsoft.Extensions.Options;
 using Multitool.Api.Configuration;
 using Multitool.Application.Interfaces;
 
 namespace Multitool.Api.BackgroundJobs;
 
-public class CleanupPastEventsCronJob(
-    IServiceProvider serviceProvider,
-    IOptions<CronJobSettings> cronSettings) : BackgroundService
+public class CleanupPastEventsCronJob : CronJobBackgroundService
 {
-    private readonly CronExpression cron = CronExpression.Parse(cronSettings.Value.CleanUpPastEvents);
+    private readonly int _months;
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    public CleanupPastEventsCronJob(
+        IServiceProvider serviceProvider,
+        IOptions<CronJobSettings> cronSettings)
+        : base(serviceProvider, cronSettings.Value.CleanUpPastEvents)
     {
-        while (!stoppingToken.IsCancellationRequested)
-        {
-            var next = cron.GetNextOccurrence(DateTime.UtcNow);
+        _months = cronSettings.Value.CleanUpPastEventsMonths;
+    }
 
-            if (next.HasValue)
-            {
-                var delay = next.Value - DateTime.UtcNow;
-
-                if (delay > TimeSpan.Zero)
-                    await Task.Delay(delay, stoppingToken);
-            }
-
-            using var scope = serviceProvider.CreateScope();
-            var calendarService = scope.ServiceProvider.GetRequiredService<ICalendarService>();
-
-            await calendarService.DeletePastEventsAsync(cronSettings.Value.CleanUpPastEventsMonths);
-        }
+    protected override async Task ExecuteJobAsync(IServiceScope scope, CancellationToken cancellationToken)
+    {
+        var calendarService = scope.ServiceProvider.GetRequiredService<ICalendarService>();
+        await calendarService.DeletePastEventsAsync(_months);
     }
 }
