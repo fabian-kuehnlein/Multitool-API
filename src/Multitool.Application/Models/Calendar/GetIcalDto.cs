@@ -1,6 +1,6 @@
 namespace Multitool.Application.Models.Calendar;
 
-public record GetICalLinkDto(
+public record GetIcalDto(
     string Title,
     string? Note,
     DateTime StartDateTime,

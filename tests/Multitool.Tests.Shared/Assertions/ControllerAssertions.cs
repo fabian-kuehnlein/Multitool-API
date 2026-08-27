@@ -50,4 +50,16 @@ internal static class ControllerAssertions
     {
         result.Should().BeOfType<NotFoundResult>();
     }
+
+    /// <summary>
+    /// Asserts that the result is a <see cref="FileContentResult"/> with the expected
+    /// content type, download file name, and file contents.
+    /// </summary>
+    public static void FileResult(IActionResult result, string contentType, string fileDownloadName, byte[] contents)
+    {
+        var file = result.Should().BeOfType<FileContentResult>().Subject;
+        file.ContentType.Should().Be(contentType);
+        file.FileDownloadName.Should().Be(fileDownloadName);
+        file.FileContents.Should().BeEquivalentTo(contents);
+    }
 }

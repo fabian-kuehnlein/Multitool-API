@@ -1,3 +1,8 @@
+using System.Text;
+using Ical.Net;
+using IcalEvent = Ical.Net.CalendarComponents.CalendarEvent;
+using Ical.Net.DataTypes;
+using Ical.Net.Serialization;
 using Mapster;
 using Multitool.Application.Extensions;
 using Multitool.Application.Interfaces;
@@ -6,7 +11,6 @@ using Multitool.Domain.Enums;
 using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
 using Multitool.Application.Models.Calendar;
-using System.Web;
 
 namespace Multitool.Application.Services;
 
@@ -97,23 +101,34 @@ public class CalendarService(
         return holidays.Adapt<List<HolidayDto>>();
     }
 
-    public Task<string> GetICalLinkAsync(GetICalLinkDto calendarEvent)
+    public Task<byte[]> GenerateIcsFileAsync(GetIcalDto calendarEvent)
     {
-        var query = HttpUtility.ParseQueryString(string.Empty);
-
         var start = calendarEvent.StartDateTime.ToUniversalTime();
         var end = (calendarEvent.EndDateTime ?? calendarEvent.StartDateTime).ToUniversalTime();
 
         if (end <= start)
             end = end.AddHours(1);
 
-        query["title"] = calendarEvent.Title;
-        query["start"] = start.ToString("o");
-        query["end"] = end.ToString("o");
+        var calendar = new Calendar
+        {
+            Method = "PUBLISH"
+        };
 
-        query["description"] = calendarEvent.Note ?? string.Empty;
+        var calendarEventComponent = new IcalEvent
+        {
+            Summary = calendarEvent.Title,
+            Description = calendarEvent.Note ?? string.Empty,
+            Start = new CalDateTime(start, "UTC"),
+            End = new CalDateTime(end, "UTC"),
+            Uid = Guid.NewGuid().ToString()
+        };
 
-        return Task.FromResult($"https://api.getcal.link/event.ics?{query}");
+        calendar.Events.Add(calendarEventComponent);
+
+        var serializer = new CalendarSerializer();
+        var icsContent = serializer.SerializeToString(calendar) ?? string.Empty;
+
+        return Task.FromResult(Encoding.UTF8.GetBytes(icsContent));
     }
 
     public async Task<int> DeletePastEventsAsync(int months)

@@ -25,6 +25,10 @@ public static class AssertEx
     public static void NotFound(IActionResult result)
         => ControllerAssertions.NotFound(result);
 
+    /// <inheritdoc cref="ControllerAssertions.FileResult(IActionResult, string, string, byte[])" />
+    public static void FileResult(IActionResult result, string contentType, string fileDownloadName, byte[] contents)
+        => ControllerAssertions.FileResult(result, contentType, fileDownloadName, contents);
+
     // Service Assertions
     /// <inheritdoc cref="ServiceAssertions.ThrowsAsync{TException}(Func{Task})" />
     public static Task Throws<TException>(Func<Task> action)

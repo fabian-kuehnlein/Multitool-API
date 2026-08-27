@@ -49,7 +49,7 @@ public static class CalendarTestData
         null
     );
 
-    public static GetICalLinkDto DefaultICalLinkEvent => new(
+    public static GetIcalDto DefaultIcalEvent => new(
         "Team Meeting",
         "Besprechung Projekt Updates",
         new DateTime(2026, 6, 1, 9, 0, 0, DateTimeKind.Utc),

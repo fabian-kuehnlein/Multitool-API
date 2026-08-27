@@ -132,7 +132,7 @@ _todoRepositoryMock.VerifyNoOtherCalls();
 The following assertion conventions apply **globally across all test projects and layers** (Controllers, Services, Repositories):
 - **`AssertEx.AreEqual(expected, actual)`**: Must be used uniformly across all tests for object, entity, DTO, property, and collection equality comparisons (provides deep comparison, preferred over standard `Assert.Equal`).
 - **Standard xUnit `Assert` Calls**: Simple boolean and null checks (`Assert.True(...)`, `Assert.False(...)`, `Assert.Null(...)`, `Assert.NotNull(...)`) that require no extra deep-comparison logic can be called directly from standard xUnit `Assert`.
-- **Specialized `AssertEx` Helpers**: HTTP responses use `AssertEx.Ok(...)`, `AssertEx.Created(...)`, `AssertEx.NoContent(...)`, etc. Exceptions use `AssertEx.Throws<TException>(...)`. Timestamps use `AssertEx.CloseTo(...)`. All custom assertion logic belongs in `AssertEx`.
+- **Specialized `AssertEx` Helpers**: HTTP responses use `AssertEx.Ok(...)`, `AssertEx.Created(...)`, `AssertEx.NoContent(...)`, `AssertEx.FileResult(...)`, etc. Exceptions use `AssertEx.Throws<TException>(...)`. Timestamps use `AssertEx.CloseTo(...)`. All custom assertion logic belongs in `AssertEx`.
 
 ### Comprehensive Assertions
 Unit tests must feature deep and thorough assertions in the `// Assert` block:
@@ -158,7 +158,7 @@ All controller test classes (`*ControllerTests.cs`) **must follow a mandatory, s
 6. **Route Separator Comments**: Visually group test methods using `// [HTTP Verb] api/[Controller]/[Route]`.
 7. **Triple-A & AssertEx Assertions**:
    - Divide tests cleanly into `// Arrange`, `// Act`, and `// Assert`.
-   - Use `AssertEx` helpers for HTTP responses (`AssertEx.Ok(result, expected)`, `AssertEx.Created(result, id)`, `AssertEx.NoContent(result)`, `AssertEx.BadRequest(result)`, `AssertEx.NotFound(result)`).
+   - Use `AssertEx` helpers for HTTP responses (`AssertEx.Ok(result, expected)`, `AssertEx.Created(result, id)`, `AssertEx.NoContent(result)`, `AssertEx.BadRequest(result)`, `AssertEx.NotFound(result)`, `AssertEx.FileResult(result, contentType, fileName, contents)`).
 8. **Strict Moq Verification & No Other Calls**:
    - Verify expected service calls with exact arguments (`_todoServiceMock.Verify(s => s.CreateTodoAsync(newTodo), Times.Once);`).
    - Always call `_todoServiceMock.VerifyNoOtherCalls();` to ensure no unexpected service interactions occurred.
@@ -375,6 +375,7 @@ Controller tests **exclusively verify the HTTP flow** (HTTP status code, respons
 | `return Ok(result)` | `WhenXExists_ReturnsOkWith...` |
 | `return NoContent()` | `WhenXExists_ReturnsNoContent` |
 | `return StatusCode(StatusCodes.Status201Created, id)` | `WhenDtoIsValid_ReturnsCreatedWithId` |
+| `return File(bytes, contentType, fileName)` | `WhenEventIsValid_ReturnsIcsFile` (via `AssertEx.FileResult`) |
 
 **Exceptions – a second test is justified when:**
 - The controller itself builds an anonymous object (`new { year, month, count }`)
@@ -723,6 +724,7 @@ When reviewing, please check:
 - Are test-relevant entities, DTOs, and models added or updated in `tests/Multitool.Tests.Shared` whenever application models change (instead of creating ad-hoc inline test objects)?
 - Are new or modified exception mappings in `GlobalExceptionHandler` updated in `tests/Multitool.Api.Tests/Exceptions/GlobalExceptionHandlerTests.cs`?
 - Do controller test classes follow the standard controller test layout (`GetController()` factory method, mock resets, default response fields, `AssertEx` assertions, and `.VerifyNoOtherCalls()`)?
+- Do file-download endpoints (e.g. `.ics`) use `AssertEx.FileResult(result, contentType, fileName, contents)` to verify the `FileContentResult`?
 - Do service test classes follow the standard service test layout (`GetService()` factory method, mock resets, Mapster setup in constructor, `.Callback<T>` argument capture, `AssertEx.AreEqual`, `AssertEx.CloseTo` for `.UtcNow` timestamp setters, and `.VerifyNoOtherCalls()`)?
 - Do repository test classes follow the standard repository test layout (inherit `RepositoryTestBase`, instantiate repository directly without `GetRepository()`, use `AssertEx.AreEqual` for deep comparisons, standard `Assert.Null/NotNull/True/False`, and `AsNoTracking()` for DB state checks)?
 - Are unused `.Callback<T>(...)` setups and unused captured private fields omitted/removed if their data is not asserted on?

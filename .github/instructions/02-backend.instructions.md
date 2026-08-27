@@ -254,6 +254,30 @@ public async Task<IActionResult> CreateTodo([FromBody] CreateTodoDto createTodoD
 }
 ```
 
+### Return values for File Downloads
+
+Endpoints that serve a downloadable file (e.g. an `.ics` calendar export) return a `File(...)` result instead of JSON.
+The service returns the raw file bytes; the controller supplies the content type and a sanitized file name.
+
+- Use `[Produces("<media type>")]` (e.g. `text/calendar`) instead of `application/json`.
+- The service generates the file bytes (no URL/link string); do **not** delegate to an external file-generating service.
+
+```csharp
+/// <summary>
+/// Generates an iCal (.ics) file for the given calendar event and returns it as a downloadable file.
+/// </summary>
+[Authorize]
+[HttpPost("events/ical")]
+[Produces("text/calendar")]
+[ProducesResponseType(StatusCodes.Status200OK)]
+[ProducesResponseType(StatusCodes.Status500InternalServerError)]
+public async Task<IActionResult> GenerateIcsFile([FromBody] GetIcalDto calendarEvent)
+{
+    var icsContent = await calendarService.GenerateIcsFileAsync(calendarEvent);
+    return File(icsContent, "text/calendar", $"{SafeFileName(calendarEvent.Title)}.ics");
+}
+```
+
 ### Example (Read Endpoint)
 
 ```csharp
@@ -277,5 +301,6 @@ When reviewing, please check:
 - Is the `<summary>` comment missing?
 - Are relevant `[ProducesResponseType]` attributes missing?
 - Does a POST creation method use `Created()` or `CreatedAtAction()` instead of `StatusCode(StatusCodes.Status201Created, ...)`? → Violation.
+- Does a file-download endpoint (e.g. `.ics`) return a link string or delegate to an external file service instead of `File(bytes, contentType, fileName)`? → Violation.
 - Does the method contain a `try/catch` block? → This is a violation; error handling belongs in the service layer.
 - Is the method itself still slim (no business logic in the controller)?
