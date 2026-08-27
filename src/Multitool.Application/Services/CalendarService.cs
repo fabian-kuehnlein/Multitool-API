@@ -116,11 +116,12 @@ public class CalendarService(
         return Task.FromResult($"https://api.getcal.link/event.ics?{query}");
     }
 
-    public async Task DeletePastEventsAsync(int months)
+    public async Task<int> DeletePastEventsAsync(int months)
     {
         var threshold = DateTime.Now.AddMonths(-months);
 
         var events = await calendarRepository.GetEventsOlderThanAsync(threshold);
+        var deletedCount = 0;
 
         foreach (var e in events)
         {
@@ -129,7 +130,10 @@ public class CalendarService(
                 var dateToCheck = e.EndDateTime ?? e.StartDateTime;
 
                 if (dateToCheck < threshold)
+                {
                     await calendarRepository.DeleteEventAsync(e.Id);
+                    deletedCount++;
+                }
 
                 continue;
             }
@@ -138,7 +142,12 @@ public class CalendarService(
                 continue;
 
             if (e.RecurrenceEnd < threshold)
+            {
                 await calendarRepository.DeleteEventAsync(e.Id);
+                deletedCount++;
+            }
         }
+
+        return deletedCount;
     }
 }

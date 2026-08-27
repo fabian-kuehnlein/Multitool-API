@@ -88,6 +88,7 @@ public class Program
 
         builder.Logging.ClearProviders();
         builder.Logging.AddConsole();
+        builder.Logging.AddDebug();
 
         builder.Services.AddApiAuthentication(builder.Configuration, builder.Environment);
 

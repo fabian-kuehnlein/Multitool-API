@@ -10,6 +10,6 @@ public interface ICalendarService
     Task UpdateEventAsync(int id, UpdateCalendarEventDto dto);
     Task DeleteEventAsync(int id);
     Task<List<HolidayDto>> GetHolidaysAsync(string year);
-    Task DeletePastEventsAsync(int months);
+    Task<int> DeletePastEventsAsync(int months);
     Task<string> GetICalLinkAsync(GetICalLinkDto calendarEvent);
 }

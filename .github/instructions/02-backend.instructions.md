@@ -192,6 +192,35 @@ When reviewing, please check:
 - Is an existing entity updated via `dto.Adapt(existing)` instead of explicit property assignment? → Violation.
 - Are default / server-managed values mapped in `MappingConfig.cs` instead of in the service?
 
+## Logging
+
+Logging is used to find problems — not to flood the logs. Log only at structurally relevant points and avoid
+trivial or high-frequency messages.
+
+### Where to log (by layer)
+
+- **Domain**: never log. The Domain layer contains no logging at all.
+- **Application**: only log important business events (e.g. significant state changes worth tracing).
+- **Infrastructure**: log errors, timeouts, and unusual situations (e.g. failing or timed-out external API calls).
+- **Api**: log the start, end, and errors of each technical process (e.g. background cron jobs). Unhandled
+  exceptions are logged by `GlobalExceptionHandler`.
+
+### Rules
+
+- Use **structured log messages with parameters** (`{Year}`, `{DeletedCount}`, `{Elapsed}`), never interpolated strings
+  (`$"deleted {count} events"`).
+- **Do not log** trivial method calls, loops, or parameter values that offer no diagnostic value (e.g. routine
+  repository CRUD calls that always succeed).
+- Errors must be logged together with the exception and the message should describe what was being attempted,
+  e.g. `logger.LogError(ex, "Failed to fetch holidays for year {Year}", year)`.
+- Log the outcome of an operation with meaningful summary data (counts, elapsed time), not per-item noise.
+
+When reviewing, please check:
+
+- Is any logging present in the Domain layer, or in trivial repository/DTO code? → Violation.
+- Are log messages using string interpolation (`$"..."`) instead of structured parameters? → Violation.
+- Is a cron job missing start/end/error logging, or the external API client missing error/timeout logging? → Violation.
+
 ## Controllers
 
 Every action method in a controller should be "decorated" as follows:
