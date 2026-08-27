@@ -1,34 +1,43 @@
-using Cronos;
+using System.Diagnostics;
 using Microsoft.Extensions.Options;
 using Multitool.Api.Configuration;
 using Multitool.Application.Interfaces;
 
 namespace Multitool.Api.BackgroundJobs;
 
-public class CleanupPastTodosCronJob(
-    IServiceProvider serviceProvider,
-    IOptions<CronJobSettings> cronSettings) : BackgroundService
+public class CleanupPastTodosCronJob : CronJobBackgroundService
 {
-    private readonly CronExpression cron = CronExpression.Parse(cronSettings.Value.CleanUpPastTodos);
+    private readonly int _days;
+    private readonly ILogger<CleanupPastTodosCronJob> _logger;
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    public CleanupPastTodosCronJob(
+        IServiceProvider serviceProvider,
+        ILogger<CleanupPastTodosCronJob> logger,
+        IOptions<CronJobSettings> cronSettings)
+        : base(serviceProvider, cronSettings.Value.CleanUpPastTodos)
     {
-        while (!stoppingToken.IsCancellationRequested)
+        _days = cronSettings.Value.CleanUpPastTodosDays;
+        _logger = logger;
+    }
+
+    protected override async Task ExecuteJobAsync(IServiceScope scope, CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("CleanUpPastTodos job started for todos older than {Days} day(s)", _days);
+
+        var stopwatch = Stopwatch.StartNew();
+        try
         {
-            var next = cron.GetNextOccurrence(DateTime.UtcNow);
-
-            if (next.HasValue)
-            {
-                var delay = next.Value - DateTime.UtcNow;
-
-                if (delay > TimeSpan.Zero)
-                    await Task.Delay(delay, stoppingToken);
-            }
-
-            using var scope = serviceProvider.CreateScope();
             var todoService = scope.ServiceProvider.GetRequiredService<ITodoService>();
+            var deletedCount = await todoService.DeletePastTodosAsync(_days);
 
-            await todoService.DeletePastTodosAsync(cronSettings.Value.CleanUpPastTodosDays);
+            stopwatch.Stop();
+            _logger.LogInformation("CleanUpPastTodos job finished: deleted {DeletedCount} todo(s) in {Elapsed}", deletedCount, stopwatch.Elapsed);
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            _logger.LogError(ex, "CleanUpPastTodos job failed after {Elapsed}", stopwatch.Elapsed);
+            throw;
         }
     }
 }

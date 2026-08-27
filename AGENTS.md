@@ -1,6 +1,6 @@
 # AGENTS.md
 
-.NET 10 / ASP.NET Core REST API (Clean Architecture) for the Multitool app. PostgreSQL via EF Core, Mapster mappings, xUnit tests. Backend of a separate Angular frontend.
+.NET 10 / ASP.NET Core REST API (Clean Architecture) for the Multitool app. PostgreSQL via EF Core, Mapster mappings, iCal.NET (`.ics` export in `CalendarService`), xUnit tests. Backend of a separate Angular frontend.
 
 ## Auto-loaded rules
 

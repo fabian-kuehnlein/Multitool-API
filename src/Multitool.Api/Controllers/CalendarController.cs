@@ -97,16 +97,23 @@ public class CalendarController(ICalendarService calendarService) : ControllerBa
     }
 
     /// <summary>
-    /// Returns a link to download the given event as an iCal file.
+    /// Generates an iCal (.ics) file for the given calendar event and returns it as a downloadable file.
     /// </summary>
     [Authorize]
-    [HttpPost("events/ical-link")]
-    [Produces("application/json")]
+    [HttpPost("events/ical")]
+    [Produces("text/calendar")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> GetICalLink([FromBody] GetICalLinkDto calendarEvent)
+    public async Task<IActionResult> GenerateIcsFile([FromBody] GetIcalDto calendarEvent)
     {
-        var result = await calendarService.GetICalLinkAsync(calendarEvent);
-        return Ok(result);
+        var icsContent = await calendarService.GenerateIcsFileAsync(calendarEvent);
+        return File(icsContent, "text/calendar", $"{SafeFileName(calendarEvent.Title)}.ics");
+    }
+
+    private static string SafeFileName(string title)
+    {
+        var invalid = Path.GetInvalidFileNameChars().Concat(new[] { ' ' }).ToHashSet();
+        var sanitized = new string(title.Where(c => !invalid.Contains(c)).ToArray());
+        return string.IsNullOrWhiteSpace(sanitized) ? "event" : sanitized;
     }
 }

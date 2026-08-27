@@ -78,7 +78,7 @@ public class TodoService(ITodoRepository todoRepository, ICategoryRepository cat
         await todoRepository.DeleteTodoAsync(existingTodo);
     }
 
-    public async Task DeletePastTodosAsync(int days)
+    public async Task<int> DeletePastTodosAsync(int days)
     {
         var threshold = DateTime.Now.AddDays(-days);
 
@@ -88,5 +88,7 @@ public class TodoService(ITodoRepository todoRepository, ICategoryRepository cat
         {
             await todoRepository.DeleteTodoAsync(todo);
         }
+
+        return todosToDelete.Count;
     }
 }

@@ -4,6 +4,7 @@ using Multitool.Application.Interfaces;
 using Multitool.Application.Models.Calendar;
 using Multitool.Tests.Shared;
 using Multitool.Tests.Shared.Assertions;
+using Xunit;
 
 namespace Multitool.Api.Tests.Controllers;
 
@@ -15,7 +16,7 @@ public class CalendarControllerTests
     private List<EventSearchResponseDto> _searchEventsResponse;
     private int _createEventResponse;
     private List<HolidayDto> _getHolidaysResponse;
-    private string _getICalLinkResponse;
+    private byte[] _generateIcsResponse;
 
     private static readonly DateTime Start = CalendarTestData.DefaultEvent.StartDateTime;
     private static readonly DateTime End = CalendarTestData.DefaultEvent.EndDateTime!.Value;
@@ -31,8 +32,7 @@ public class CalendarControllerTests
         _searchEventsResponse = [new EventSearchResponseDto(defaultEvent.Id, defaultEvent.Title, null, defaultEvent.StartDateTime, null, null)];
         _createEventResponse = defaultEvent.Id;
         _getHolidaysResponse = [new HolidayDto { Name = CalendarTestData.DefaultHoliday.Name, Date = CalendarTestData.DefaultHoliday.Date }];
-        _getICalLinkResponse = "https://api.getcal.link/event.ics?title=Team+Meeting";
-    }
+        _generateIcsResponse = "BEGIN:VCALENDAR"u8.ToArray();;    }
 
     private CalendarController GetController()
     {
@@ -56,8 +56,8 @@ public class CalendarControllerTests
         _calendarServiceMock.Setup(s => s.GetHolidaysAsync(It.IsAny<string>()))
             .ReturnsAsync(_getHolidaysResponse);
 
-        _calendarServiceMock.Setup(s => s.GetICalLinkAsync(It.IsAny<GetICalLinkDto>()))
-            .ReturnsAsync(_getICalLinkResponse);
+        _calendarServiceMock.Setup(s => s.GenerateIcsFileAsync(It.IsAny<GetIcalDto>()))
+            .ReturnsAsync(_generateIcsResponse);
 
         return new CalendarController(_calendarServiceMock.Object);
     }
@@ -194,19 +194,19 @@ public class CalendarControllerTests
     // POST api/Calendar/events/ical-link
 
     [Fact]
-    public async Task GetICalLink_WhenEventIsValid_ReturnsOkWithLink()
+    public async Task GenerateIcsFile_WhenEventIsValid_ReturnsIcsFile()
     {
         // Arrange
-        var calendarEvent = CalendarTestData.DefaultICalLinkEvent;
+        var calendarEvent = CalendarTestData.DefaultIcalEvent;
         var controller = GetController();
 
         // Act
-        var result = await controller.GetICalLink(calendarEvent);
+        var result = await controller.GenerateIcsFile(calendarEvent);
 
         // Assert
-        AssertEx.Ok(result, _getICalLinkResponse);
+        AssertEx.FileResult(result, "text/calendar", "TeamMeeting.ics", _generateIcsResponse);
 
-        _calendarServiceMock.Verify(s => s.GetICalLinkAsync(calendarEvent), Times.Once);
+        _calendarServiceMock.Verify(s => s.GenerateIcsFileAsync(calendarEvent), Times.Once);
         _calendarServiceMock.VerifyNoOtherCalls();
     }
 }

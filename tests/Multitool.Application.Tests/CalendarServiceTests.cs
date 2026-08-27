@@ -1,6 +1,4 @@
-using System.Collections.Specialized;
-using System.Globalization;
-using System.Web;
+using System.Text;
 using Mapster;
 using Moq;
 using Multitool.Application.Mappings;
@@ -475,23 +473,23 @@ public class CalendarServiceTests
         _todoRepositoryMock.VerifyNoOtherCalls();
     }
 
-    // GetICalLinkAsync
+    // GenerateIcsFileAsync
     [Fact]
-    public async Task GetICalLinkAsync_WhenEndDateTimeIsSet_ReturnsLinkWithAllQueryParameters()
+    public async Task GenerateIcsFileAsync_WhenEndDateTimeIsSet_ReturnsIcsWithEventDetails()
     {
         // Arrange
-        var calendarEvent = CalendarTestData.DefaultICalLinkEvent;
+        var calendarEvent = CalendarTestData.DefaultIcalEvent;
         var service = GetService();
 
         // Act
-        var result = await service.GetICalLinkAsync(calendarEvent);
+        var result = await service.GenerateIcsFileAsync(calendarEvent);
+        var ics = Encoding.UTF8.GetString(result);
 
         // Assert
-        var query = ParseQuery(result);
-        AssertEx.AreEqual("Team Meeting", query["title"]);
-        AssertEx.AreEqual("2026-06-01T09:00:00.0000000Z", query["start"]);
-        AssertEx.AreEqual("2026-06-01T10:00:00.0000000Z", query["end"]);
-        AssertEx.AreEqual("Besprechung Projekt Updates", query["description"]);
+        AssertEx.AreEqual(true, ics.Contains("SUMMARY:Team Meeting"));
+        AssertEx.AreEqual(true, ics.Contains("DESCRIPTION:Besprechung Projekt Updates"));
+        AssertEx.AreEqual(true, ics.Contains("DTSTART:20260601T090000Z"));
+        AssertEx.AreEqual(true, ics.Contains("DTEND:20260601T100000Z"));
 
         _calendarRepositoryMock.VerifyNoOtherCalls();
         _todoRepositoryMock.VerifyNoOtherCalls();
@@ -499,19 +497,19 @@ public class CalendarServiceTests
     }
 
     [Fact]
-    public async Task GetICalLinkAsync_WhenEndDateTimeIsNull_AddsOneHourToStartAsEnd()
+    public async Task GenerateIcsFileAsync_WhenEndDateTimeIsNull_AddsOneHourToStartAsEnd()
     {
         // Arrange
-        var calendarEvent = CalendarTestData.DefaultICalLinkEvent with { EndDateTime = null };
+        var calendarEvent = CalendarTestData.DefaultIcalEvent with { EndDateTime = null };
         var service = GetService();
 
         // Act
-        var result = await service.GetICalLinkAsync(calendarEvent);
+        var result = await service.GenerateIcsFileAsync(calendarEvent);
+        var ics = Encoding.UTF8.GetString(result);
 
         // Assert
-        var query = ParseQuery(result);
-        AssertEx.AreEqual("2026-06-01T09:00:00.0000000Z", query["start"]);
-        AssertEx.AreEqual("2026-06-01T10:00:00.0000000Z", query["end"]);
+        AssertEx.AreEqual(true, ics.Contains("DTSTART:20260601T090000Z"));
+        AssertEx.AreEqual(true, ics.Contains("DTEND:20260601T100000Z"));
 
         _calendarRepositoryMock.VerifyNoOtherCalls();
         _todoRepositoryMock.VerifyNoOtherCalls();
@@ -519,22 +517,22 @@ public class CalendarServiceTests
     }
 
     [Fact]
-    public async Task GetICalLinkAsync_WhenEndDateTimeEqualsStartDateTime_AddsOneHourToEnd()
+    public async Task GenerateIcsFileAsync_WhenEndDateTimeEqualsStartDateTime_AddsOneHourToEnd()
     {
         // Arrange
-        var calendarEvent = CalendarTestData.DefaultICalLinkEvent with
+        var calendarEvent = CalendarTestData.DefaultIcalEvent with
         {
-            EndDateTime = CalendarTestData.DefaultICalLinkEvent.StartDateTime
+            EndDateTime = CalendarTestData.DefaultIcalEvent.StartDateTime
         };
         var service = GetService();
 
         // Act
-        var result = await service.GetICalLinkAsync(calendarEvent);
+        var result = await service.GenerateIcsFileAsync(calendarEvent);
+        var ics = Encoding.UTF8.GetString(result);
 
         // Assert
-        var query = ParseQuery(result);
-        AssertEx.AreEqual("2026-06-01T09:00:00.0000000Z", query["start"]);
-        AssertEx.AreEqual("2026-06-01T10:00:00.0000000Z", query["end"]);
+        AssertEx.AreEqual(true, ics.Contains("DTSTART:20260601T090000Z"));
+        AssertEx.AreEqual(true, ics.Contains("DTEND:20260601T100000Z"));
 
         _calendarRepositoryMock.VerifyNoOtherCalls();
         _todoRepositoryMock.VerifyNoOtherCalls();
@@ -542,19 +540,19 @@ public class CalendarServiceTests
     }
 
     [Fact]
-    public async Task GetICalLinkAsync_WhenNoteIsNull_SetsEmptyDescription()
+    public async Task GenerateIcsFileAsync_WhenNoteIsNull_SetsEmptyDescription()
     {
         // Arrange
-        var calendarEvent = CalendarTestData.DefaultICalLinkEvent with { Note = null };
+        var calendarEvent = CalendarTestData.DefaultIcalEvent with { Note = null };
         var service = GetService();
 
         // Act
-        var result = await service.GetICalLinkAsync(calendarEvent);
+        var result = await service.GenerateIcsFileAsync(calendarEvent);
+        var ics = Encoding.UTF8.GetString(result);
 
         // Assert
-        var query = ParseQuery(result);
-        AssertEx.AreEqual(string.Empty, query["description"]);
-        AssertEx.AreEqual("Team Meeting", query["title"]);
+        AssertEx.AreEqual(true, ics.Contains("SUMMARY:Team Meeting"));
+        AssertEx.AreEqual(true, ics.Contains("DESCRIPTION:"));
 
         _calendarRepositoryMock.VerifyNoOtherCalls();
         _todoRepositoryMock.VerifyNoOtherCalls();
@@ -562,22 +560,22 @@ public class CalendarServiceTests
     }
 
     [Fact]
-    public async Task GetICalLinkAsync_WhenEndDateTimeIsBeforeStartDateTime_AddsOneHourToEnd()
+    public async Task GenerateIcsFileAsync_WhenEndDateTimeIsBeforeStartDateTime_AddsOneHourToEnd()
     {
         // Arrange
-        var calendarEvent = CalendarTestData.DefaultICalLinkEvent with
+        var calendarEvent = CalendarTestData.DefaultIcalEvent with
         {
-            EndDateTime = CalendarTestData.DefaultICalLinkEvent.StartDateTime.AddMinutes(-30)
+            EndDateTime = CalendarTestData.DefaultIcalEvent.StartDateTime.AddMinutes(-30)
         };
         var service = GetService();
 
         // Act
-        var result = await service.GetICalLinkAsync(calendarEvent);
+        var result = await service.GenerateIcsFileAsync(calendarEvent);
+        var ics = Encoding.UTF8.GetString(result);
 
         // Assert
-        var query = ParseQuery(result);
-        AssertEx.AreEqual("2026-06-01T09:00:00.0000000Z", query["start"]);
-        AssertEx.AreEqual("2026-06-01T09:30:00.0000000Z", query["end"]);
+        AssertEx.AreEqual(true, ics.Contains("DTSTART:20260601T090000Z"));
+        AssertEx.AreEqual(true, ics.Contains("DTEND:20260601T093000Z"));
 
         _calendarRepositoryMock.VerifyNoOtherCalls();
         _todoRepositoryMock.VerifyNoOtherCalls();
@@ -585,10 +583,10 @@ public class CalendarServiceTests
     }
 
     [Fact]
-    public async Task GetICalLinkAsync_WhenDatesAreLocal_ConvertsToUtcInLink()
+    public async Task GenerateIcsFileAsync_WhenDatesAreLocal_ConvertsToUtcInIcs()
     {
         // Arrange
-        var calendarEvent = CalendarTestData.DefaultICalLinkEvent with
+        var calendarEvent = CalendarTestData.DefaultIcalEvent with
         {
             StartDateTime = new DateTime(2026, 6, 1, 9, 0, 0, DateTimeKind.Local),
             EndDateTime = new DateTime(2026, 6, 1, 10, 0, 0, DateTimeKind.Local)
@@ -596,15 +594,14 @@ public class CalendarServiceTests
         var service = GetService();
 
         // Act
-        var result = await service.GetICalLinkAsync(calendarEvent);
+        var result = await service.GenerateIcsFileAsync(calendarEvent);
+        var ics = Encoding.UTF8.GetString(result);
 
         // Assert
-        var query = ParseQuery(result);
-        AssertEx.AreEqual(true, query["start"]!.EndsWith("Z"));
-        AssertEx.AreEqual(true, query["end"]!.EndsWith("Z"));
-        AssertEx.AreEqual(
-            calendarEvent.StartDateTime.ToUniversalTime(),
-            DateTime.Parse(query["start"]!, CultureInfo.InvariantCulture, DateTimeStyles.AdjustToUniversal));
+        var startLine = ics.Split('\n').First(l => l.StartsWith("DTSTART:")).Trim();
+        var endLine = ics.Split('\n').First(l => l.StartsWith("DTEND:")).Trim();
+        AssertEx.AreEqual(true, startLine.EndsWith("Z"));
+        AssertEx.AreEqual(true, endLine.EndsWith("Z"));
 
         _calendarRepositoryMock.VerifyNoOtherCalls();
         _todoRepositoryMock.VerifyNoOtherCalls();
@@ -757,11 +754,5 @@ public class CalendarServiceTests
         _calendarRepositoryMock.Verify(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()), Times.Once);
         _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(It.IsAny<int>()), Times.Never);
         _calendarRepositoryMock.VerifyNoOtherCalls();
-    }
-
-    private static NameValueCollection ParseQuery(string link)
-    {
-        var query = link[(link.IndexOf('?') + 1)..];
-        return HttpUtility.ParseQueryString(query);
     }
 }
