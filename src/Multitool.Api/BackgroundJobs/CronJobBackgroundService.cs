@@ -5,11 +5,13 @@ namespace Multitool.Api.BackgroundJobs;
 public abstract class CronJobBackgroundService : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
+    private readonly ILogger _logger;
     private readonly CronExpression _cron;
 
-    protected CronJobBackgroundService(IServiceProvider serviceProvider, string cronExpression)
+    protected CronJobBackgroundService(IServiceProvider serviceProvider, ILogger logger, string cronExpression)
     {
         _serviceProvider = serviceProvider;
+        _logger = logger;
         _cron = CronExpression.Parse(cronExpression);
     }
 
@@ -17,20 +19,36 @@ public abstract class CronJobBackgroundService : BackgroundService
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        var jobName = GetType().Name;
+        _logger.LogInformation("[{Job}] starting", jobName);
+
         while (!stoppingToken.IsCancellationRequested)
         {
-            var next = _cron.GetNextOccurrence(DateTime.UtcNow);
-
-            if (next.HasValue)
+            try
             {
-                var delay = next.Value - DateTime.UtcNow;
-
-                if (delay > TimeSpan.Zero)
-                    await Task.Delay(delay, stoppingToken);
+                using var scope = _serviceProvider.CreateScope();
+                await ExecuteJobAsync(scope, stoppingToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[{Job}] execution failed", jobName);
             }
 
-            using var scope = _serviceProvider.CreateScope();
-            await ExecuteJobAsync(scope, stoppingToken);
+            var next = _cron.GetNextOccurrence(DateTime.UtcNow);
+
+            if (!next.HasValue)
+            {
+                _logger.LogWarning("[{Job}] no next occurrence found, stopping", jobName);
+                break;
+            }
+
+            var delay = next.Value - DateTime.UtcNow;
+
+            if (delay > TimeSpan.Zero)
+            {
+                _logger.LogDebug("[{Job}] next run at {NextRun}", jobName, next.Value);
+                await Task.Delay(delay, stoppingToken);
+            }
         }
     }
 }
