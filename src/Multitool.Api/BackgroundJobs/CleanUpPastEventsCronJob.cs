@@ -14,7 +14,7 @@ public class CleanupPastEventsCronJob : CronJobBackgroundService
         IServiceProvider serviceProvider,
         ILogger<CleanupPastEventsCronJob> logger,
         IOptions<CronJobSettings> cronSettings)
-        : base(serviceProvider, cronSettings.Value.CleanUpPastEvents)
+        : base(serviceProvider, logger, cronSettings.Value.CleanUpPastEvents)
     {
         _months = cronSettings.Value.CleanUpPastEventsMonths;
         _logger = logger;
@@ -25,19 +25,10 @@ public class CleanupPastEventsCronJob : CronJobBackgroundService
         _logger.LogInformation("CleanUpPastEvents job started for events older than {Months} month(s)", _months);
 
         var stopwatch = Stopwatch.StartNew();
-        try
-        {
-            var calendarService = scope.ServiceProvider.GetRequiredService<ICalendarService>();
-            var deletedCount = await calendarService.DeletePastEventsAsync(_months);
+        var calendarService = scope.ServiceProvider.GetRequiredService<ICalendarService>();
+        var deletedCount = await calendarService.DeletePastEventsAsync(_months);
 
-            stopwatch.Stop();
-            _logger.LogInformation("CleanUpPastEvents job finished: deleted {DeletedCount} event(s) in {Elapsed}", deletedCount, stopwatch.Elapsed);
-        }
-        catch (Exception ex)
-        {
-            stopwatch.Stop();
-            _logger.LogError(ex, "CleanUpPastEvents job failed after {Elapsed}", stopwatch.Elapsed);
-            throw;
-        }
+        stopwatch.Stop();
+        _logger.LogInformation("CleanUpPastEvents job finished: deleted {DeletedCount} event(s) in {Elapsed}", deletedCount, stopwatch.Elapsed);
     }
 }

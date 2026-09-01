@@ -14,7 +14,7 @@ public class CleanupPastTodosCronJob : CronJobBackgroundService
         IServiceProvider serviceProvider,
         ILogger<CleanupPastTodosCronJob> logger,
         IOptions<CronJobSettings> cronSettings)
-        : base(serviceProvider, cronSettings.Value.CleanUpPastTodos)
+        : base(serviceProvider, logger, cronSettings.Value.CleanUpPastTodos)
     {
         _days = cronSettings.Value.CleanUpPastTodosDays;
         _logger = logger;
@@ -25,19 +25,10 @@ public class CleanupPastTodosCronJob : CronJobBackgroundService
         _logger.LogInformation("CleanUpPastTodos job started for todos older than {Days} day(s)", _days);
 
         var stopwatch = Stopwatch.StartNew();
-        try
-        {
-            var todoService = scope.ServiceProvider.GetRequiredService<ITodoService>();
-            var deletedCount = await todoService.DeletePastTodosAsync(_days);
+        var todoService = scope.ServiceProvider.GetRequiredService<ITodoService>();
+        var deletedCount = await todoService.DeletePastTodosAsync(_days);
 
-            stopwatch.Stop();
-            _logger.LogInformation("CleanUpPastTodos job finished: deleted {DeletedCount} todo(s) in {Elapsed}", deletedCount, stopwatch.Elapsed);
-        }
-        catch (Exception ex)
-        {
-            stopwatch.Stop();
-            _logger.LogError(ex, "CleanUpPastTodos job failed after {Elapsed}", stopwatch.Elapsed);
-            throw;
-        }
+        stopwatch.Stop();
+        _logger.LogInformation("CleanUpPastTodos job finished: deleted {DeletedCount} todo(s) in {Elapsed}", deletedCount, stopwatch.Elapsed);
     }
 }
