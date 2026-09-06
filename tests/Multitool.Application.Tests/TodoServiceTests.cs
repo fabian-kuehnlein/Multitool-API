@@ -370,9 +370,9 @@ public class TodoServiceTests
         _repositoryMock.VerifyNoOtherCalls();
     }
 
-    // ToggleDoneAsync
+    // SetDoneAsync
     [Fact]
-    public async Task ToggleDoneAsync_WhenTodoIsFalse_SetsIsDoneToTrue()
+    public async Task SetDoneAsync_WhenIsDoneTrue_SetsIsDoneToTrue()
     {
         // Arrange
         var todo = TodoTestData.DefaultTodo;
@@ -382,7 +382,7 @@ public class TodoServiceTests
         var service = GetService();
 
         // Act
-        await service.ToggleDoneAsync(todo.Id);
+        await service.SetDoneAsync(todo.Id, true);
 
         // Assert
         AssertEx.AreEqual(_updatedTodo, new Todo
@@ -407,7 +407,7 @@ public class TodoServiceTests
     }
 
     [Fact]
-    public async Task ToggleDoneAsync_WhenTodoIsTrue_SetsIsDoneToFalse()
+    public async Task SetDoneAsync_WhenIsDoneFalse_SetsIsDoneToFalse()
     {
         // Arrange
         var todo = TodoTestData.DefaultTodo;
@@ -418,7 +418,7 @@ public class TodoServiceTests
         var service = GetService();
 
         // Act
-        await service.ToggleDoneAsync(todo.Id);
+        await service.SetDoneAsync(todo.Id, false);
 
         // Assert
         AssertEx.AreEqual(_updatedTodo, new Todo
@@ -442,14 +442,14 @@ public class TodoServiceTests
     }
 
     [Fact]
-    public async Task ToggleDoneAsync_WhenTodoDoesNotExist_ThrowsNotFoundException()
+    public async Task SetDoneAsync_WhenTodoDoesNotExist_ThrowsNotFoundException()
     {
         // Arrange
         _getByIdResponse = null;
         var service = GetService();
 
         // Act
-        Func<Task> act = async () => await service.ToggleDoneAsync(ID);
+        Func<Task> act = async () => await service.SetDoneAsync(ID, true);
 
         // Assert
         await AssertEx.Throws<NotFoundException>(act);

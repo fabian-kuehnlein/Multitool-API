@@ -41,7 +41,7 @@ public class TodoControllerTests
         _todoServiceMock.Setup(s => s.DeleteTodoAsync(It.IsAny<int>()))
             .Returns(Task.CompletedTask);
 
-        _todoServiceMock.Setup(s => s.ToggleDoneAsync(It.IsAny<int>()))
+        _todoServiceMock.Setup(s => s.SetDoneAsync(It.IsAny<int>(), It.IsAny<bool>()))
             .Returns(Task.CompletedTask);
 
         return new TodoController(_todoServiceMock.Object);
@@ -103,21 +103,21 @@ public class TodoControllerTests
         _todoServiceMock.VerifyNoOtherCalls();
     }
 
-    // PATCH api/Todo/{id}/toggle
+    // PATCH api/Todo/{id}/done
 
     [Fact]
-    public async Task ToggleTodo_WhenTodoExists_ReturnsNoContent()
+    public async Task SetDone_WhenTodoExists_ReturnsNoContent()
     {
         // Arrange
         var controller = GetController();
 
         // Act
-        var result = await controller.ToggleTodo(ID);
+        var result = await controller.SetDone(ID, true);
 
         // Assert
         AssertEx.NoContent(result);
 
-        _todoServiceMock.Verify(s => s.ToggleDoneAsync(ID), Times.Once);
+        _todoServiceMock.Verify(s => s.SetDoneAsync(ID, true), Times.Once);
         _todoServiceMock.VerifyNoOtherCalls();
     }
 

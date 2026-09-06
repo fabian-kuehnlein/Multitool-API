@@ -79,6 +79,18 @@ public class TodoRepositoryTests : RepositoryTestBase
         AssertEx.AreEqual(result!.Id, todo.Id);
     }
 
+    [Fact]
+    public async Task GetByIdAsync_WhenTodoDoesNotExist_ReturnsNull()
+    {
+        // Arrange
+
+        // Act
+        var result = await _todoRepository.GetByIdAsync(999);
+
+        // Assert
+        Assert.Null(result);
+    }
+
     // CreateTodoAsync
 
     [Fact]
@@ -134,5 +146,123 @@ public class TodoRepositoryTests : RepositoryTestBase
         // Assert
         var deletedTodo = await Context.Todos.FindAsync(todo.Id);
         Assert.Null(deletedTodo);
+    }
+
+    // GetTodosWithDueDateInRangeAsync
+
+    [Fact]
+    public async Task GetTodosWithDueDateInRangeAsync_WhenTodosInRange_ReturnsOnlyMatchingTodos()
+    {
+        // Arrange
+        var start = new DateTime(2026, 6, 10, 0, 0, 0, DateTimeKind.Utc);
+        var end = new DateTime(2026, 6, 12, 0, 0, 0, DateTimeKind.Utc);
+
+        var inside = CreateTodo("Inside");
+        inside.DueDate = new DateTime(2026, 6, 11, 12, 0, 0, DateTimeKind.Utc);
+        var before = CreateTodo("Before");
+        before.DueDate = new DateTime(2026, 6, 9, 12, 0, 0, DateTimeKind.Utc);
+        var after = CreateTodo("After");
+        after.DueDate = new DateTime(2026, 6, 13, 12, 0, 0, DateTimeKind.Utc);
+
+        Context.Todos.AddRange(inside, before, after);
+        await Context.SaveChangesAsync();
+
+        // Act
+        var result = await _todoRepository.GetTodosWithDueDateInRangeAsync(start, end);
+
+        // Assert
+        AssertEx.AreEqual(1, result.Count);
+        AssertEx.AreEqual("Inside", result[0].Title);
+    }
+
+    [Fact]
+    public async Task GetTodosWithDueDateInRangeAsync_WhenTodoHasNoDueDate_ExcludesTodo()
+    {
+        // Arrange
+        var start = new DateTime(2026, 6, 10, 0, 0, 0, DateTimeKind.Utc);
+        var end = new DateTime(2026, 6, 12, 0, 0, 0, DateTimeKind.Utc);
+
+        var noDueDate = CreateTodo("No Due Date");
+        noDueDate.DueDate = null;
+
+        Context.Todos.Add(noDueDate);
+        await Context.SaveChangesAsync();
+
+        // Act
+        var result = await _todoRepository.GetTodosWithDueDateInRangeAsync(start, end);
+
+        // Assert
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetTodosWithDueDateInRangeAsync_WhenTodoIsDone_ExcludesTodo()
+    {
+        // Arrange
+        var start = new DateTime(2026, 6, 10, 0, 0, 0, DateTimeKind.Utc);
+        var end = new DateTime(2026, 6, 12, 0, 0, 0, DateTimeKind.Utc);
+
+        var done = CreateTodo("Done", true);
+        done.DueDate = new DateTime(2026, 6, 11, 12, 0, 0, DateTimeKind.Utc);
+
+        Context.Todos.Add(done);
+        await Context.SaveChangesAsync();
+
+        // Act
+        var result = await _todoRepository.GetTodosWithDueDateInRangeAsync(start, end);
+
+        // Assert
+        Assert.Empty(result);
+    }
+
+    [Fact]
+    public async Task GetTodosWithDueDateInRangeAsync_WhenNoTodosMatch_ReturnsEmptyList()
+    {
+        // Arrange
+        var start = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        var end = new DateTime(2026, 1, 2, 0, 0, 0, DateTimeKind.Utc);
+
+        // Act
+        var result = await _todoRepository.GetTodosWithDueDateInRangeAsync(start, end);
+
+        // Assert
+        Assert.Empty(result);
+    }
+
+    // GetTodosOlderThanAsync
+
+    [Fact]
+    public async Task GetTodosOlderThanAsync_WhenTodosExist_ReturnsOnlyOlderTodos()
+    {
+        // Arrange
+        var cutoff = new DateTime(2026, 6, 11, 11, 0, 0, DateTimeKind.Utc);
+
+        var old = CreateTodo("Old");
+        old.CompletedDateTime = new DateTime(2026, 6, 11, 10, 0, 0, DateTimeKind.Utc);
+        var recent = CreateTodo("Recent");
+        recent.CompletedDateTime = new DateTime(2026, 6, 11, 12, 0, 0, DateTimeKind.Utc);
+
+        Context.Todos.AddRange(old, recent);
+        await Context.SaveChangesAsync();
+
+        // Act
+        var result = await _todoRepository.GetTodosOlderThanAsync(cutoff);
+
+        // Assert
+        AssertEx.AreEqual(1, result.Count);
+        AssertEx.AreEqual("Old", result[0].Title);
+    }
+
+    [Fact]
+    public async Task GetTodosOlderThanAsync_WhenNoTodosMatch_ReturnsEmptyList()
+    {
+        // Arrange
+        var cutoff = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        // Act
+        var result = await _todoRepository.GetTodosOlderThanAsync(cutoff);
+
+        // Assert
+        Assert.Empty(result);
     }
 }

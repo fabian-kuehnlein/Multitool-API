@@ -56,17 +56,17 @@ public class TodoController(ITodoService todoService) : ControllerBase
     }
 
     /// <summary>
-    /// Toggles the completion status of a todo.
+    /// Sets the completion status of a todo.
     /// </summary>
     [Authorize]
-    [HttpPatch("{id}/toggle")]
+    [HttpPatch("{id}/done")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> ToggleTodo(int id)
+    public async Task<IActionResult> SetDone(int id, [FromBody] bool isDone)
     {
-        await todoService.ToggleDoneAsync(id);
+        await todoService.SetDoneAsync(id, isDone);
         return NoContent();
     }
 
