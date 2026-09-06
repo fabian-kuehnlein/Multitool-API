@@ -51,7 +51,7 @@ public class TodoService(ITodoRepository todoRepository, ICategoryRepository cat
         await todoRepository.UpdateTodoAsync(existingTodo);
     }
 
-    public async Task ToggleDoneAsync(int id)
+    public async Task SetDoneAsync(int id, bool isDone)
     {
         var todo = await todoRepository.GetByIdAsync(id);
 
@@ -60,8 +60,8 @@ public class TodoService(ITodoRepository todoRepository, ICategoryRepository cat
             throw new NotFoundException($"Todo with ID {id} not found.");
         }
 
-        todo.IsDone = !todo.IsDone;
-        todo.CompletedDateTime = todo.IsDone ? DateTime.Now : null;
+        todo.IsDone = isDone;
+        todo.CompletedDateTime = isDone ? DateTime.Now : null;
 
         await todoRepository.UpdateTodoAsync(todo);
     }
