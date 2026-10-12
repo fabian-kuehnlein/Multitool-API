@@ -168,4 +168,37 @@ public class WorkDayRepositoryTests : RepositoryTestBase
         var dbWorkDay = await Context.WorkDays.AsNoTracking().FirstOrDefaultAsync(w => w.Id == workDay.Id);
         Assert.Null(dbWorkDay);
     }
+
+    // GetTotalOvertimeAsync
+
+    [Fact]
+    public async Task GetTotalOvertimeAsync_WhenWorkDaysExist_ReturnsSummedOvertime()
+    {
+        // Arrange
+        var start = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc);
+        var dayOne = CreateWorkDay(start);
+        dayOne.OvertimeMinutes = 30;
+        var dayTwo = CreateWorkDay(start.AddDays(1));
+        dayTwo.OvertimeMinutes = -15;
+        Context.WorkDays.AddRange(dayOne, dayTwo);
+        await Context.SaveChangesAsync();
+
+        // Act
+        var result = await _sut.GetTotalOvertimeAsync();
+
+        // Assert
+        AssertEx.AreEqual(15, result);
+    }
+
+    [Fact]
+    public async Task GetTotalOvertimeAsync_WhenNoWorkDaysExist_ReturnsZero()
+    {
+        // Arrange
+
+        // Act
+        var result = await _sut.GetTotalOvertimeAsync();
+
+        // Assert
+        AssertEx.AreEqual(0, result);
+    }
 }

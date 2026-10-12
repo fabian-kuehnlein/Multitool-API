@@ -17,14 +17,6 @@ public static class WorkTimePlannerTestData
         IsLocked = false
     };
 
-    public static WeekSummary DefaultWeekSummary => new()
-    {
-        Id = 1,
-        Year = 2026,
-        WeekNumber = 23,
-        TotalOvertime = 60
-    };
-
     public static WorkTimeSettings DefaultSettings => new()
     {
         Id = 1,
@@ -66,14 +58,6 @@ public static class WorkTimePlannerTestData
         DayStatus.Normal,
         false
     );
-
-    public static WeekSummaryDto DefaultWeekSummaryDto => new()
-    {
-        Id = 1,
-        Year = 2026,
-        WeekNumber = 23,
-        TotalOvertime = 60
-    };
 
     public static WorkTimeSettingsDto DefaultSettingsDto => new()
     {

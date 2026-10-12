@@ -10,8 +10,7 @@ public interface IWorkTimePlannerService
     Task UpdateWorkDayAsync(int id, UpdateWorkDayDto dto);
     Task DeleteWorkDayAsync(int id);
 
-    Task<WeekSummaryDto?> GetWeekSummaryAsync(int year, int weekNumber);
-    Task<WeekSummaryDto> SaveWeekSummaryAsync(int year, int weekNumber);
+    Task<int> GetTotalOvertimeAsync();
 
     Task<WorkTimeSettingsDto> GetSettingsAsync();
     Task UpdateSettingsAsync(UpdateWorkTimeSettingsDto dto);

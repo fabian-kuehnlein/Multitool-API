@@ -24,7 +24,6 @@ public class AppDbContext : DbContext
     public DbSet<Cell> CustomCells { get; set; }
 
     public DbSet<WorkDay> WorkDays { get; set; }
-    public DbSet<WeekSummary> WeekSummaries { get; set; }
     public DbSet<WorkTimeSettings> WorkTimeSettings { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -170,19 +169,6 @@ public class AppDbContext : DbContext
             e.Property(e => e.IsHomeOffice).HasColumnName("is_home_office").IsRequired();
             e.Property(e => e.Status).HasConversion<string>().HasColumnName("status").IsRequired();
             e.Property(e => e.IsLocked).HasColumnName("is_locked").IsRequired();
-        });
-
-        modelBuilder.Entity<WeekSummary>(e =>
-        {
-            e.ToTable("week_summaries", "worktime");
-            e.HasKey(e => e.Id);
-
-            e.Property(e => e.Id).HasColumnName("week_summary_id").ValueGeneratedOnAdd();
-            e.Property(e => e.Year).HasColumnName("year").IsRequired();
-            e.Property(e => e.WeekNumber).HasColumnName("week_number").IsRequired();
-            e.Property(e => e.TotalOvertime).HasColumnName("total_overtime").IsRequired();
-
-            e.HasIndex(e => new { e.Year, e.WeekNumber }).IsUnique().HasDatabaseName("ix_week_summaries_year_week");
         });
 
         modelBuilder.Entity<WorkTimeSettings>(e =>

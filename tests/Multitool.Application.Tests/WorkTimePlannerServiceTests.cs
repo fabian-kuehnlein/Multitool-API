@@ -1,4 +1,3 @@
-using System.Globalization;
 using Mapster;
 using Moq;
 using Multitool.Application.Mappings;
@@ -16,20 +15,18 @@ namespace Multitool.Application.Tests;
 public class WorkTimePlannerServiceTests
 {
     private readonly Mock<IWorkDayRepository> _workDayRepositoryMock;
-    private readonly Mock<IWeekSummaryRepository> _weekSummaryRepositoryMock;
     private readonly Mock<IWorkTimeSettingsRepository> _settingsRepositoryMock;
 
     private List<WorkDay> _getWorkDaysByRangeResponse;
     private WorkDay? _getWorkDayByIdResponse;
     private int _createWorkDayResponse;
-    private WeekSummary? _getWeekSummaryResponse;
+    private int _getTotalOvertimeResponse;
     private WorkTimeSettings? _getSettingsResponse;
 
     private static readonly int ID = WorkTimePlannerTestData.DefaultWorkDay.Id;
 
     private WorkDay? _createdWorkDay;
     private WorkDay? _deletedWorkDay;
-    private WeekSummary? _addedSummary;
     private WorkTimeSettings? _addedSettings;
 
     public WorkTimePlannerServiceTests()
@@ -37,13 +34,12 @@ public class WorkTimePlannerServiceTests
         TypeAdapterConfig.GlobalSettings.Apply(new MappingConfig());
 
         _workDayRepositoryMock = new Mock<IWorkDayRepository>();
-        _weekSummaryRepositoryMock = new Mock<IWeekSummaryRepository>();
         _settingsRepositoryMock = new Mock<IWorkTimeSettingsRepository>();
 
         _getWorkDaysByRangeResponse = new List<WorkDay>();
         _getWorkDayByIdResponse = WorkTimePlannerTestData.DefaultWorkDay;
         _createWorkDayResponse = ID;
-        _getWeekSummaryResponse = null;
+        _getTotalOvertimeResponse = 0;
         _getSettingsResponse = WorkTimePlannerTestData.DefaultSettings;
     }
 
@@ -51,11 +47,9 @@ public class WorkTimePlannerServiceTests
     {
         _createdWorkDay = null;
         _deletedWorkDay = null;
-        _addedSummary = null;
         _addedSettings = null;
 
         _workDayRepositoryMock.Reset();
-        _weekSummaryRepositoryMock.Reset();
         _settingsRepositoryMock.Reset();
 
         _workDayRepositoryMock.Setup(r => r.GetByDateRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
@@ -63,6 +57,9 @@ public class WorkTimePlannerServiceTests
 
         _workDayRepositoryMock.Setup(r => r.GetByIdAsync(It.IsAny<int>()))
             .ReturnsAsync(_getWorkDayByIdResponse);
+
+        _workDayRepositoryMock.Setup(r => r.GetTotalOvertimeAsync())
+            .ReturnsAsync(_getTotalOvertimeResponse);
 
         _workDayRepositoryMock.Setup(r => r.CreateWorkDayAsync(It.IsAny<WorkDay>()))
             .Callback<WorkDay>(w => _createdWorkDay = w)
@@ -73,16 +70,6 @@ public class WorkTimePlannerServiceTests
 
         _workDayRepositoryMock.Setup(r => r.DeleteWorkDayAsync(It.IsAny<WorkDay>()))
             .Callback<WorkDay>(w => _deletedWorkDay = w)
-            .Returns(Task.CompletedTask);
-
-        _weekSummaryRepositoryMock.Setup(r => r.GetByYearAndWeekAsync(It.IsAny<int>(), It.IsAny<int>()))
-            .ReturnsAsync(_getWeekSummaryResponse);
-
-        _weekSummaryRepositoryMock.Setup(r => r.AddAsync(It.IsAny<WeekSummary>()))
-            .Callback<WeekSummary>(s => _addedSummary = s)
-            .Returns(Task.CompletedTask);
-
-        _weekSummaryRepositoryMock.Setup(r => r.UpdateAsync(It.IsAny<WeekSummary>()))
             .Returns(Task.CompletedTask);
 
         _settingsRepositoryMock.Setup(r => r.GetAsync())
@@ -97,7 +84,6 @@ public class WorkTimePlannerServiceTests
 
         return new WorkTimePlannerService(
             _workDayRepositoryMock.Object,
-            _weekSummaryRepositoryMock.Object,
             _settingsRepositoryMock.Object);
     }
 
@@ -434,173 +420,38 @@ public class WorkTimePlannerServiceTests
         _workDayRepositoryMock.VerifyNoOtherCalls();
     }
 
-    // GetWeekSummaryAsync
+    // GetTotalOvertimeAsync
     [Fact]
-    public async Task GetWeekSummaryAsync_WhenSummaryExists_ReturnsSummary()
+    public async Task GetTotalOvertimeAsync_WhenWorkDaysExist_ReturnsSummedOvertime()
     {
         // Arrange
-        var summary = WorkTimePlannerTestData.DefaultWeekSummary;
-        _getWeekSummaryResponse = summary;
+        _getTotalOvertimeResponse = 75;
         var service = GetService();
 
         // Act
-        var result = await service.GetWeekSummaryAsync(2026, 23);
+        var result = await service.GetTotalOvertimeAsync();
 
         // Assert
-        AssertEx.AreEqual(result, summary.Adapt<WeekSummaryDto>());
+        AssertEx.AreEqual(75, result);
 
-        _weekSummaryRepositoryMock.Verify(r => r.GetByYearAndWeekAsync(2026, 23), Times.Once);
-        _weekSummaryRepositoryMock.VerifyNoOtherCalls();
-    }
-
-    [Fact]
-    public async Task GetWeekSummaryAsync_WhenSummaryDoesNotExist_ReturnsNull()
-    {
-        // Arrange
-        _getWeekSummaryResponse = null;
-        var service = GetService();
-
-        // Act
-        var result = await service.GetWeekSummaryAsync(2026, 23);
-
-        // Assert
-        AssertEx.AreEqual(null, result);
-
-        _weekSummaryRepositoryMock.Verify(r => r.GetByYearAndWeekAsync(2026, 23), Times.Once);
-        _weekSummaryRepositoryMock.VerifyNoOtherCalls();
-    }
-
-    // SaveWeekSummaryAsync
-    [Fact]
-    public async Task SaveWeekSummaryAsync_WhenNoExistingSummary_CreatesNewSummaryWithCumulativeOvertime()
-    {
-        // Arrange
-        var previousSummary = WorkTimePlannerTestData.DefaultWeekSummary;
-        previousSummary.Year = 2026;
-        previousSummary.WeekNumber = 22;
-        previousSummary.TotalOvertime = 60;
-
-        _getWeekSummaryResponse = null;
-        _getWorkDaysByRangeResponse = new List<WorkDay>
-        {
-            new() { Status = DayStatus.Normal, OvertimeMinutes = 30 },
-            new() { Status = DayStatus.Normal, OvertimeMinutes = -15 }
-        };
-        var service = GetService();
-        _weekSummaryRepositoryMock
-            .Setup(r => r.GetByYearAndWeekAsync(2026, 22))
-            .ReturnsAsync(previousSummary);
-
-        // Act
-        var result = await service.SaveWeekSummaryAsync(2026, 23);
-
-        // Assert
-        AssertEx.AreEqual(75, result.TotalOvertime); // 60 (previous) + 30 - 15 (this week)
-        AssertEx.AreEqual(_addedSummary, new WeekSummary
-        {
-            Year = 2026,
-            WeekNumber = 23,
-            TotalOvertime = 75
-        });
-
-        _weekSummaryRepositoryMock.Verify(r => r.GetByYearAndWeekAsync(2026, 23), Times.Once);
-        _weekSummaryRepositoryMock.Verify(r => r.GetByYearAndWeekAsync(2026, 22), Times.Once);
-        _weekSummaryRepositoryMock.Verify(r => r.AddAsync(It.Is<WeekSummary>(s =>
-            s.Year == 2026 &&
-            s.WeekNumber == 23 &&
-            s.TotalOvertime == 75
-        )), Times.Once);
-        _weekSummaryRepositoryMock.VerifyNoOtherCalls();
-
-        _workDayRepositoryMock.Verify(r => r.GetByDateRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()), Times.Once);
+        _workDayRepositoryMock.Verify(r => r.GetTotalOvertimeAsync(), Times.Once);
         _workDayRepositoryMock.VerifyNoOtherCalls();
     }
 
     [Fact]
-    public async Task SaveWeekSummaryAsync_WhenExistingSummaryExists_UpdatesInsteadOfCreating()
+    public async Task GetTotalOvertimeAsync_WhenNoWorkDaysExist_ReturnsZero()
     {
         // Arrange
-        var existing = WorkTimePlannerTestData.DefaultWeekSummary;
-        existing.Year = 2026;
-        existing.WeekNumber = 23;
-        existing.TotalOvertime = 0;
-
-        _getWeekSummaryResponse = existing;
-        _getWorkDaysByRangeResponse = new List<WorkDay>
-        {
-            new() { Status = DayStatus.Normal, OvertimeMinutes = 45 }
-        };
+        _getTotalOvertimeResponse = 0;
         var service = GetService();
 
         // Act
-        var result = await service.SaveWeekSummaryAsync(2026, 23);
+        var result = await service.GetTotalOvertimeAsync();
 
         // Assert
-        AssertEx.AreEqual(45, result.TotalOvertime);
-        AssertEx.AreEqual(45, existing.TotalOvertime);
+        AssertEx.AreEqual(0, result);
 
-        _weekSummaryRepositoryMock.Verify(r => r.GetByYearAndWeekAsync(2026, 23), Times.Once);
-        _weekSummaryRepositoryMock.Verify(r => r.GetByYearAndWeekAsync(2026, 22), Times.Once);
-        _weekSummaryRepositoryMock.Verify(r => r.UpdateAsync(It.Is<WeekSummary>(s =>
-            s.TotalOvertime == 45
-        )), Times.Once);
-        _weekSummaryRepositoryMock.Verify(r => r.AddAsync(It.IsAny<WeekSummary>()), Times.Never);
-        _weekSummaryRepositoryMock.VerifyNoOtherCalls();
-
-        _workDayRepositoryMock.Verify(r => r.GetByDateRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()), Times.Once);
-        _workDayRepositoryMock.VerifyNoOtherCalls();
-    }
-
-    [Fact]
-    public async Task SaveWeekSummaryAsync_WhenWeekIsFirstOfYear_UsesLastWeekOfPreviousYear()
-    {
-        // Arrange
-        _getWeekSummaryResponse = null;
-        _getWorkDaysByRangeResponse = new List<WorkDay>();
-        var service = GetService();
-
-        // Act
-        await service.SaveWeekSummaryAsync(2026, 1);
-
-        // Assert
-        _weekSummaryRepositoryMock.Verify(r => r.GetByYearAndWeekAsync(2026, 1), Times.Once);
-        _weekSummaryRepositoryMock.Verify(r => r.GetByYearAndWeekAsync(2025, It.IsAny<int>()), Times.Once);
-        _weekSummaryRepositoryMock.Verify(r => r.AddAsync(It.Is<WeekSummary>(s =>
-            s.Year == 2026 &&
-            s.WeekNumber == 1 &&
-            s.TotalOvertime == 0
-        )), Times.Once);
-        _weekSummaryRepositoryMock.VerifyNoOtherCalls();
-
-        _workDayRepositoryMock.Verify(r => r.GetByDateRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()), Times.Once);
-        _workDayRepositoryMock.VerifyNoOtherCalls();
-    }
-
-    [Fact]
-    public async Task SaveWeekSummaryAsync_WhenNoPreviousSummaryExists_StartsFromZero()
-    {
-        // Arrange
-        _getWeekSummaryResponse = null;
-        _getWorkDaysByRangeResponse = new List<WorkDay>
-        {
-            new() { Status = DayStatus.Normal, OvertimeMinutes = 30 }
-        };
-        var service = GetService();
-
-        // Act
-        var result = await service.SaveWeekSummaryAsync(2026, 23);
-
-        // Assert
-        AssertEx.AreEqual(30, result.TotalOvertime);
-
-        _weekSummaryRepositoryMock.Verify(r => r.GetByYearAndWeekAsync(2026, 23), Times.Once);
-        _weekSummaryRepositoryMock.Verify(r => r.GetByYearAndWeekAsync(2026, 22), Times.Once);
-        _weekSummaryRepositoryMock.Verify(r => r.AddAsync(It.Is<WeekSummary>(s =>
-            s.TotalOvertime == 30
-        )), Times.Once);
-        _weekSummaryRepositoryMock.VerifyNoOtherCalls();
-
-        _workDayRepositoryMock.Verify(r => r.GetByDateRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()), Times.Once);
+        _workDayRepositoryMock.Verify(r => r.GetTotalOvertimeAsync(), Times.Once);
         _workDayRepositoryMock.VerifyNoOtherCalls();
     }
 

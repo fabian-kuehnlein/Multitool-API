@@ -330,37 +330,6 @@ namespace Multitool.Infrastructure.Migrations
                     b.ToTable("todos", "public");
                 });
 
-            modelBuilder.Entity("Multitool.Domain.Entities.WorkTimePlanner.WeekSummary", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("week_summary_id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("TotalOvertime")
-                        .HasColumnType("integer")
-                        .HasColumnName("total_overtime");
-
-                    b.Property<int>("WeekNumber")
-                        .HasColumnType("integer")
-                        .HasColumnName("week_number");
-
-                    b.Property<int>("Year")
-                        .HasColumnType("integer")
-                        .HasColumnName("year");
-
-                    b.HasKey("Id")
-                        .HasName("pk_week_summaries");
-
-                    b.HasIndex("Year", "WeekNumber")
-                        .IsUnique()
-                        .HasDatabaseName("ix_week_summaries_year_week");
-
-                    b.ToTable("week_summaries", "worktime");
-                });
-
             modelBuilder.Entity("Multitool.Domain.Entities.WorkTimePlanner.WorkDay", b =>
                 {
                     b.Property<int>("Id")

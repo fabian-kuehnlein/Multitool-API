@@ -26,7 +26,6 @@ public static class Setup
         services.AddScoped<ITodoRepository, TodoRepository>();
 
         services.AddScoped<IWorkDayRepository, WorkDayRepository>();
-        services.AddScoped<IWeekSummaryRepository, WeekSummaryRepository>();
         services.AddScoped<IWorkTimeSettingsRepository, WorkTimeSettingsRepository>();
 
         services.AddDbContext<AppDbContext>(options =>
