@@ -69,31 +69,17 @@ public class WorkTimePlannerController(IWorkTimePlannerService service) : Contro
     }
 
     /// <summary>
-    /// Returns the week summary for a given year and week number.
+    /// Returns the current total overtime balance summed across all work days.
     /// </summary>
     [Authorize]
-    [HttpGet("weeksummary")]
+    [HttpGet("overtime-balance")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> GetWeekSummary([FromQuery] int year, [FromQuery] int weekNumber)
+    public async Task<IActionResult> GetTotalOvertime()
     {
-        var summary = await service.GetWeekSummaryAsync(year, weekNumber);
-        return Ok(summary);
-    }
-
-    /// <summary>
-    /// Calculates and saves the week summary for a given year and week number.
-    /// </summary>
-    [Authorize]
-    [HttpPost("weeksummary")]
-    [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> SaveWeekSummary([FromQuery] int year, [FromQuery] int weekNumber)
-    {
-        var summary = await service.SaveWeekSummaryAsync(year, weekNumber);
-        return Ok(summary);
+        var totalOvertime = await service.GetTotalOvertimeAsync();
+        return Ok(new { totalOvertime });
     }
 
     /// <summary>

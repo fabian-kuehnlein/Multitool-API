@@ -13,7 +13,7 @@ public class WorkTimePlannerControllerTests
 
     private List<WorkDayDto> _getWorkDaysResponse;
     private int _createWorkDayResponse;
-    private WeekSummaryDto _weekSummaryResponse;
+    private int _totalOvertimeResponse;
     private WorkTimeSettingsDto _settingsResponse;
     private int _homeOfficeDaysResponse;
 
@@ -26,7 +26,7 @@ public class WorkTimePlannerControllerTests
         // Default responses
         _getWorkDaysResponse = [WorkTimePlannerTestData.DefaultWorkDayDto];
         _createWorkDayResponse = WorkTimePlannerTestData.DefaultWorkDayDto.Id;
-        _weekSummaryResponse = WorkTimePlannerTestData.DefaultWeekSummaryDto;
+        _totalOvertimeResponse = 75;
         _settingsResponse = WorkTimePlannerTestData.DefaultSettingsDto;
         _homeOfficeDaysResponse = 12;
     }
@@ -47,11 +47,8 @@ public class WorkTimePlannerControllerTests
         _workTimePlannerServiceMock.Setup(s => s.DeleteWorkDayAsync(It.IsAny<int>()))
             .Returns(Task.CompletedTask);
 
-        _workTimePlannerServiceMock.Setup(s => s.GetWeekSummaryAsync(It.IsAny<int>(), It.IsAny<int>()))
-            .ReturnsAsync(_weekSummaryResponse);
-
-        _workTimePlannerServiceMock.Setup(s => s.SaveWeekSummaryAsync(It.IsAny<int>(), It.IsAny<int>()))
-            .ReturnsAsync(_weekSummaryResponse);
+        _workTimePlannerServiceMock.Setup(s => s.GetTotalOvertimeAsync())
+            .ReturnsAsync(_totalOvertimeResponse);
 
         _workTimePlannerServiceMock.Setup(s => s.GetSettingsAsync())
             .ReturnsAsync(_settingsResponse);
@@ -141,43 +138,21 @@ public class WorkTimePlannerControllerTests
         _workTimePlannerServiceMock.VerifyNoOtherCalls();
     }
 
-    // GET api/WorkTimePlanner/weeksummary
+    // GET api/WorkTimePlanner/overtime-balance
 
     [Fact]
-    public async Task GetWeekSummary_WhenSummaryExists_ReturnsOkWithSummary()
+    public async Task GetTotalOvertime_WhenCalled_ReturnsOkWithTotalOvertime()
     {
         // Arrange
-        const int year = 2026;
-        const int weekNumber = 23;
         var controller = GetController();
 
         // Act
-        var result = await controller.GetWeekSummary(year, weekNumber);
+        var result = await controller.GetTotalOvertime();
 
         // Assert
-        AssertEx.Ok(result, _weekSummaryResponse);
+        AssertEx.Ok(result, new { totalOvertime = _totalOvertimeResponse });
 
-        _workTimePlannerServiceMock.Verify(s => s.GetWeekSummaryAsync(year, weekNumber), Times.Once);
-        _workTimePlannerServiceMock.VerifyNoOtherCalls();
-    }
-
-    // POST api/WorkTimePlanner/weeksummary
-
-    [Fact]
-    public async Task SaveWeekSummary_WhenSummaryIsSaved_ReturnsOkWithSummary()
-    {
-        // Arrange
-        const int year = 2026;
-        const int weekNumber = 23;
-        var controller = GetController();
-
-        // Act
-        var result = await controller.SaveWeekSummary(year, weekNumber);
-
-        // Assert
-        AssertEx.Ok(result, _weekSummaryResponse);
-
-        _workTimePlannerServiceMock.Verify(s => s.SaveWeekSummaryAsync(year, weekNumber), Times.Once);
+        _workTimePlannerServiceMock.Verify(s => s.GetTotalOvertimeAsync(), Times.Once);
         _workTimePlannerServiceMock.VerifyNoOtherCalls();
     }
 

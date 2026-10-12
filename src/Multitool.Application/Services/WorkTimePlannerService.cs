@@ -1,4 +1,3 @@
-using System.Globalization;
 using Mapster;
 using Multitool.Application.Interfaces;
 using Multitool.Application.Models.WorkTimePlanner;
@@ -10,7 +9,6 @@ namespace Multitool.Application.Services;
 
 public class WorkTimePlannerService(
     IWorkDayRepository workDayRepository,
-    IWeekSummaryRepository weekSummaryRepository,
     IWorkTimeSettingsRepository settingsRepository) : IWorkTimePlannerService
 {
     public async Task<List<WorkDayDto>> GetWorkDaysAsync(DateTime startDate, DateTime endDate)
@@ -71,44 +69,9 @@ public class WorkTimePlannerService(
         await workDayRepository.DeleteWorkDayAsync(existing);
     }
 
-    public async Task<WeekSummaryDto?> GetWeekSummaryAsync(int year, int weekNumber)
+    public async Task<int> GetTotalOvertimeAsync()
     {
-        var summary = await weekSummaryRepository.GetByYearAndWeekAsync(year, weekNumber);
-        return summary?.Adapt<WeekSummaryDto>();
-    }
-
-    public async Task<WeekSummaryDto> SaveWeekSummaryAsync(int year, int weekNumber)
-    {
-        var existing = await weekSummaryRepository.GetByYearAndWeekAsync(year, weekNumber);
-
-        var (previousYear, previousWeek) = GetPreviousWeek(year, weekNumber);
-        var previousSummary = await weekSummaryRepository.GetByYearAndWeekAsync(previousYear, previousWeek);
-        var previousOvertime = previousSummary?.TotalOvertime ?? 0;
-
-        var weekStart = ISOWeek.ToDateTime(year, weekNumber, DayOfWeek.Monday);
-        var weekEnd = weekStart.AddDays(7);
-
-        var workDays = await workDayRepository.GetByDateRangeAsync(weekStart, weekEnd);
-        var weekOvertime = workDays.Sum(w => w.OvertimeMinutes);
-
-        var totalOvertime = previousOvertime + weekOvertime;
-
-        if (existing is not null)
-        {
-            existing.TotalOvertime = totalOvertime;
-            await weekSummaryRepository.UpdateAsync(existing);
-            return existing.Adapt<WeekSummaryDto>();
-        }
-
-        var summary = new WeekSummary
-        {
-            Year = year,
-            WeekNumber = weekNumber,
-            TotalOvertime = totalOvertime
-        };
-
-        await weekSummaryRepository.AddAsync(summary);
-        return summary.Adapt<WeekSummaryDto>();
+        return await workDayRepository.GetTotalOvertimeAsync();
     }
 
     public async Task<WorkTimeSettingsDto> GetSettingsAsync()
@@ -178,19 +141,5 @@ public class WorkTimePlannerService(
         var totalMinutes = (int)(workDay.EndTime.Value.ToTimeSpan() - workDay.StartTime.Value.ToTimeSpan()).TotalMinutes;
         workDay.WorkMinutes = Math.Max(0, totalMinutes - workDay.BreakMinutes);
         workDay.OvertimeMinutes = workDay.WorkMinutes - settings.DailyTargetMinutes;
-    }
-
-    private static (int Year, int WeekNumber) GetPreviousWeek(int year, int weekNumber)
-    {
-        if (weekNumber <= 1)
-            return (year - 1, GetTotalWeeksOfYear(year - 1));
-
-        return (year, weekNumber - 1);
-    }
-
-    private static int GetTotalWeeksOfYear(int year)
-    {
-        var dec28 = new DateTime(year, 12, 28);
-        return ISOWeek.GetWeekOfYear(dec28);
     }
 }
