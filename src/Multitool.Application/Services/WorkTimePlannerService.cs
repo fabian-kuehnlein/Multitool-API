@@ -38,7 +38,7 @@ public class WorkTimePlannerService(
         var existing = await workDayRepository.GetByIdAsync(id)
             ?? throw new NotFoundException($"WorkDay with ID {id} not found.");
 
-        if (existing.IsLocked)
+        if (existing.IsLocked && dto.IsLocked)
             throw new InvalidOperationException("Cannot modify a locked WorkDay.");
 
         var settings = await GetOrCreateSettingsAsync();

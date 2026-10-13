@@ -343,16 +343,17 @@ public class WorkTimePlannerServiceTests
     }
 
     [Fact]
-    public async Task UpdateWorkDayAsync_WhenWorkDayIsLocked_ThrowsInvalidOperationException()
+    public async Task UpdateWorkDayAsync_WhenWorkDayIsLockedAndStaysLocked_ThrowsInvalidOperationException()
     {
         // Arrange
         var locked = WorkTimePlannerTestData.DefaultWorkDay;
         locked.IsLocked = true;
+        var dto = WorkTimePlannerTestData.DefaultUpdateWorkDayDto with { IsLocked = true };
         _getWorkDayByIdResponse = locked;
         var service = GetService();
 
         // Act
-        Func<Task> act = async () => await service.UpdateWorkDayAsync(ID, WorkTimePlannerTestData.DefaultUpdateWorkDayDto);
+        Func<Task> act = async () => await service.UpdateWorkDayAsync(ID, dto);
 
         // Assert
         await AssertEx.Throws<InvalidOperationException>(act);
@@ -360,6 +361,33 @@ public class WorkTimePlannerServiceTests
         _workDayRepositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
         _workDayRepositoryMock.Verify(r => r.UpdateWorkDayAsync(It.IsAny<WorkDay>()), Times.Never);
         _workDayRepositoryMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task UpdateWorkDayAsync_WhenWorkDayIsLockedAndIsUnlocked_UpdatesAndUnlocksWorkDay()
+    {
+        // Arrange
+        var locked = WorkTimePlannerTestData.DefaultWorkDay;
+        locked.IsLocked = true;
+        var dto = WorkTimePlannerTestData.DefaultUpdateWorkDayDto with { IsLocked = false };
+        _getWorkDayByIdResponse = locked;
+        var service = GetService();
+
+        // Act
+        await service.UpdateWorkDayAsync(ID, dto);
+
+        // Assert
+        AssertEx.AreEqual(false, locked.IsLocked);
+
+        _workDayRepositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
+        _workDayRepositoryMock.Verify(r => r.UpdateWorkDayAsync(It.Is<WorkDay>(w =>
+            w.Id == ID &&
+            !w.IsLocked
+        )), Times.Once);
+        _workDayRepositoryMock.VerifyNoOtherCalls();
+
+        _settingsRepositoryMock.Verify(r => r.GetAsync(), Times.Once);
+        _settingsRepositoryMock.VerifyNoOtherCalls();
     }
 
     // DeleteWorkDayAsync
