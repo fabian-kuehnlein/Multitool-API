@@ -21,6 +21,11 @@ public class WorkDayRepository(AppDbContext db) : IWorkDayRepository
         return await db.WorkDays.FindAsync(id);
     }
 
+    public async Task<WorkDay?> GetWorkDayByDateAsync(DateTime date)
+    {
+        return await db.WorkDays.FirstOrDefaultAsync(w => w.Date == date);
+    }
+
     public async Task<int> GetTotalOvertimeAsync()
     {
         return await db.WorkDays.SumAsync(w => w.OvertimeMinutes);

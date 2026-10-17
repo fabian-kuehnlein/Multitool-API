@@ -18,7 +18,7 @@ namespace Multitool.Infrastructure.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("public")
-                .HasAnnotation("ProductVersion", "10.0.11")
+                .HasAnnotation("ProductVersion", "10.0.12")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -378,6 +378,10 @@ namespace Multitool.Infrastructure.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_work_days");
+
+                    b.HasIndex("Date")
+                        .IsUnique()
+                        .HasDatabaseName("ux_work_days_date");
 
                     b.ToTable("work_days", "worktime");
                 });

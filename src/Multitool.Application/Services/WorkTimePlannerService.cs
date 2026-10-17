@@ -17,54 +17,52 @@ public class WorkTimePlannerService(
         return workDays.Adapt<List<WorkDayDto>>();
     }
 
-    public async Task<WorkDayDto?> GetWorkDayByIdAsync(int id)
+    public async Task<int> UpsertWorkDayAsync(UpsertWorkDayDto dto)
     {
-        var workDay = await workDayRepository.GetByIdAsync(id);
-        return workDay?.Adapt<WorkDayDto>();
-    }
+        var existing = await workDayRepository.GetWorkDayByDateAsync(dto.Date);
 
-    public async Task<int> CreateWorkDayAsync(CreateWorkDayDto dto)
-    {
-        var workDay = dto.Adapt<WorkDay>();
-
-        var settings = await GetOrCreateSettingsAsync();
-        CalculateWorkDayAsync(workDay, settings);
-        
-        return await workDayRepository.CreateWorkDayAsync(workDay);
-    }
-
-    public async Task UpdateWorkDayAsync(int id, UpdateWorkDayDto dto)
-    {
-        var existing = await workDayRepository.GetByIdAsync(id)
-            ?? throw new NotFoundException($"WorkDay with ID {id} not found.");
-
-        if (existing.IsLocked && dto.IsLocked)
-            throw new InvalidOperationException("Cannot modify a locked WorkDay.");
+        if (existing is not null && existing.IsLocked)
+            throw new InvalidOperationException($"WorkDay for {dto.Date:yyyy-MM-dd} is locked. Unlock it before making changes.");
 
         var settings = await GetOrCreateSettingsAsync();
 
-        existing.Date = dto.Date;
+        if (existing is null)
+        {
+            var workDay = dto.Adapt<WorkDay>();
+            CalculateWorkDayAsync(workDay, settings);
+
+            return await workDayRepository.CreateWorkDayAsync(workDay);
+        }
+
         existing.StartTime = dto.StartTime;
         existing.EndTime = dto.EndTime;
         existing.BreakMinutes = dto.BreakMinutes;
         existing.IsHomeOffice = dto.IsHomeOffice;
         existing.Status = dto.Status;
-        existing.IsLocked = dto.IsLocked;
 
         CalculateWorkDayAsync(existing, settings);
+        await workDayRepository.UpdateWorkDayAsync(existing);
+
+        return existing.Id;
+    }
+
+    public async Task SetWorkDayLockedAsync(int id, bool isLocked)
+    {
+        var existing = await workDayRepository.GetByIdAsync(id)
+            ?? throw new NotFoundException($"WorkDay with ID {id} not found.");
+
+        existing.IsLocked = isLocked;
         
         await workDayRepository.UpdateWorkDayAsync(existing);
     }
 
     public async Task DeleteWorkDayAsync(int id)
     {
-        var existing = await workDayRepository.GetByIdAsync(id);
-        
-        if (existing == null)
-            throw new NotFoundException($"WorkDay with ID {id} not found.");
+        var existing = await workDayRepository.GetByIdAsync(id)
+            ?? throw new NotFoundException($"WorkDay with ID {id} not found.");
 
         if (existing.IsLocked)
-            throw new InvalidOperationException("Cannot modify a locked WorkDay.");
+            throw new InvalidOperationException($"WorkDay with ID {id} is locked. Unlock it before deleting.");
 
         await workDayRepository.DeleteWorkDayAsync(existing);
     }

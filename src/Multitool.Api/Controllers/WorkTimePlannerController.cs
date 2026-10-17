@@ -24,42 +24,43 @@ public class WorkTimePlannerController(IWorkTimePlannerService service) : Contro
     }
 
     /// <summary>
-    /// Creates a new work day.
+    /// Creates or updates the work day for the given date (upsert).
     /// </summary>
     [Authorize]
-    [HttpPost("workdays")]
-    [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> CreateWorkDay([FromBody] CreateWorkDayDto dto)
-    {
-        var id = await service.CreateWorkDayAsync(dto);
-        return StatusCode(StatusCodes.Status201Created, id);
-    }
-
-    /// <summary>
-    /// Updates an existing work day.
-    /// </summary>
-    [Authorize]
-    [HttpPut("workdays/{id}")]
+    [HttpPut("workdays")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> UpdateWorkDay([FromRoute] int id, [FromBody] UpdateWorkDayDto dto)
+    public async Task<IActionResult> UpsertWorkDay([FromBody] UpsertWorkDayDto dto)
     {
-        await service.UpdateWorkDayAsync(id, dto);
+        await service.UpsertWorkDayAsync(dto);
         return NoContent();
     }
 
     /// <summary>
-    /// Deletes a work day.
+    /// Locks or unlocks the work day with the given id.
+    /// </summary>
+    [Authorize]
+    [HttpPut("workdays/{id}/lock")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> SetWorkDayLock([FromRoute] int id, [FromBody] LockWorkDayDto dto)
+    {
+        await service.SetWorkDayLockedAsync(id, dto.IsLocked);
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Deletes the work day with the given id.
     /// </summary>
     [Authorize]
     [HttpDelete("workdays/{id}")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> DeleteWorkDay([FromRoute] int id)

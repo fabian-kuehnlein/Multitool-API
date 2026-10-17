@@ -40,7 +40,7 @@ public static class WorkTimePlannerTestData
         IsLocked = false
     };
 
-    public static CreateWorkDayDto DefaultCreateWorkDayDto => new(
+    public static UpsertWorkDayDto DefaultUpsertWorkDayDto => new(
         new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc),
         new TimeOnly(8, 0),
         new TimeOnly(16, 30),
@@ -49,15 +49,7 @@ public static class WorkTimePlannerTestData
         DayStatus.Normal
     );
 
-    public static UpdateWorkDayDto DefaultUpdateWorkDayDto => new(
-        new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc),
-        new TimeOnly(8, 0),
-        new TimeOnly(16, 30),
-        30,
-        false,
-        DayStatus.Normal,
-        false
-    );
+    public static LockWorkDayDto DefaultLockWorkDayDto => new(true);
 
     public static WorkTimeSettingsDto DefaultSettingsDto => new()
     {

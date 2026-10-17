@@ -169,6 +169,10 @@ public class AppDbContext : DbContext
             e.Property(e => e.IsHomeOffice).HasColumnName("is_home_office").IsRequired();
             e.Property(e => e.Status).HasConversion<string>().HasColumnName("status").IsRequired();
             e.Property(e => e.IsLocked).HasColumnName("is_locked").IsRequired();
+
+            // A work day is uniquely identified by its date; prevents duplicate
+            // entries (and therefore double-counted overtime) per day.
+            e.HasIndex(e => e.Date).IsUnique().HasDatabaseName("ux_work_days_date");
         });
 
         modelBuilder.Entity<WorkTimeSettings>(e =>
