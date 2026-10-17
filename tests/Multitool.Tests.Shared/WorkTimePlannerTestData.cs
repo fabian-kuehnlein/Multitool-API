@@ -17,15 +17,6 @@ public static class WorkTimePlannerTestData
         IsLocked = false
     };
 
-    public static WorkTimeSettings DefaultSettings => new()
-    {
-        Id = 1,
-        DailyTargetMinutes = 480,
-        BreakRule6h = 30,
-        BreakRule9h = 45,
-        HomeOfficeLimit = 20
-    };
-
     public static WorkDayDto DefaultWorkDayDto => new()
     {
         Id = 1,
@@ -50,15 +41,4 @@ public static class WorkTimePlannerTestData
     );
 
     public static LockWorkDayDto DefaultLockWorkDayDto => new(true);
-
-    public static WorkTimeSettingsDto DefaultSettingsDto => new()
-    {
-        Id = 1,
-        DailyTargetMinutes = 480,
-        BreakRule6h = 30,
-        BreakRule9h = 45,
-        HomeOfficeLimit = 20
-    };
-
-    public static UpdateWorkTimeSettingsDto DefaultUpdateSettingsDto => new(480, 30, 45, 20);
 }

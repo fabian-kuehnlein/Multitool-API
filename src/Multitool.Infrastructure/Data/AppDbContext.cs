@@ -4,6 +4,7 @@ using Multitool.Domain.Entities.Calendar;
 using Multitool.Domain.Entities.Category;
 using Multitool.Domain.Entities.Config;
 using Multitool.Domain.Entities.CustomTable;
+using Multitool.Domain.Entities.Settings;
 using Multitool.Domain.Entities.Todo;
 using Multitool.Domain.Entities.WorkTimePlanner;
 using Multitool.Domain.Enums;
@@ -24,7 +25,7 @@ public class AppDbContext : DbContext
     public DbSet<Cell> CustomCells { get; set; }
 
     public DbSet<WorkDay> WorkDays { get; set; }
-    public DbSet<WorkTimeSettings> WorkTimeSettings { get; set; }
+    public DbSet<Setting> Settings { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -175,16 +176,24 @@ public class AppDbContext : DbContext
             e.HasIndex(e => e.Date).IsUnique().HasDatabaseName("ux_work_days_date");
         });
 
-        modelBuilder.Entity<WorkTimeSettings>(e =>
+        modelBuilder.Entity<Setting>(e =>
         {
-            e.ToTable("work_time_settings", "worktime");
+            e.ToTable("settings");
             e.HasKey(e => e.Id);
 
-            e.Property(e => e.Id).HasColumnName("settings_id").ValueGeneratedOnAdd();
-            e.Property(e => e.DailyTargetMinutes).HasColumnName("daily_target_minutes").IsRequired();
-            e.Property(e => e.BreakRule6h).HasColumnName("break_rule_6h").IsRequired();
-            e.Property(e => e.BreakRule9h).HasColumnName("break_rule_9h").IsRequired();
-            e.Property(e => e.HomeOfficeLimit).HasColumnName("home_office_limit").IsRequired();
+            e.Property(e => e.Id).HasColumnName("setting_id").ValueGeneratedOnAdd();
+            e.Property(e => e.UserId).HasColumnName("user_id").IsRequired();
+            e.Property(e => e.Key).HasColumnName("key").HasMaxLength(100).IsRequired();
+            e.Property(e => e.Value).HasColumnName("value").HasMaxLength(500).IsRequired();
+            e.Property(e => e.UpdatedAt).HasColumnName("updated_at").IsRequired();
+
+            e.HasOne<User>()
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .HasConstraintName("fk_settings_user_id");
+
+            // A user can only store one value per setting key.
+            e.HasIndex(e => new { e.UserId, e.Key }).IsUnique().HasDatabaseName("ux_settings_user_key");
         });
 
         // ---------- GLOBAL SNAKE CASE ----------

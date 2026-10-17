@@ -13,10 +13,10 @@ public class WorkTimePlannerControllerTests
 
     private List<WorkDayDto> _getWorkDaysResponse;
     private int _totalOvertimeResponse;
-    private WorkTimeSettingsDto _settingsResponse;
     private int _homeOfficeDaysResponse;
 
     private static readonly int ID = WorkTimePlannerTestData.DefaultWorkDayDto.Id;
+    private static readonly int USER_ID = AuthTestData.DefaultUser.Id;
 
     public WorkTimePlannerControllerTests()
     {
@@ -25,7 +25,6 @@ public class WorkTimePlannerControllerTests
         // Default responses
         _getWorkDaysResponse = [WorkTimePlannerTestData.DefaultWorkDayDto];
         _totalOvertimeResponse = 75;
-        _settingsResponse = WorkTimePlannerTestData.DefaultSettingsDto;
         _homeOfficeDaysResponse = 12;
     }
 
@@ -36,7 +35,7 @@ public class WorkTimePlannerControllerTests
         _workTimePlannerServiceMock.Setup(s => s.GetWorkDaysAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
             .ReturnsAsync(_getWorkDaysResponse);
 
-        _workTimePlannerServiceMock.Setup(s => s.UpsertWorkDayAsync(It.IsAny<UpsertWorkDayDto>()))
+        _workTimePlannerServiceMock.Setup(s => s.UpsertWorkDayAsync(It.IsAny<int>(), It.IsAny<UpsertWorkDayDto>()))
             .ReturnsAsync(ID);
 
         _workTimePlannerServiceMock.Setup(s => s.SetWorkDayLockedAsync(It.IsAny<int>(), It.IsAny<bool>()))
@@ -48,16 +47,13 @@ public class WorkTimePlannerControllerTests
         _workTimePlannerServiceMock.Setup(s => s.GetTotalOvertimeAsync())
             .ReturnsAsync(_totalOvertimeResponse);
 
-        _workTimePlannerServiceMock.Setup(s => s.GetSettingsAsync())
-            .ReturnsAsync(_settingsResponse);
-
-        _workTimePlannerServiceMock.Setup(s => s.UpdateSettingsAsync(It.IsAny<UpdateWorkTimeSettingsDto>()))
-            .Returns(Task.CompletedTask);
-
         _workTimePlannerServiceMock.Setup(s => s.GetHomeOfficeDaysCountAsync(It.IsAny<int>(), It.IsAny<int>()))
             .ReturnsAsync(_homeOfficeDaysResponse);
 
-        return new WorkTimePlannerController(_workTimePlannerServiceMock.Object);
+        return new WorkTimePlannerController(_workTimePlannerServiceMock.Object)
+        {
+            ControllerContext = ControllerContextFactory.Create(USER_ID)
+        };
     }
 
     // GET api/WorkTimePlanner/workdays
@@ -95,7 +91,7 @@ public class WorkTimePlannerControllerTests
         // Assert
         AssertEx.NoContent(result);
 
-        _workTimePlannerServiceMock.Verify(s => s.UpsertWorkDayAsync(upsertWorkDay), Times.Once);
+        _workTimePlannerServiceMock.Verify(s => s.UpsertWorkDayAsync(USER_ID, upsertWorkDay), Times.Once);
         _workTimePlannerServiceMock.VerifyNoOtherCalls();
     }
 
@@ -151,43 +147,6 @@ public class WorkTimePlannerControllerTests
         AssertEx.Ok(result, new { totalOvertime = _totalOvertimeResponse });
 
         _workTimePlannerServiceMock.Verify(s => s.GetTotalOvertimeAsync(), Times.Once);
-        _workTimePlannerServiceMock.VerifyNoOtherCalls();
-    }
-
-    // GET api/WorkTimePlanner/settings
-
-    [Fact]
-    public async Task GetSettings_WhenSettingsExist_ReturnsOkWithSettings()
-    {
-        // Arrange
-        var controller = GetController();
-
-        // Act
-        var result = await controller.GetSettings();
-
-        // Assert
-        AssertEx.Ok(result, _settingsResponse);
-
-        _workTimePlannerServiceMock.Verify(s => s.GetSettingsAsync(), Times.Once);
-        _workTimePlannerServiceMock.VerifyNoOtherCalls();
-    }
-
-    // PUT api/WorkTimePlanner/settings
-
-    [Fact]
-    public async Task UpdateSettings_WhenSettingsExist_ReturnsNoContent()
-    {
-        // Arrange
-        var updateSettings = WorkTimePlannerTestData.DefaultUpdateSettingsDto;
-        var controller = GetController();
-
-        // Act
-        var result = await controller.UpdateSettings(updateSettings);
-
-        // Assert
-        AssertEx.NoContent(result);
-
-        _workTimePlannerServiceMock.Verify(s => s.UpdateSettingsAsync(updateSettings), Times.Once);
         _workTimePlannerServiceMock.VerifyNoOtherCalls();
     }
 

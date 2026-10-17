@@ -279,6 +279,45 @@ namespace Multitool.Infrastructure.Migrations
                     b.ToTable("tables", "custom");
                 });
 
+            modelBuilder.Entity("Multitool.Domain.Entities.Settings.Setting", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("setting_id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("key");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("value");
+
+                    b.HasKey("Id")
+                        .HasName("pk_settings");
+
+                    b.HasIndex("UserId", "Key")
+                        .IsUnique()
+                        .HasDatabaseName("ux_settings_user_key");
+
+                    b.ToTable("settings", "public");
+                });
+
             modelBuilder.Entity("Multitool.Domain.Entities.Todo.Todo", b =>
                 {
                     b.Property<int>("Id")
@@ -386,37 +425,6 @@ namespace Multitool.Infrastructure.Migrations
                     b.ToTable("work_days", "worktime");
                 });
 
-            modelBuilder.Entity("Multitool.Domain.Entities.WorkTimePlanner.WorkTimeSettings", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer")
-                        .HasColumnName("settings_id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("BreakRule6h")
-                        .HasColumnType("integer")
-                        .HasColumnName("break_rule_6h");
-
-                    b.Property<int>("BreakRule9h")
-                        .HasColumnType("integer")
-                        .HasColumnName("break_rule_9h");
-
-                    b.Property<int>("DailyTargetMinutes")
-                        .HasColumnType("integer")
-                        .HasColumnName("daily_target_minutes");
-
-                    b.Property<int>("HomeOfficeLimit")
-                        .HasColumnType("integer")
-                        .HasColumnName("home_office_limit");
-
-                    b.HasKey("Id")
-                        .HasName("pk_work_time_settings");
-
-                    b.ToTable("work_time_settings", "worktime");
-                });
-
             modelBuilder.Entity("Multitool.Domain.Entities.Calendar.CalendarEvent", b =>
                 {
                     b.HasOne("Multitool.Domain.Entities.Category.Category", null)
@@ -470,6 +478,16 @@ namespace Multitool.Infrastructure.Migrations
                         .HasConstraintName("fk_custom_rows_table_id");
 
                     b.Navigation("Table");
+                });
+
+            modelBuilder.Entity("Multitool.Domain.Entities.Settings.Setting", b =>
+                {
+                    b.HasOne("Multitool.Domain.Entities.Config.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_settings_user_id");
                 });
 
             modelBuilder.Entity("Multitool.Domain.Entities.Todo.Todo", b =>

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Multitool.Api.Extensions;
 using Multitool.Application.Interfaces;
 using Multitool.Application.Models.WorkTimePlanner;
 
@@ -34,7 +35,7 @@ public class WorkTimePlannerController(IWorkTimePlannerService service) : Contro
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> UpsertWorkDay([FromBody] UpsertWorkDayDto dto)
     {
-        await service.UpsertWorkDayAsync(dto);
+        await service.UpsertWorkDayAsync(User.GetUserId(), dto);
         return NoContent();
     }
 
@@ -81,35 +82,6 @@ public class WorkTimePlannerController(IWorkTimePlannerService service) : Contro
     {
         var totalOvertime = await service.GetTotalOvertimeAsync();
         return Ok(new { totalOvertime });
-    }
-
-    /// <summary>
-    /// Returns the current work time settings.
-    /// </summary>
-    [Authorize]
-    [HttpGet("settings")]
-    [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> GetSettings()
-    {
-        var settings = await service.GetSettingsAsync();
-        return Ok(settings);
-    }
-
-    /// <summary>
-    /// Updates the work time settings.
-    /// </summary>
-    [Authorize]
-    [HttpPut("settings")]
-    [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> UpdateSettings([FromBody] UpdateWorkTimeSettingsDto dto)
-    {
-        await service.UpdateSettingsAsync(dto);
-        return NoContent();
     }
 
     /// <summary>

@@ -9,7 +9,7 @@ namespace Multitool.Application.Services;
 
 public class WorkTimePlannerService(
     IWorkDayRepository workDayRepository,
-    IWorkTimeSettingsRepository settingsRepository) : IWorkTimePlannerService
+    ISettingsService settingsService) : IWorkTimePlannerService
 {
     public async Task<List<WorkDayDto>> GetWorkDaysAsync(DateTime startDate, DateTime endDate)
     {
@@ -17,19 +17,17 @@ public class WorkTimePlannerService(
         return workDays.Adapt<List<WorkDayDto>>();
     }
 
-    public async Task<int> UpsertWorkDayAsync(UpsertWorkDayDto dto)
+    public async Task<int> UpsertWorkDayAsync(int userId, UpsertWorkDayDto dto)
     {
         var existing = await workDayRepository.GetWorkDayByDateAsync(dto.Date);
 
         if (existing is not null && existing.IsLocked)
             throw new InvalidOperationException($"WorkDay for {dto.Date:yyyy-MM-dd} is locked. Unlock it before making changes.");
 
-        var settings = await GetOrCreateSettingsAsync();
-
         if (existing is null)
         {
             var workDay = dto.Adapt<WorkDay>();
-            CalculateWorkDayAsync(workDay, settings);
+            await CalculateWorkDayAsync(workDay, userId);
 
             return await workDayRepository.CreateWorkDayAsync(workDay);
         }
@@ -40,7 +38,7 @@ public class WorkTimePlannerService(
         existing.IsHomeOffice = dto.IsHomeOffice;
         existing.Status = dto.Status;
 
-        CalculateWorkDayAsync(existing, settings);
+        await CalculateWorkDayAsync(existing, userId);
         await workDayRepository.UpdateWorkDayAsync(existing);
 
         return existing.Id;
@@ -72,25 +70,6 @@ public class WorkTimePlannerService(
         return await workDayRepository.GetTotalOvertimeAsync();
     }
 
-    public async Task<WorkTimeSettingsDto> GetSettingsAsync()
-    {
-        var settings = await GetOrCreateSettingsAsync();
-        return settings.Adapt<WorkTimeSettingsDto>();
-    }
-
-    public async Task UpdateSettingsAsync(UpdateWorkTimeSettingsDto dto)
-    {
-        var existing = await settingsRepository.GetAsync()
-            ?? throw new NotFoundException("WorkTimeSettings not found.");
-
-        existing.DailyTargetMinutes = dto.DailyTargetMinutes;
-        existing.BreakRule6h = dto.BreakRule6h;
-        existing.BreakRule9h = dto.BreakRule9h;
-        existing.HomeOfficeLimit = dto.HomeOfficeLimit;
-
-        await settingsRepository.UpdateAsync(existing);
-    }
-
     public async Task<int> GetHomeOfficeDaysCountAsync(int year, int month)
     {
         var startDate = new DateTime(year, month, 1);
@@ -101,26 +80,7 @@ public class WorkTimePlannerService(
         return workDays.Count(w => w.IsHomeOffice);
     }
 
-    private async Task<WorkTimeSettings> GetOrCreateSettingsAsync()
-    {
-        var settings = await settingsRepository.GetAsync();
-
-        if (settings is null)
-        {
-            settings = new WorkTimeSettings
-            {
-                DailyTargetMinutes = 480,
-                BreakRule6h = 30,
-                BreakRule9h = 45,
-                HomeOfficeLimit = 20
-            };
-            await settingsRepository.AddAsync(settings);
-        }
-
-        return settings;
-    }
-
-    private static void CalculateWorkDayAsync(WorkDay workDay, WorkTimeSettings settings)
+    private async Task CalculateWorkDayAsync(WorkDay workDay, int userId)
     {
         if (workDay.Status == DayStatus.Holiday || workDay.Status == DayStatus.Vacation || workDay.Status == DayStatus.Sick)
         {
@@ -136,8 +96,10 @@ public class WorkTimePlannerService(
             return;
         }
 
+        var dailyTargetMinutes = (await settingsService.GetSettingsAsync(userId)).Worktime.DailyTargetMinutes;
+
         var totalMinutes = (int)(workDay.EndTime.Value.ToTimeSpan() - workDay.StartTime.Value.ToTimeSpan()).TotalMinutes;
         workDay.WorkMinutes = Math.Max(0, totalMinutes - workDay.BreakMinutes);
-        workDay.OvertimeMinutes = workDay.WorkMinutes - settings.DailyTargetMinutes;
+        workDay.OvertimeMinutes = workDay.WorkMinutes - dailyTargetMinutes;
     }
 }
