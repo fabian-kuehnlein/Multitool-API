@@ -26,7 +26,7 @@ public static class Setup
         services.AddScoped<ITodoRepository, TodoRepository>();
 
         services.AddScoped<IWorkDayRepository, WorkDayRepository>();
-        services.AddScoped<IWorkTimeSettingsRepository, WorkTimeSettingsRepository>();
+        services.AddScoped<ISettingRepository, SettingRepository>();
 
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(

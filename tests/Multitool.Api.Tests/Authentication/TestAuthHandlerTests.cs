@@ -1,10 +1,12 @@
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Moq;
 using Multitool.Api.Authentication;
+using Multitool.Api.Extensions;
 using Multitool.Tests.Shared.Assertions;
 
 namespace Multitool.Api.Tests.Authentication;
@@ -13,15 +15,19 @@ public class TestAuthHandlerTests
 {
     private const string SchemeName = TestAuthHandler.SchemeName;
 
-    private TestAuthHandler CreateHandler()
+    private TestAuthHandler CreateHandler(string? userId = null)
     {
         var optionsMonitorMock = new Mock<IOptionsMonitor<AuthenticationSchemeOptions>>();
         optionsMonitorMock.Setup(o => o.Get(SchemeName)).Returns(new AuthenticationSchemeOptions());
 
+        var configurationMock = new Mock<IConfiguration>();
+        configurationMock.Setup(c => c["TestAuth:UserId"]).Returns(userId);
+
         var handler = new TestAuthHandler(
             optionsMonitorMock.Object,
             NullLoggerFactory.Instance,
-            UrlEncoder.Default);
+            UrlEncoder.Default,
+            configurationMock.Object);
 
         var scheme = new AuthenticationScheme(SchemeName, SchemeName, typeof(TestAuthHandler));
         handler.InitializeAsync(scheme, new DefaultHttpContext()).GetAwaiter().GetResult();
@@ -58,5 +64,37 @@ public class TestAuthHandlerTests
         Assert.NotNull(principal);
         Assert.True(principal.Identity?.IsAuthenticated);
         AssertEx.AreEqual(SchemeName, principal.Identity?.AuthenticationType);
+    }
+
+    [Fact]
+    public async Task HandleAuthenticateAsync_WhenNoUserIdIsConfigured_ReturnsDefaultUserIdClaim()
+    {
+        // Arrange
+        var handler = CreateHandler();
+
+        // Act
+        var result = await handler.AuthenticateAsync();
+
+        // Assert
+        var principal = result.Principal;
+        Assert.NotNull(principal);
+        AssertEx.AreEqual(int.Parse(TestAuthHandler.DefaultUserId), principal!.GetUserId());
+    }
+
+    [Theory]
+    [InlineData("42")]
+    [InlineData("7")]
+    public async Task HandleAuthenticateAsync_WhenUserIdIsConfigured_ReturnsConfiguredUserIdClaim(string userId)
+    {
+        // Arrange
+        var handler = CreateHandler(userId);
+
+        // Act
+        var result = await handler.AuthenticateAsync();
+
+        // Assert
+        var principal = result.Principal;
+        Assert.NotNull(principal);
+        AssertEx.AreEqual(int.Parse(userId), principal!.GetUserId());
     }
 }

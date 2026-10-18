@@ -41,6 +41,27 @@ public class WorkDayRepositoryTests : RepositoryTestBase
         AssertEx.AreEqual(workDay.Date, dbWorkDay!.Date);
     }
 
+    [Fact]
+    public async Task CreateWorkDayAsync_WhenWorkDayForSameDateAlreadyExists_ThrowsDbUpdateException()
+    {
+        // Arrange
+        Context.WorkDays.Add(WorkTimePlannerTestData.DefaultWorkDay);
+        await Context.SaveChangesAsync();
+
+        var duplicate = CreateWorkDay(WorkTimePlannerTestData.DefaultWorkDay.Date);
+
+        // Act
+        Func<Task> act = async () => await _sut.CreateWorkDayAsync(duplicate);
+
+        // Assert
+        await AssertEx.Throws<DbUpdateException>(act);
+
+        var dbWorkDays = await Context.WorkDays.AsNoTracking()
+            .Where(w => w.Date == duplicate.Date)
+            .ToListAsync();
+        AssertEx.AreEqual(1, dbWorkDays.Count);
+    }
+
     // GetByIdAsync
 
     [Fact]
@@ -66,6 +87,36 @@ public class WorkDayRepositoryTests : RepositoryTestBase
 
         // Act
         var result = await _sut.GetByIdAsync(999);
+
+        // Assert
+        Assert.Null(result);
+    }
+
+    // GetWorkDayByDateAsync
+
+    [Fact]
+    public async Task GetWorkDayByDateAsync_WhenWorkDayExists_ReturnsWorkDay()
+    {
+        // Arrange
+        var workDay = WorkTimePlannerTestData.DefaultWorkDay;
+        Context.WorkDays.Add(workDay);
+        await Context.SaveChangesAsync();
+
+        // Act
+        var result = await _sut.GetWorkDayByDateAsync(workDay.Date);
+
+        // Assert
+        Assert.NotNull(result);
+        AssertEx.AreEqual(workDay.Id, result!.Id);
+    }
+
+    [Fact]
+    public async Task GetWorkDayByDateAsync_WhenWorkDayDoesNotExist_ReturnsNull()
+    {
+        // Arrange
+
+        // Act
+        var result = await _sut.GetWorkDayByDateAsync(new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc));
 
         // Assert
         Assert.Null(result);

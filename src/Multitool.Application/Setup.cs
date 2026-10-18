@@ -22,6 +22,7 @@ public static class Setup
         services.AddScoped<ICustomTableService, CustomTableService>();
         services.AddScoped<ITodoService, TodoService>();
         services.AddScoped<IWorkTimePlannerService, WorkTimePlannerService>();
+        services.AddScoped<ISettingsService, SettingsService>();
 
         return services;
     }

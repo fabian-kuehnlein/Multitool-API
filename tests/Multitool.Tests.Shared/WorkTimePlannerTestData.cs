@@ -17,15 +17,6 @@ public static class WorkTimePlannerTestData
         IsLocked = false
     };
 
-    public static WorkTimeSettings DefaultSettings => new()
-    {
-        Id = 1,
-        DailyTargetMinutes = 480,
-        BreakRule6h = 30,
-        BreakRule9h = 45,
-        HomeOfficeLimit = 20
-    };
-
     public static WorkDayDto DefaultWorkDayDto => new()
     {
         Id = 1,
@@ -40,7 +31,7 @@ public static class WorkTimePlannerTestData
         IsLocked = false
     };
 
-    public static CreateWorkDayDto DefaultCreateWorkDayDto => new(
+    public static UpsertWorkDayDto DefaultUpsertWorkDayDto => new(
         new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc),
         new TimeOnly(8, 0),
         new TimeOnly(16, 30),
@@ -49,24 +40,5 @@ public static class WorkTimePlannerTestData
         DayStatus.Normal
     );
 
-    public static UpdateWorkDayDto DefaultUpdateWorkDayDto => new(
-        new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc),
-        new TimeOnly(8, 0),
-        new TimeOnly(16, 30),
-        30,
-        false,
-        DayStatus.Normal,
-        false
-    );
-
-    public static WorkTimeSettingsDto DefaultSettingsDto => new()
-    {
-        Id = 1,
-        DailyTargetMinutes = 480,
-        BreakRule6h = 30,
-        BreakRule9h = 45,
-        HomeOfficeLimit = 20
-    };
-
-    public static UpdateWorkTimeSettingsDto DefaultUpdateSettingsDto => new(480, 30, 45, 20);
+    public static LockWorkDayDto DefaultLockWorkDayDto => new(true);
 }

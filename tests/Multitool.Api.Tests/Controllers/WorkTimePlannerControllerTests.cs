@@ -12,12 +12,11 @@ public class WorkTimePlannerControllerTests
     private readonly Mock<IWorkTimePlannerService> _workTimePlannerServiceMock;
 
     private List<WorkDayDto> _getWorkDaysResponse;
-    private int _createWorkDayResponse;
     private int _totalOvertimeResponse;
-    private WorkTimeSettingsDto _settingsResponse;
     private int _homeOfficeDaysResponse;
 
     private static readonly int ID = WorkTimePlannerTestData.DefaultWorkDayDto.Id;
+    private static readonly int USER_ID = AuthTestData.DefaultUser.Id;
 
     public WorkTimePlannerControllerTests()
     {
@@ -25,9 +24,7 @@ public class WorkTimePlannerControllerTests
 
         // Default responses
         _getWorkDaysResponse = [WorkTimePlannerTestData.DefaultWorkDayDto];
-        _createWorkDayResponse = WorkTimePlannerTestData.DefaultWorkDayDto.Id;
         _totalOvertimeResponse = 75;
-        _settingsResponse = WorkTimePlannerTestData.DefaultSettingsDto;
         _homeOfficeDaysResponse = 12;
     }
 
@@ -38,10 +35,10 @@ public class WorkTimePlannerControllerTests
         _workTimePlannerServiceMock.Setup(s => s.GetWorkDaysAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
             .ReturnsAsync(_getWorkDaysResponse);
 
-        _workTimePlannerServiceMock.Setup(s => s.CreateWorkDayAsync(It.IsAny<CreateWorkDayDto>()))
-            .ReturnsAsync(_createWorkDayResponse);
+        _workTimePlannerServiceMock.Setup(s => s.UpsertWorkDayAsync(It.IsAny<int>(), It.IsAny<UpsertWorkDayDto>()))
+            .ReturnsAsync(ID);
 
-        _workTimePlannerServiceMock.Setup(s => s.UpdateWorkDayAsync(It.IsAny<int>(), It.IsAny<UpdateWorkDayDto>()))
+        _workTimePlannerServiceMock.Setup(s => s.SetWorkDayLockedAsync(It.IsAny<int>(), It.IsAny<bool>()))
             .Returns(Task.CompletedTask);
 
         _workTimePlannerServiceMock.Setup(s => s.DeleteWorkDayAsync(It.IsAny<int>()))
@@ -50,16 +47,13 @@ public class WorkTimePlannerControllerTests
         _workTimePlannerServiceMock.Setup(s => s.GetTotalOvertimeAsync())
             .ReturnsAsync(_totalOvertimeResponse);
 
-        _workTimePlannerServiceMock.Setup(s => s.GetSettingsAsync())
-            .ReturnsAsync(_settingsResponse);
-
-        _workTimePlannerServiceMock.Setup(s => s.UpdateSettingsAsync(It.IsAny<UpdateWorkTimeSettingsDto>()))
-            .Returns(Task.CompletedTask);
-
         _workTimePlannerServiceMock.Setup(s => s.GetHomeOfficeDaysCountAsync(It.IsAny<int>(), It.IsAny<int>()))
             .ReturnsAsync(_homeOfficeDaysResponse);
 
-        return new WorkTimePlannerController(_workTimePlannerServiceMock.Object);
+        return new WorkTimePlannerController(_workTimePlannerServiceMock.Object)
+        {
+            ControllerContext = ControllerContextFactory.Create(USER_ID)
+        };
     }
 
     // GET api/WorkTimePlanner/workdays
@@ -82,41 +76,41 @@ public class WorkTimePlannerControllerTests
         _workTimePlannerServiceMock.VerifyNoOtherCalls();
     }
 
-    // POST api/WorkTimePlanner/workdays
+    // PUT api/WorkTimePlanner/workdays
 
     [Fact]
-    public async Task CreateWorkDay_WhenWorkDayIsValid_ReturnsCreatedWithId()
+    public async Task UpsertWorkDay_WhenWorkDayIsValid_ReturnsNoContent()
     {
         // Arrange
-        var newWorkDay = WorkTimePlannerTestData.DefaultCreateWorkDayDto;
+        var upsertWorkDay = WorkTimePlannerTestData.DefaultUpsertWorkDayDto;
         var controller = GetController();
 
         // Act
-        var result = await controller.CreateWorkDay(newWorkDay);
-
-        // Assert
-        AssertEx.Created(result, _createWorkDayResponse);
-
-        _workTimePlannerServiceMock.Verify(s => s.CreateWorkDayAsync(newWorkDay), Times.Once);
-        _workTimePlannerServiceMock.VerifyNoOtherCalls();
-    }
-
-    // PUT api/WorkTimePlanner/workdays/{id}
-
-    [Fact]
-    public async Task UpdateWorkDay_WhenWorkDayExists_ReturnsNoContent()
-    {
-        // Arrange
-        var updateWorkDay = WorkTimePlannerTestData.DefaultUpdateWorkDayDto;
-        var controller = GetController();
-
-        // Act
-        var result = await controller.UpdateWorkDay(ID, updateWorkDay);
+        var result = await controller.UpsertWorkDay(upsertWorkDay);
 
         // Assert
         AssertEx.NoContent(result);
 
-        _workTimePlannerServiceMock.Verify(s => s.UpdateWorkDayAsync(ID, updateWorkDay), Times.Once);
+        _workTimePlannerServiceMock.Verify(s => s.UpsertWorkDayAsync(USER_ID, upsertWorkDay), Times.Once);
+        _workTimePlannerServiceMock.VerifyNoOtherCalls();
+    }
+
+    // PUT api/WorkTimePlanner/workdays/{id}/lock
+
+    [Fact]
+    public async Task SetWorkDayLock_WhenWorkDayExists_ReturnsNoContent()
+    {
+        // Arrange
+        var lockWorkDay = WorkTimePlannerTestData.DefaultLockWorkDayDto;
+        var controller = GetController();
+
+        // Act
+        var result = await controller.SetWorkDayLock(ID, lockWorkDay);
+
+        // Assert
+        AssertEx.NoContent(result);
+
+        _workTimePlannerServiceMock.Verify(s => s.SetWorkDayLockedAsync(ID, lockWorkDay.IsLocked), Times.Once);
         _workTimePlannerServiceMock.VerifyNoOtherCalls();
     }
 
@@ -153,43 +147,6 @@ public class WorkTimePlannerControllerTests
         AssertEx.Ok(result, new { totalOvertime = _totalOvertimeResponse });
 
         _workTimePlannerServiceMock.Verify(s => s.GetTotalOvertimeAsync(), Times.Once);
-        _workTimePlannerServiceMock.VerifyNoOtherCalls();
-    }
-
-    // GET api/WorkTimePlanner/settings
-
-    [Fact]
-    public async Task GetSettings_WhenSettingsExist_ReturnsOkWithSettings()
-    {
-        // Arrange
-        var controller = GetController();
-
-        // Act
-        var result = await controller.GetSettings();
-
-        // Assert
-        AssertEx.Ok(result, _settingsResponse);
-
-        _workTimePlannerServiceMock.Verify(s => s.GetSettingsAsync(), Times.Once);
-        _workTimePlannerServiceMock.VerifyNoOtherCalls();
-    }
-
-    // PUT api/WorkTimePlanner/settings
-
-    [Fact]
-    public async Task UpdateSettings_WhenSettingsExist_ReturnsNoContent()
-    {
-        // Arrange
-        var updateSettings = WorkTimePlannerTestData.DefaultUpdateSettingsDto;
-        var controller = GetController();
-
-        // Act
-        var result = await controller.UpdateSettings(updateSettings);
-
-        // Assert
-        AssertEx.NoContent(result);
-
-        _workTimePlannerServiceMock.Verify(s => s.UpdateSettingsAsync(updateSettings), Times.Once);
         _workTimePlannerServiceMock.VerifyNoOtherCalls();
     }
 
