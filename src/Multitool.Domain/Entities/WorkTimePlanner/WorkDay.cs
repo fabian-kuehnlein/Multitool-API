@@ -1,8 +1,11 @@
+using Multitool.Domain.Interfaces;
+
 namespace Multitool.Domain.Entities.WorkTimePlanner;
 
-public class WorkDay
+public class WorkDay : IUserEntity
 {
     public int Id { get; set; }
+    public int UserId { get; set; }
     public DateTime Date { get; set; }
     public TimeOnly? StartTime { get; set; }
     public TimeOnly? EndTime { get; set; }

@@ -4,8 +4,10 @@ using System.Text.Json.Serialization;
 using Microsoft.OpenApi;
 using System.Threading.RateLimiting;
 using Multitool.Api.Exceptions;
+using Multitool.Api.Authentication;
 using Multitool.Api.Extensions;
 using Multitool.Application;
+using Multitool.Domain.Interfaces;
 using Multitool.Infrastructure;
 using Multitool.Api.BackgroundJobs;
 using Multitool.Api.Configuration;
@@ -29,6 +31,9 @@ public class Program
             .AddEnvironmentVariables();
 
         builder.Services.AddExceptionHandling();
+
+        builder.Services.AddHttpContextAccessor();
+        builder.Services.AddScoped<IUserContext, HttpUserContext>();
 
         var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 

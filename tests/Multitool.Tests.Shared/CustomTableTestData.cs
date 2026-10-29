@@ -10,6 +10,7 @@ public static class CustomTableTestData
     public static Table DefaultTable => new()
     {
         TableId = 1,
+        UserId = AuthTestData.DefaultUser.Id,
         Name = "Test Table",
         CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
     };

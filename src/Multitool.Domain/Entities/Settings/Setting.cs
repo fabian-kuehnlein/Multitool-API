@@ -1,3 +1,5 @@
+using Multitool.Domain.Interfaces;
+
 namespace Multitool.Domain.Entities.Settings;
 
 /// <summary>
@@ -5,7 +7,7 @@ namespace Multitool.Domain.Entities.Settings;
 /// The value is always persisted as a string and interpreted by the backend
 /// according to the registered setting definition.
 /// </summary>
-public class Setting
+public class Setting : IUserEntity
 {
     public int Id { get; set; }
     public int UserId { get; set; }

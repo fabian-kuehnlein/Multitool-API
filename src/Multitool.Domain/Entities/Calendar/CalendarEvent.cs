@@ -1,8 +1,11 @@
+using Multitool.Domain.Interfaces;
+
 namespace Multitool.Domain.Entities.Calendar;
 
-public class CalendarEvent
+public class CalendarEvent : IUserEntity
 {
     public int Id { get; set; }
+    public int UserId { get; set; }
     public required string Title { get; set; }
     public string? Note { get; set; }
     public required DateTime StartDateTime { get; set; }

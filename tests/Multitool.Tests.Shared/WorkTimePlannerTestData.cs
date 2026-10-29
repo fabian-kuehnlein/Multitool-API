@@ -8,6 +8,7 @@ public static class WorkTimePlannerTestData
     public static WorkDay DefaultWorkDay => new()
     {
         Id = 1,
+        UserId = AuthTestData.DefaultUser.Id,
         Date = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc),
         StartTime = new TimeOnly(8, 0),
         EndTime = new TimeOnly(16, 30),
