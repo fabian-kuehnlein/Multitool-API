@@ -275,7 +275,7 @@ public class CalendarRepositoryTests : RepositoryTestBase
         await Context.SaveChangesAsync();
 
         // Act
-        await _sut.DeleteEventAsync(ev.Id);
+        await _sut.DeleteEventAsync(ev);
 
         // Assert
         var dbEv = await Context.CalendarEvents.AsNoTracking().FirstOrDefaultAsync(e => e.Id == ev.Id);

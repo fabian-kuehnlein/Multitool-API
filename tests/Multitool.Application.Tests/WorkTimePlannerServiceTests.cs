@@ -77,7 +77,7 @@ public class WorkTimePlannerServiceTests
             .Callback<WorkDay>(w => _deletedWorkDay = w)
             .Returns(Task.CompletedTask);
 
-        _settingsServiceMock.Setup(s => s.GetSettingsAsync(It.IsAny<int>()))
+        _settingsServiceMock.Setup(s => s.GetSettingsAsync())
             .ReturnsAsync(_getSettingsResponse);
 
         return new WorkTimePlannerService(
@@ -113,7 +113,7 @@ public class WorkTimePlannerServiceTests
         var service = GetService();
 
         // Act
-        var result = await service.UpsertWorkDayAsync(USER_ID, dto);
+        var result = await service.UpsertWorkDayAsync(dto);
 
         // Assert
         AssertEx.AreEqual(result, ID);
@@ -134,7 +134,7 @@ public class WorkTimePlannerServiceTests
         _workDayRepositoryMock.Verify(r => r.UpdateWorkDayAsync(It.IsAny<WorkDay>()), Times.Never);
         _workDayRepositoryMock.VerifyNoOtherCalls();
 
-        _settingsServiceMock.Verify(s => s.GetSettingsAsync(USER_ID), Times.Once);
+        _settingsServiceMock.Verify(s => s.GetSettingsAsync(), Times.Once);
         _settingsServiceMock.VerifyNoOtherCalls();
     }
 
@@ -148,7 +148,7 @@ public class WorkTimePlannerServiceTests
         var service = GetService();
 
         // Act
-        var result = await service.UpsertWorkDayAsync(USER_ID, dto);
+        var result = await service.UpsertWorkDayAsync(dto);
 
         // Assert
         AssertEx.AreEqual(result, ID);
@@ -172,7 +172,7 @@ public class WorkTimePlannerServiceTests
         )), Times.Once);
         _workDayRepositoryMock.VerifyNoOtherCalls();
 
-        _settingsServiceMock.Verify(s => s.GetSettingsAsync(USER_ID), Times.Once);
+        _settingsServiceMock.Verify(s => s.GetSettingsAsync(), Times.Once);
         _settingsServiceMock.VerifyNoOtherCalls();
     }
 
@@ -187,7 +187,7 @@ public class WorkTimePlannerServiceTests
         var service = GetService();
 
         // Act
-        var result = await service.UpsertWorkDayAsync(USER_ID, dto);
+        var result = await service.UpsertWorkDayAsync(dto);
 
         // Assert
         AssertEx.AreEqual(result, ID);
@@ -201,7 +201,7 @@ public class WorkTimePlannerServiceTests
         )), Times.Once);
         _workDayRepositoryMock.VerifyNoOtherCalls();
 
-        _settingsServiceMock.Verify(s => s.GetSettingsAsync(It.IsAny<int>()), Times.Never);
+        _settingsServiceMock.Verify(s => s.GetSettingsAsync(), Times.Never);
         _settingsServiceMock.VerifyNoOtherCalls();
     }
 
@@ -213,7 +213,7 @@ public class WorkTimePlannerServiceTests
         var service = GetService();
 
         // Act
-        var result = await service.UpsertWorkDayAsync(USER_ID, dto);
+        var result = await service.UpsertWorkDayAsync(dto);
 
         // Assert
         AssertEx.AreEqual(result, ID);
@@ -227,7 +227,7 @@ public class WorkTimePlannerServiceTests
         )), Times.Once);
         _workDayRepositoryMock.VerifyNoOtherCalls();
 
-        _settingsServiceMock.Verify(s => s.GetSettingsAsync(It.IsAny<int>()), Times.Never);
+        _settingsServiceMock.Verify(s => s.GetSettingsAsync(), Times.Never);
         _settingsServiceMock.VerifyNoOtherCalls();
     }
 
@@ -240,7 +240,7 @@ public class WorkTimePlannerServiceTests
         var service = GetService();
 
         // Act
-        var result = await service.UpsertWorkDayAsync(USER_ID, dto);
+        var result = await service.UpsertWorkDayAsync(dto);
 
         // Assert
         AssertEx.AreEqual(result, ID);
@@ -254,7 +254,7 @@ public class WorkTimePlannerServiceTests
         )), Times.Once);
         _workDayRepositoryMock.VerifyNoOtherCalls();
 
-        _settingsServiceMock.Verify(s => s.GetSettingsAsync(USER_ID), Times.Once);
+        _settingsServiceMock.Verify(s => s.GetSettingsAsync(), Times.Once);
         _settingsServiceMock.VerifyNoOtherCalls();
     }
 
@@ -268,7 +268,7 @@ public class WorkTimePlannerServiceTests
         var service = GetService();
 
         // Act
-        Func<Task> act = async () => await service.UpsertWorkDayAsync(USER_ID, WorkTimePlannerTestData.DefaultUpsertWorkDayDto);
+        Func<Task> act = async () => await service.UpsertWorkDayAsync(WorkTimePlannerTestData.DefaultUpsertWorkDayDto);
 
         // Assert
         await AssertEx.Throws<InvalidOperationException>(act);
@@ -278,7 +278,7 @@ public class WorkTimePlannerServiceTests
         _workDayRepositoryMock.Verify(r => r.UpdateWorkDayAsync(It.IsAny<WorkDay>()), Times.Never);
         _workDayRepositoryMock.VerifyNoOtherCalls();
 
-        _settingsServiceMock.Verify(s => s.GetSettingsAsync(It.IsAny<int>()), Times.Never);
+        _settingsServiceMock.Verify(s => s.GetSettingsAsync(), Times.Never);
         _settingsServiceMock.VerifyNoOtherCalls();
     }
 

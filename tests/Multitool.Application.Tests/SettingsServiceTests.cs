@@ -14,8 +14,9 @@ namespace Multitool.Application.Tests;
 public class SettingsServiceTests
 {
     private readonly Mock<ISettingRepository> _settingRepositoryMock;
+    private readonly Mock<IUserContext> _userContextMock;
 
-    private List<Setting> _getSettingsByUserResponse;
+    private List<Setting> _getSettingsResponse;
     private Setting? _getSettingByKeyResponse;
 
     private static readonly int USER_ID = AuthTestData.DefaultUser.Id;
@@ -30,8 +31,10 @@ public class SettingsServiceTests
         TypeAdapterConfig.GlobalSettings.Apply(new MappingConfig());
 
         _settingRepositoryMock = new Mock<ISettingRepository>();
+        _userContextMock = new Mock<IUserContext>();
+        _userContextMock.SetupGet(c => c.UserId).Returns(USER_ID);
 
-        _getSettingsByUserResponse = new List<Setting>();
+        _getSettingsResponse = new List<Setting>();
         _getSettingByKeyResponse = null;
     }
 
@@ -42,10 +45,10 @@ public class SettingsServiceTests
 
         _settingRepositoryMock.Reset();
 
-        _settingRepositoryMock.Setup(r => r.GetSettingsByUserAsync(It.IsAny<int>()))
-            .ReturnsAsync(_getSettingsByUserResponse);
+        _settingRepositoryMock.Setup(r => r.GetSettingsAsync())
+            .ReturnsAsync(_getSettingsResponse);
 
-        _settingRepositoryMock.Setup(r => r.GetSettingByKeyAsync(It.IsAny<int>(), It.IsAny<string>()))
+        _settingRepositoryMock.Setup(r => r.GetSettingByKeyAsync(It.IsAny<string>()))
             .ReturnsAsync(_getSettingByKeyResponse);
 
         _settingRepositoryMock.Setup(r => r.CreateSettingAsync(It.IsAny<Setting>()))
@@ -56,7 +59,7 @@ public class SettingsServiceTests
             .Callback<Setting>(s => _updatedSetting = s)
             .Returns(Task.CompletedTask);
 
-        return new SettingsService(_settingRepositoryMock.Object);
+        return new SettingsService(_settingRepositoryMock.Object, _userContextMock.Object);
     }
 
     private static Setting CreateStoredSetting(string key, string value) => new()
@@ -72,7 +75,7 @@ public class SettingsServiceTests
     public async Task GetSettingsAsync_WhenAllKeysAreStored_ReturnsStoredValuesWithoutCreating()
     {
         // Arrange
-        _getSettingsByUserResponse =
+        _getSettingsResponse =
         [
             CreateStoredSetting(SettingTestData.DailyTargetMinutesFullKey, "500"),
             CreateStoredSetting(SettingTestData.HomeOfficeLimitMonthlyFullKey, "10"),
@@ -81,12 +84,12 @@ public class SettingsServiceTests
         var service = GetService();
 
         // Act
-        var result = await service.GetSettingsAsync(USER_ID);
+        var result = await service.GetSettingsAsync();
 
         // Assert
         AssertEx.AreEqual(result, new SettingsDto(new WorktimeSettingsDto(500, 10, 2)));
 
-        _settingRepositoryMock.Verify(r => r.GetSettingsByUserAsync(USER_ID), Times.Once);
+        _settingRepositoryMock.Verify(r => r.GetSettingsAsync(), Times.Once);
         _settingRepositoryMock.Verify(r => r.CreateSettingAsync(It.IsAny<Setting>()), Times.Never);
         _settingRepositoryMock.VerifyNoOtherCalls();
     }
@@ -98,12 +101,12 @@ public class SettingsServiceTests
         var service = GetService();
 
         // Act
-        var result = await service.GetSettingsAsync(USER_ID);
+        var result = await service.GetSettingsAsync();
 
         // Assert
         AssertEx.AreEqual(result, SettingTestData.DefaultSettingsDto);
 
-        _settingRepositoryMock.Verify(r => r.GetSettingsByUserAsync(USER_ID), Times.Once);
+        _settingRepositoryMock.Verify(r => r.GetSettingsAsync(), Times.Once);
         _settingRepositoryMock.Verify(r => r.CreateSettingAsync(It.Is<Setting>(s =>
             s.UserId == USER_ID &&
             s.Key == SettingTestData.DailyTargetMinutesFullKey &&
@@ -126,16 +129,16 @@ public class SettingsServiceTests
     public async Task GetSettingsAsync_WhenSomeKeysAreStored_CreatesOnlyMissingKeys()
     {
         // Arrange
-        _getSettingsByUserResponse = [CreateStoredSetting(SettingTestData.DailyTargetMinutesFullKey, "500")];
+        _getSettingsResponse = [CreateStoredSetting(SettingTestData.DailyTargetMinutesFullKey, "500")];
         var service = GetService();
 
         // Act
-        var result = await service.GetSettingsAsync(USER_ID);
+        var result = await service.GetSettingsAsync();
 
         // Assert
         AssertEx.AreEqual(result, new SettingsDto(new WorktimeSettingsDto(500, 0, 0)));
 
-        _settingRepositoryMock.Verify(r => r.GetSettingsByUserAsync(USER_ID), Times.Once);
+        _settingRepositoryMock.Verify(r => r.GetSettingsAsync(), Times.Once);
         _settingRepositoryMock.Verify(r => r.CreateSettingAsync(It.Is<Setting>(s =>
             s.Key == SettingTestData.DailyTargetMinutesFullKey
         )), Times.Never);
@@ -163,13 +166,13 @@ public class SettingsServiceTests
         var service = GetService();
 
         // Act
-        await service.UpdateSettingAsync(USER_ID, MODULE, KEY, dto);
+        await service.UpdateSettingAsync(MODULE, KEY, dto);
 
         // Assert
         AssertEx.AreEqual(dto.Value, _updatedSetting!.Value);
         AssertEx.CloseTo(_updatedSetting.UpdatedAt, DateTime.Now, TimeSpan.FromSeconds(5));
 
-        _settingRepositoryMock.Verify(r => r.GetSettingByKeyAsync(USER_ID, SettingTestData.DailyTargetMinutesFullKey), Times.Once);
+        _settingRepositoryMock.Verify(r => r.GetSettingByKeyAsync(SettingTestData.DailyTargetMinutesFullKey), Times.Once);
         _settingRepositoryMock.Verify(r => r.UpdateSettingAsync(It.Is<Setting>(s =>
             s.UserId == USER_ID &&
             s.Key == SettingTestData.DailyTargetMinutesFullKey &&
@@ -187,7 +190,7 @@ public class SettingsServiceTests
         var service = GetService();
 
         // Act
-        await service.UpdateSettingAsync(USER_ID, MODULE, KEY, dto);
+        await service.UpdateSettingAsync(MODULE, KEY, dto);
 
         // Assert
         AssertEx.AreEqual(_createdSetting, new Setting
@@ -199,7 +202,7 @@ public class SettingsServiceTests
         });
         AssertEx.CloseTo(_createdSetting.UpdatedAt, DateTime.Now, TimeSpan.FromSeconds(5));
 
-        _settingRepositoryMock.Verify(r => r.GetSettingByKeyAsync(USER_ID, SettingTestData.DailyTargetMinutesFullKey), Times.Once);
+        _settingRepositoryMock.Verify(r => r.GetSettingByKeyAsync(SettingTestData.DailyTargetMinutesFullKey), Times.Once);
         _settingRepositoryMock.Verify(r => r.CreateSettingAsync(It.Is<Setting>(s =>
             s.UserId == USER_ID &&
             s.Key == SettingTestData.DailyTargetMinutesFullKey &&
@@ -219,7 +222,7 @@ public class SettingsServiceTests
         var service = GetService();
 
         // Act
-        Func<Task> act = async () => await service.UpdateSettingAsync(USER_ID, module, key, dto);
+        Func<Task> act = async () => await service.UpdateSettingAsync(module, key, dto);
 
         // Assert
         await AssertEx.Throws<NotFoundException>(act);
@@ -239,7 +242,7 @@ public class SettingsServiceTests
         var service = GetService();
 
         // Act
-        Func<Task> act = async () => await service.UpdateSettingAsync(USER_ID, MODULE, KEY, dto);
+        Func<Task> act = async () => await service.UpdateSettingAsync(MODULE, KEY, dto);
 
         // Assert
         await AssertEx.Throws<ArgumentException>(act);

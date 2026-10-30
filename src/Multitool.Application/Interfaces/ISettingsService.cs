@@ -4,6 +4,6 @@ namespace Multitool.Application.Interfaces;
 
 public interface ISettingsService
 {
-    Task<SettingsDto> GetSettingsAsync(int userId);
-    Task UpdateSettingAsync(int userId, string module, string key, UpdateSettingDto dto);
+    Task<SettingsDto> GetSettingsAsync();
+    Task UpdateSettingAsync(string module, string key, UpdateSettingDto dto);
 }

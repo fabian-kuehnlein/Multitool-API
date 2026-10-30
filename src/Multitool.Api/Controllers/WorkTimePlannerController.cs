@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Multitool.Api.Extensions;
 using Multitool.Application.Interfaces;
 using Multitool.Application.Models.WorkTimePlanner;
 
@@ -35,7 +34,7 @@ public class WorkTimePlannerController(IWorkTimePlannerService service) : Contro
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> UpsertWorkDay([FromBody] UpsertWorkDayDto dto)
     {
-        await service.UpsertWorkDayAsync(User.GetUserId(), dto);
+        await service.UpsertWorkDayAsync(dto);
         return NoContent();
     }
 

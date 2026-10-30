@@ -88,7 +88,7 @@ public class CalendarService(
         if (exists == null)
             throw new NotFoundException($"Event with Id {id} not found");
 
-        await calendarRepository.DeleteEventAsync(id);
+        await calendarRepository.DeleteEventAsync(exists);
     }
 
     public async Task<List<HolidayDto>> GetHolidaysAsync(string year)
@@ -146,7 +146,7 @@ public class CalendarService(
 
                 if (dateToCheck < threshold)
                 {
-                    await calendarRepository.DeleteEventAsync(e.Id);
+                    await calendarRepository.DeleteEventAsync(e);
                     deletedCount++;
                 }
 
@@ -158,7 +158,7 @@ public class CalendarService(
 
             if (e.RecurrenceEnd < threshold)
             {
-                await calendarRepository.DeleteEventAsync(e.Id);
+                await calendarRepository.DeleteEventAsync(e);
                 deletedCount++;
             }
         }

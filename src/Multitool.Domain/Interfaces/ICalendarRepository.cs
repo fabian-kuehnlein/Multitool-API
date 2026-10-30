@@ -9,6 +9,6 @@ public interface ICalendarRepository
     Task<List<CalendarEvent>> SearchCalendarEventsAsync(string searchString);
     Task<long> CreateEventAsync(CalendarEvent createEvent);
     Task UpdateEventAsync(CalendarEvent updateEvent);
-    Task DeleteEventAsync(int Id);
+    Task DeleteEventAsync(CalendarEvent entity);
     Task<List<CalendarEvent>> GetEventsOlderThanAsync(DateTime date);
 }

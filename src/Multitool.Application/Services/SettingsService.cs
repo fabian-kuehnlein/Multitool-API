@@ -8,15 +8,17 @@ using Multitool.Domain.Interfaces;
 
 namespace Multitool.Application.Services;
 
-public class SettingsService(ISettingRepository settingRepository) : ISettingsService
+public class SettingsService(ISettingRepository settingRepository, IUserContext userContext) : ISettingsService
 {
     /// <summary>
     /// Returns the complete settings object for the user. Every defined key that is not
     /// stored yet is created lazily with its default value (per key).
     /// </summary>
-    public async Task<SettingsDto> GetSettingsAsync(int userId)
+    public async Task<SettingsDto> GetSettingsAsync()
     {
-        var storedSettings = await settingRepository.GetSettingsByUserAsync(userId);
+        var userId = userContext.UserId;
+
+        var storedSettings = await settingRepository.GetSettingsAsync();
         var valuesByFullKey = storedSettings.ToDictionary(s => s.Key, s => s.Value);
 
         foreach (var definition in SettingDefinitions.All)
@@ -40,14 +42,16 @@ public class SettingsService(ISettingRepository settingRepository) : ISettingsSe
     /// <summary>
     /// Validates and stores a single setting value for the user.
     /// </summary>
-    public async Task UpdateSettingAsync(int userId, string module, string key, UpdateSettingDto dto)
+    public async Task UpdateSettingAsync(string module, string key, UpdateSettingDto dto)
     {
+        var userId = userContext.UserId;
+
         var definition = SettingDefinitions.TryGet(module, key)
             ?? throw new NotFoundException($"Setting '{module}_{key}' does not exist.");
 
         var value = ValidateValue(definition, dto.Value);
 
-        var existingSetting = await settingRepository.GetSettingByKeyAsync(userId, definition.FullKey);
+        var existingSetting = await settingRepository.GetSettingByKeyAsync(definition.FullKey);
 
         if (existingSetting is null)
         {

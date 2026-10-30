@@ -13,7 +13,6 @@ public class SettingsControllerTests
 
     private SettingsDto _getSettingsResponse;
 
-    private static readonly int USER_ID = AuthTestData.DefaultUser.Id;
     private static readonly string MODULE = SettingTestData.WorktimeModule;
     private static readonly string KEY = SettingTestData.DailyTargetMinutesKey;
 
@@ -29,16 +28,13 @@ public class SettingsControllerTests
     {
         _settingsServiceMock.Reset();
 
-        _settingsServiceMock.Setup(s => s.GetSettingsAsync(It.IsAny<int>()))
+        _settingsServiceMock.Setup(s => s.GetSettingsAsync())
             .ReturnsAsync(_getSettingsResponse);
 
-        _settingsServiceMock.Setup(s => s.UpdateSettingAsync(It.IsAny<int>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<UpdateSettingDto>()))
+        _settingsServiceMock.Setup(s => s.UpdateSettingAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<UpdateSettingDto>()))
             .Returns(Task.CompletedTask);
 
-        return new SettingsController(_settingsServiceMock.Object)
-        {
-            ControllerContext = ControllerContextFactory.Create(USER_ID)
-        };
+        return new SettingsController(_settingsServiceMock.Object);
     }
 
     // GET api/Settings
@@ -55,7 +51,7 @@ public class SettingsControllerTests
         // Assert
         AssertEx.Ok(result, _getSettingsResponse);
 
-        _settingsServiceMock.Verify(s => s.GetSettingsAsync(USER_ID), Times.Once);
+        _settingsServiceMock.Verify(s => s.GetSettingsAsync(), Times.Once);
         _settingsServiceMock.VerifyNoOtherCalls();
     }
 
@@ -74,7 +70,7 @@ public class SettingsControllerTests
         // Assert
         AssertEx.NoContent(result);
 
-        _settingsServiceMock.Verify(s => s.UpdateSettingAsync(USER_ID, MODULE, KEY, updateSetting), Times.Once);
+        _settingsServiceMock.Verify(s => s.UpdateSettingAsync(MODULE, KEY, updateSetting), Times.Once);
         _settingsServiceMock.VerifyNoOtherCalls();
     }
 }

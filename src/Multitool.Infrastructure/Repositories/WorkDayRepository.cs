@@ -18,7 +18,7 @@ public class WorkDayRepository(AppDbContext db) : IWorkDayRepository
 
     public async Task<WorkDay?> GetByIdAsync(int id)
     {
-        return await db.WorkDays.FindAsync(id);
+        return await db.WorkDays.FirstOrDefaultAsync(w => w.Id == id);
     }
 
     public async Task<WorkDay?> GetWorkDayByDateAsync(DateTime date)

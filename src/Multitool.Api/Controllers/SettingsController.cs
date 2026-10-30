@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Multitool.Api.Extensions;
 using Multitool.Application.Interfaces;
 using Multitool.Application.Models.Settings;
 
@@ -21,7 +20,7 @@ public class SettingsController(ISettingsService service) : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetSettings()
     {
-        var settings = await service.GetSettingsAsync(User.GetUserId());
+        var settings = await service.GetSettingsAsync();
         return Ok(settings);
     }
 
@@ -37,7 +36,7 @@ public class SettingsController(ISettingsService service) : ControllerBase
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> UpdateSetting([FromRoute] string module, [FromRoute] string key, [FromBody] UpdateSettingDto dto)
     {
-        await service.UpdateSettingAsync(User.GetUserId(), module, key, dto);
+        await service.UpdateSettingAsync(module, key, dto);
         return NoContent();
     }
 }

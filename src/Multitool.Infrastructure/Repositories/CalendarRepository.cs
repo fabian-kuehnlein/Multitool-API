@@ -67,16 +67,17 @@ public class CalendarRepository(AppDbContext db) : ICalendarRepository
         await db.SaveChangesAsync();
     }
 
-    public async Task DeleteEventAsync(int Id)
+    public async Task DeleteEventAsync(CalendarEvent entity)
     {
-        await db.CalendarEvents
-            .Where(e => e.Id == Id)
-            .ExecuteDeleteAsync();
+        db.CalendarEvents.Remove(entity);
+        await db.SaveChangesAsync();
     }
 
+    // Maintenance query of the cleanup cron job: intentionally spans all users.
     public Task<List<CalendarEvent>> GetEventsOlderThanAsync(DateTime date)
     {
         return db.CalendarEvents
+            .IgnoreQueryFilters()
             .Where(e =>
                 // Non-recurring events that ended before the threshold
                 (string.IsNullOrWhiteSpace(e.RecurrenceRule) &&

@@ -21,7 +21,7 @@ public class TodoRepository(AppDbContext db) : ITodoRepository
 
     public async Task<Todo?> GetByIdAsync(int id)
     {
-        return await db.Todos.FindAsync(id);
+        return await db.Todos.FirstOrDefaultAsync(t => t.Id == id);
     }
 
     public async Task<int> CreateTodoAsync(Todo todo)
@@ -52,8 +52,10 @@ public class TodoRepository(AppDbContext db) : ITodoRepository
                         t.IsDone == false)
             .ToListAsync();
 
+    // Maintenance query of the cleanup cron job: intentionally spans all users.
     public async Task<List<Todo>> GetTodosOlderThanAsync(DateTime date)
         => await db.Todos
+            .IgnoreQueryFilters()
             .Where(t => t.CompletedDateTime < date)
             .ToListAsync();
 }
