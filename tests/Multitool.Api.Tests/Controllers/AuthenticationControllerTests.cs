@@ -26,33 +26,10 @@ public class AuthControllerTests
     {
         _authenticationServiceMock.Reset();
 
-        _authenticationServiceMock.Setup(s => s.RegisterAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
-            .Returns(Task.CompletedTask);
-
         _authenticationServiceMock.Setup(s => s.LoginAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(_loginResponse);
 
         return new AuthController(_authenticationServiceMock.Object);
-    }
-
-    // POST api/Auth/register
-
-    [Fact]
-    public async Task Register_WhenRequestIsValid_ReturnsOk()
-    {
-        // Arrange
-        var request = AuthTestData.DefaultRegisterRequest;
-        var adminKey = AuthTestData.ValidAdminKey;
-        var controller = GetController();
-
-        // Act
-        var result = await controller.Register(request, adminKey);
-
-        // Assert
-        AssertEx.Ok(result, "User created");
-
-        _authenticationServiceMock.Verify(s => s.RegisterAsync(request.Username, request.Password, adminKey), Times.Once);
-        _authenticationServiceMock.VerifyNoOtherCalls();
     }
 
     // POST api/Auth/login

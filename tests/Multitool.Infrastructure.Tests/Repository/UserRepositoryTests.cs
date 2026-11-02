@@ -14,17 +14,17 @@ public class UserRepositoryTests : RepositoryTestBase
         _sut = new UserRepository(Context);
     }
 
-    // AddAsync
+    // CreateUserAsync
 
     [Fact]
-    public async Task AddAsync_WhenUserIsValid_AddsUserToDatabase()
+    public async Task CreateUserAsync_WhenUserIsValid_AddsUserToDatabase()
     {
         // Arrange
         var user = AuthTestData.DefaultUser;
         user.Username = "test";
 
         // Act
-        await _sut.AddAsync(user);
+        await _sut.CreateUserAsync(user);
 
         // Assert
         var dbUser = await Context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Username == "test");
@@ -32,10 +32,10 @@ public class UserRepositoryTests : RepositoryTestBase
         AssertEx.AreEqual(user.PasswordHash, dbUser!.PasswordHash);
     }
 
-    // GetByUsernameAsync
+    // GetUserByUsernameAsync
 
     [Fact]
-    public async Task GetByUsernameAsync_WhenUserExists_ReturnsUser()
+    public async Task GetUserByUsernameAsync_WhenUserExists_ReturnsUser()
     {
         // Arrange
         var user = AuthTestData.DefaultUser;
@@ -44,7 +44,7 @@ public class UserRepositoryTests : RepositoryTestBase
         await Context.SaveChangesAsync();
 
         // Act
-        var result = await _sut.GetByUsernameAsync("findme");
+        var result = await _sut.GetUserByUsernameAsync("findme");
 
         // Assert
         Assert.NotNull(result);
@@ -52,19 +52,19 @@ public class UserRepositoryTests : RepositoryTestBase
     }
 
     [Fact]
-    public async Task GetByUsernameAsync_WhenUserDoesNotExist_ReturnsNull()
+    public async Task GetUserByUsernameAsync_WhenUserDoesNotExist_ReturnsNull()
     {
         // Arrange
 
         // Act
-        var result = await _sut.GetByUsernameAsync("nobody");
+        var result = await _sut.GetUserByUsernameAsync("nobody");
 
         // Assert
         Assert.Null(result);
     }
 
     [Fact]
-    public async Task GetByUsernameAsync_WhenMultipleUsersExist_ReturnsCorrectUser()
+    public async Task GetUserByUsernameAsync_WhenMultipleUsersExist_ReturnsCorrectUser()
     {
         // Arrange
         var user1 = AuthTestData.DefaultUser;
@@ -75,17 +75,17 @@ public class UserRepositoryTests : RepositoryTestBase
         await Context.SaveChangesAsync();
 
         // Act
-        var result = await _sut.GetByUsernameAsync("bob");
+        var result = await _sut.GetUserByUsernameAsync("bob");
 
         // Assert
         Assert.NotNull(result);
         AssertEx.AreEqual("bob", result!.Username);
     }
 
-    // UpdateAsync
+    // UpdateUserAsync
 
     [Fact]
-    public async Task UpdateAsync_WhenUserExists_UpdatesUsername()
+    public async Task UpdateUserAsync_WhenUserExists_UpdatesUsername()
     {
         // Arrange
         var user = AuthTestData.DefaultUser;
@@ -96,7 +96,7 @@ public class UserRepositoryTests : RepositoryTestBase
         user.Username = "newname";
 
         // Act
-        await _sut.UpdateAsync(user);
+        await _sut.UpdateUserAsync(user);
 
         // Assert
         var dbUser = await Context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == user.Id);
@@ -105,7 +105,7 @@ public class UserRepositoryTests : RepositoryTestBase
     }
 
     [Fact]
-    public async Task UpdateAsync_WhenUserExists_UpdatesPasswordHash()
+    public async Task UpdateUserAsync_WhenUserExists_UpdatesPasswordHash()
     {
         // Arrange
         var user = AuthTestData.DefaultUser;
@@ -116,7 +116,7 @@ public class UserRepositoryTests : RepositoryTestBase
         user.PasswordHash = "new-hash";
 
         // Act
-        await _sut.UpdateAsync(user);
+        await _sut.UpdateUserAsync(user);
 
         // Assert
         var dbUser = await Context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == user.Id);
@@ -125,7 +125,7 @@ public class UserRepositoryTests : RepositoryTestBase
     }
 
     [Fact]
-    public async Task UpdateAsync_WhenUserExists_UpdatesLockoutEnd()
+    public async Task UpdateUserAsync_WhenUserExists_UpdatesLockoutEnd()
     {
         // Arrange
         var user = AuthTestData.DefaultUser;
@@ -137,7 +137,7 @@ public class UserRepositoryTests : RepositoryTestBase
         user.LockoutEnd = lockout;
 
         // Act
-        await _sut.UpdateAsync(user);
+        await _sut.UpdateUserAsync(user);
 
         // Assert
         var dbUser = await Context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == user.Id);
@@ -146,7 +146,7 @@ public class UserRepositoryTests : RepositoryTestBase
     }
 
     [Fact]
-    public async Task UpdateAsync_WhenUserExists_IncrementsAccessFailedCount()
+    public async Task UpdateUserAsync_WhenUserExists_IncrementsAccessFailedCount()
     {
         // Arrange
         var user = AuthTestData.DefaultUser;
@@ -157,7 +157,7 @@ public class UserRepositoryTests : RepositoryTestBase
         user.AccessFailedCount = 3;
 
         // Act
-        await _sut.UpdateAsync(user);
+        await _sut.UpdateUserAsync(user);
 
         // Assert
         var dbUser = await Context.Users.AsNoTracking().FirstOrDefaultAsync(u => u.Id == user.Id);

@@ -1,11 +1,13 @@
 using Mapster;
-using Multitool.Domain.Entities.Todo;
 using Multitool.Domain.Entities.Calendar;
+using Multitool.Domain.Entities.Config;
+using Multitool.Domain.Entities.Todo;
 using Multitool.Domain.Entities.CustomTable;
 using Multitool.Application.Models;
 using Multitool.Application.Models.CustomTable;
 using Multitool.Application.Models.Calendar;
 using Multitool.Application.Models.Info;
+using Multitool.Application.Models.User;
 
 namespace Multitool.Application.Mappings;
 
@@ -39,6 +41,12 @@ public class MappingConfig : IRegister
         config.NewConfig<CreateTableDto, Table>()
             .Map(dest => dest.CreatedAt, src => DateTime.Now)
             .Map(dest => dest.Columns, src => new List<Column> { src.Column.Adapt<Column>() });
+
+        // -----------------------------------------------------------------
+
+        config.NewConfig<CreateUserDto, User>()
+            .Map(dest => dest.IsActive, src => true)
+            .Map(dest => dest.CreatedAt, src => DateTime.Now);
     }
 
     private static object? CellValue(Cell cell) =>

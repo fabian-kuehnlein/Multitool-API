@@ -4,7 +4,9 @@ namespace Multitool.Domain.Interfaces;
 
 public interface IUserRepository
 {
-    Task<User?> GetByUsernameAsync(string username);
-    Task AddAsync(User user);
-    Task UpdateAsync(User user);
+    Task<User?> GetUserByIdAsync(int id);
+    Task<User?> GetUserByUsernameAsync(string username);
+    Task<List<User>> GetUsersAsync();
+    Task<int> CreateUserAsync(User user);
+    Task UpdateUserAsync(User user);
 }

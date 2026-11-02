@@ -13,13 +13,15 @@ public sealed class TestAuthHandler(
 {
     public const string SchemeName = "Test";
     public const string DefaultUserId = "1";
+    public const string DefaultRole = "Admin";
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, configuration["TestAuth:UserId"] ?? DefaultUserId),
-            new Claim(ClaimTypes.Name, "test-user")
+            new Claim(ClaimTypes.Name, "test-user"),
+            new Claim(ClaimTypes.Role, configuration["TestAuth:Role"] ?? DefaultRole)
         };
 
         var principal = new ClaimsPrincipal(new ClaimsIdentity(claims, SchemeName));

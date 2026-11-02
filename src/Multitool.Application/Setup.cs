@@ -16,6 +16,7 @@ public static class Setup
         services.AddMapster();
 
         services.AddScoped<IAuthenticationService, AuthenticationService>();
+        services.AddScoped<IUserService, UserService>();
 
         services.AddScoped<ICalendarService, CalendarService>();
         services.AddScoped<ICategoryService, CategoryService>();
