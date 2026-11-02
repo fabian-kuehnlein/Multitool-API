@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
@@ -15,13 +16,14 @@ public class TestAuthHandlerTests
 {
     private const string SchemeName = TestAuthHandler.SchemeName;
 
-    private TestAuthHandler CreateHandler(string? userId = null)
+    private TestAuthHandler CreateHandler(string? userId = null, string? role = null)
     {
         var optionsMonitorMock = new Mock<IOptionsMonitor<AuthenticationSchemeOptions>>();
         optionsMonitorMock.Setup(o => o.Get(SchemeName)).Returns(new AuthenticationSchemeOptions());
 
         var configurationMock = new Mock<IConfiguration>();
         configurationMock.Setup(c => c["TestAuth:UserId"]).Returns(userId);
+        configurationMock.Setup(c => c["TestAuth:Role"]).Returns(role);
 
         var handler = new TestAuthHandler(
             optionsMonitorMock.Object,
@@ -96,5 +98,37 @@ public class TestAuthHandlerTests
         var principal = result.Principal;
         Assert.NotNull(principal);
         AssertEx.AreEqual(int.Parse(userId), principal!.GetUserId());
+    }
+
+    [Fact]
+    public async Task HandleAuthenticateAsync_WhenNoRoleIsConfigured_ReturnsDefaultAdminRoleClaim()
+    {
+        // Arrange
+        var handler = CreateHandler();
+
+        // Act
+        var result = await handler.AuthenticateAsync();
+
+        // Assert
+        var principal = result.Principal;
+        Assert.NotNull(principal);
+        AssertEx.AreEqual(TestAuthHandler.DefaultRole, principal!.FindFirst(ClaimTypes.Role)?.Value);
+    }
+
+    [Theory]
+    [InlineData("User")]
+    [InlineData("Admin")]
+    public async Task HandleAuthenticateAsync_WhenRoleIsConfigured_ReturnsConfiguredRoleClaim(string role)
+    {
+        // Arrange
+        var handler = CreateHandler(role: role);
+
+        // Act
+        var result = await handler.AuthenticateAsync();
+
+        // Assert
+        var principal = result.Principal;
+        Assert.NotNull(principal);
+        AssertEx.AreEqual(role, principal!.FindFirst(ClaimTypes.Role)?.Value);
     }
 }

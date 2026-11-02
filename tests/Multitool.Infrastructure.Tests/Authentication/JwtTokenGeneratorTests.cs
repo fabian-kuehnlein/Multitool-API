@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Multitool.Domain.Entities.Config;
+using Multitool.Domain.Enums;
 using Multitool.Domain.Exceptions;
 using Multitool.Infrastructure.Authentication;
 using System.IdentityModel.Tokens.Jwt;
@@ -52,6 +53,23 @@ public class JwtTokenGeneratorTests
         var jwtToken = new JwtSecurityTokenHandler().ReadJwtToken(token);
         jwtToken.Claims.Should().Contain(c => c.Type == ClaimTypes.NameIdentifier && c.Value == "42");
         jwtToken.Claims.Should().Contain(c => c.Type == ClaimTypes.Name && c.Value == "testuser");
+    }
+
+    [Theory]
+    [InlineData(UserRole.User)]
+    [InlineData(UserRole.Admin)]
+    public void GenerateToken_WhenConfigIsValid_IncludesRoleClaim(UserRole role)
+    {
+        // Arrange
+        var sut = new JwtTokenGenerator(BuildConfig(ValidSettings));
+        var user = new User { Id = 1, Username = "testuser", Role = role };
+
+        // Act
+        var token = sut.GenerateToken(user);
+
+        // Assert
+        var jwtToken = new JwtSecurityTokenHandler().ReadJwtToken(token);
+        jwtToken.Claims.Should().Contain(c => c.Type == ClaimTypes.Role && c.Value == role.ToString());
     }
 
     [Fact]

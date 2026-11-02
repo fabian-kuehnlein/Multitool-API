@@ -35,6 +35,11 @@ public static class AssertEx
         where TException : Exception
         => ServiceAssertions.ThrowsAsync<TException>(action);
 
+    /// <inheritdoc cref="ServiceAssertions.ThrowsAsync{TException}(Func{Task}, string)" />
+    public static Task Throws<TException>(Func<Task> action, string expectedMessagePart)
+        where TException : Exception
+        => ServiceAssertions.ThrowsAsync<TException>(action, expectedMessagePart);
+
     /// <inheritdoc cref="ServiceAssertions.AreEqual{T}(T, T)" />
     public static void AreEqual<T>(T expected, T actual)
         => ServiceAssertions.AreEqual(expected, actual);
