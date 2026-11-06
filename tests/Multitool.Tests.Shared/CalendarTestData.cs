@@ -52,8 +52,9 @@ public static class CalendarTestData
     public static GetIcalDto DefaultIcalEvent => new(
         "Team Meeting",
         "Besprechung Projekt Updates",
-        new DateTime(2026, 6, 1, 9, 0, 0, DateTimeKind.Utc),
-        new DateTime(2026, 6, 1, 10, 0, 0, DateTimeKind.Utc)
+        new DateTimeOffset(2026, 6, 1, 9, 0, 0, TimeSpan.Zero),
+        new DateTimeOffset(2026, 6, 1, 10, 0, 0, TimeSpan.Zero),
+        false
     );
 
     public static Holiday DefaultHoliday => new() { Name = "Neujahr", Date = new DateTime(2026, 1, 1) };

@@ -588,8 +588,8 @@ public class CalendarServiceTests
         // Arrange
         var calendarEvent = CalendarTestData.DefaultIcalEvent with
         {
-            StartDateTime = new DateTime(2026, 6, 1, 9, 0, 0, DateTimeKind.Local),
-            EndDateTime = new DateTime(2026, 6, 1, 10, 0, 0, DateTimeKind.Local)
+            StartDateTime = new DateTimeOffset(2026, 6, 1, 9, 0, 0, TimeSpan.FromHours(2)),
+            EndDateTime = new DateTimeOffset(2026, 6, 1, 10, 0, 0, TimeSpan.FromHours(2))
         };
         var service = GetService();
 
@@ -600,8 +600,113 @@ public class CalendarServiceTests
         // Assert
         var startLine = ics.Split('\n').First(l => l.StartsWith("DTSTART:")).Trim();
         var endLine = ics.Split('\n').First(l => l.StartsWith("DTEND:")).Trim();
-        AssertEx.AreEqual(true, startLine.EndsWith("Z"));
-        AssertEx.AreEqual(true, endLine.EndsWith("Z"));
+        AssertEx.AreEqual("DTSTART:20260601T070000Z", startLine);
+        AssertEx.AreEqual("DTEND:20260601T080000Z", endLine);
+
+        _calendarRepositoryMock.VerifyNoOtherCalls();
+        _todoRepositoryMock.VerifyNoOtherCalls();
+        _apiClientMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task GenerateIcsFileAsync_WhenEventIsAllDay_UsesDateValues()
+    {
+        // Arrange
+        var calendarEvent = CalendarTestData.DefaultIcalEvent with
+        {
+            IsAllDay = true,
+            StartDateTime = new DateTimeOffset(2026, 11, 5, 0, 0, 0, TimeSpan.FromHours(1)),
+            EndDateTime = new DateTimeOffset(2026, 11, 6, 0, 0, 0, TimeSpan.FromHours(1))
+        };
+        var service = GetService();
+
+        // Act
+        var result = await service.GenerateIcsFileAsync(calendarEvent);
+        var ics = Encoding.UTF8.GetString(result);
+
+        // Assert
+        Assert.Contains("DTSTART;VALUE=DATE:20261105", ics);
+        Assert.Contains("DTEND;VALUE=DATE:20261106", ics);
+        Assert.DoesNotContain("DTSTART:", ics);
+        Assert.DoesNotContain("DTEND:", ics);
+
+        _calendarRepositoryMock.VerifyNoOtherCalls();
+        _todoRepositoryMock.VerifyNoOtherCalls();
+        _apiClientMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task GenerateIcsFileAsync_WhenAllDayEndDateTimeIsNull_UsesNextDayAsEnd()
+    {
+        // Arrange
+        var calendarEvent = CalendarTestData.DefaultIcalEvent with
+        {
+            IsAllDay = true,
+            StartDateTime = new DateTimeOffset(2026, 11, 5, 0, 0, 0, TimeSpan.FromHours(1)),
+            EndDateTime = null
+        };
+        var service = GetService();
+
+        // Act
+        var result = await service.GenerateIcsFileAsync(calendarEvent);
+        var ics = Encoding.UTF8.GetString(result);
+
+        // Assert
+        Assert.Contains("DTSTART;VALUE=DATE:20261105", ics);
+        Assert.Contains("DTEND;VALUE=DATE:20261106", ics);
+
+        _calendarRepositoryMock.VerifyNoOtherCalls();
+        _todoRepositoryMock.VerifyNoOtherCalls();
+        _apiClientMock.VerifyNoOtherCalls();
+    }
+
+    [Fact]
+    public async Task GenerateIcsFileAsync_WhenAllDayEndIsNotAfterStart_UsesNextDayAsEnd()
+    {
+        // Arrange
+        var calendarEvent = CalendarTestData.DefaultIcalEvent with
+        {
+            IsAllDay = true,
+            StartDateTime = new DateTimeOffset(2026, 11, 5, 0, 0, 0, TimeSpan.FromHours(1)),
+            EndDateTime = new DateTimeOffset(2026, 11, 5, 0, 0, 0, TimeSpan.FromHours(1))
+        };
+        var service = GetService();
+
+        // Act
+        var result = await service.GenerateIcsFileAsync(calendarEvent);
+        var ics = Encoding.UTF8.GetString(result);
+
+        // Assert
+        Assert.Contains("DTSTART;VALUE=DATE:20261105", ics);
+        Assert.Contains("DTEND;VALUE=DATE:20261106", ics);
+
+        _calendarRepositoryMock.VerifyNoOtherCalls();
+        _todoRepositoryMock.VerifyNoOtherCalls();
+        _apiClientMock.VerifyNoOtherCalls();
+    }
+
+    [Theory]
+    [InlineData(2)]
+    [InlineData(-5)]
+    public async Task GenerateIcsFileAsync_WhenAllDayStartHasOffset_PreservesLocalDate(int offsetHours)
+    {
+        // Arrange
+        var offset = TimeSpan.FromHours(offsetHours);
+        var calendarEvent = CalendarTestData.DefaultIcalEvent with
+        {
+            IsAllDay = true,
+            StartDateTime = new DateTimeOffset(2026, 11, 5, 0, 0, 0, offset),
+            EndDateTime = new DateTimeOffset(2026, 11, 6, 0, 0, 0, offset)
+        };
+        var service = GetService();
+
+        // Act
+        var result = await service.GenerateIcsFileAsync(calendarEvent);
+        var ics = Encoding.UTF8.GetString(result);
+
+        // Assert
+        Assert.Contains("DTSTART;VALUE=DATE:20261105", ics);
+        Assert.Contains("DTEND;VALUE=DATE:20261106", ics);
 
         _calendarRepositoryMock.VerifyNoOtherCalls();
         _todoRepositoryMock.VerifyNoOtherCalls();
