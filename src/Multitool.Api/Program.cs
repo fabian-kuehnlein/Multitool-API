@@ -39,11 +39,15 @@ public class Program
         {
             options.AddPolicy("AllowFrontendAndLocalhost", policy =>
             {
-                policy.WithOrigins(
-                    "https://multitool-frontend-pi.vercel.app", // Prod Frontend URL
-                    "https://multitool-frontend-integration.vercel.app", // Integration Frontend URL
-                    "http://localhost:4200" // Angular local development on ng serve
-                )
+                policy.SetIsOriginAllowed(origin =>
+                {
+                    if (origin == "http://localhost:4200")
+                        return true;
+
+                    var uri = new Uri(origin);
+
+                    return uri.Host.StartsWith("multitool-frontend-") && uri.Host.EndsWith(".vercel.app");
+                })
                 .AllowAnyHeader()
                 .AllowAnyMethod()
                 .AllowCredentials();

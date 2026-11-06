@@ -103,31 +103,50 @@ public class CalendarService(
 
     public Task<byte[]> GenerateIcsFileAsync(GetIcalDto calendarEvent)
     {
-        var start = calendarEvent.StartDateTime.ToUniversalTime();
-        var end = (calendarEvent.EndDateTime ?? calendarEvent.StartDateTime).ToUniversalTime();
+        var calendar = new Calendar { Method = "PUBLISH" };
 
-        if (end <= start)
-            end = end.AddHours(1);
-
-        var calendar = new Calendar
-        {
-            Method = "PUBLISH"
-        };
-
-        var calendarEventComponent = new IcalEvent
+        var iCalEvent = new IcalEvent
         {
             Summary = calendarEvent.Title,
             Description = calendarEvent.Note ?? string.Empty,
-            Start = new CalDateTime(start, "UTC"),
-            End = new CalDateTime(end, "UTC"),
             Uid = Guid.NewGuid().ToString()
         };
 
-        calendar.Events.Add(calendarEventComponent);
+        if (calendarEvent.IsAllDay)
+        {
+            // Ical.Net derives CalendarEvent.IsAllDay from Start.HasTime. A date-only
+            // CalDateTime serializes as VALUE=DATE, which is what clients need to
+            // render the event as all-day instead of a timed UTC event.
+            //
+            // Use the wall-clock date from the DateTimeOffset, not its UTC date:
+            // the client sends local midnight, and converting that to UTC would
+            // shift the event to the previous day for positive offsets.
+            var startDate = DateOnly.FromDateTime(calendarEvent.StartDateTime.DateTime);
 
-        var serializer = new CalendarSerializer();
-        var icsContent = serializer.SerializeToString(calendar) ?? string.Empty;
+            // FullCalendar sends an exclusive end; without one the event lasts one day.
+            var endExclusive = calendarEvent.EndDateTime is { } e
+                ? DateOnly.FromDateTime(e.DateTime)
+                : startDate.AddDays(1);
 
+            if (endExclusive <= startDate)
+                endExclusive = startDate.AddDays(1);
+
+            iCalEvent.Start = new CalDateTime(startDate.Year, startDate.Month, startDate.Day);
+            iCalEvent.End = new CalDateTime(endExclusive.Year, endExclusive.Month, endExclusive.Day);
+        }
+        else
+        {
+            var start = calendarEvent.StartDateTime.UtcDateTime;
+            var end = (calendarEvent.EndDateTime ?? calendarEvent.StartDateTime).UtcDateTime;
+            if (end <= start) end = end.AddHours(1);
+
+            iCalEvent.Start = new CalDateTime(start, CalDateTime.UtcTzId);
+            iCalEvent.End = new CalDateTime(end, CalDateTime.UtcTzId);
+        }
+
+        calendar.Events.Add(iCalEvent);
+
+        var icsContent = new CalendarSerializer().SerializeToString(calendar) ?? string.Empty;
         return Task.FromResult(Encoding.UTF8.GetBytes(icsContent));
     }
 
