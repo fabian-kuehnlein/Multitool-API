@@ -14,7 +14,10 @@ public static class AuthenticationSetupExtensions
         IConfiguration configuration,
         IWebHostEnvironment environment)
     {
-        if (environment.IsDevelopment())
+        // The hard-coded test identity must not replace real JWT authentication
+        // in local development; otherwise every request runs as the same user
+        // and per-user data isolation cannot be verified.
+        if (environment.IsEnvironment("Testing"))
         {
             services.AddAuthentication(TestAuthHandler.SchemeName)
                 .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.SchemeName, _ => { });
