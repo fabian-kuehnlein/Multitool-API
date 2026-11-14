@@ -10,4 +10,5 @@ public record UserDto(
     string Username,
     UserRole Role,
     bool IsActive,
+    bool MustChangePassword,
     DateTime CreatedAt);

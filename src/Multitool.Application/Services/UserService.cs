@@ -1,7 +1,9 @@
 using Mapster;
 using Multitool.Application.Interfaces;
 using Multitool.Application.Models.User;
+using Multitool.Domain.Entities.Category;
 using Multitool.Domain.Entities.Config;
+using Multitool.Domain.Enums;
 using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
 
@@ -9,6 +11,7 @@ namespace Multitool.Application.Services;
 
 public class UserService(
     IUserRepository userRepository,
+    ICategoryRepository categoryRepository,
     IPasswordHasher hasher,
     IUserContext userContext) : IUserService
 {
@@ -28,7 +31,11 @@ public class UserService(
         var user = dto.Adapt<User>();
         user.PasswordHash = hasher.Hash(dto.Password);
 
-        return await userRepository.CreateUserAsync(user);
+        var userId = await userRepository.CreateUserAsync(user);
+
+        await CreateDefaultEntities(userId);
+
+        return userId;
     }
 
     public async Task ResetPasswordAsync(int id, ResetPasswordDto dto)
@@ -37,6 +44,7 @@ public class UserService(
             ?? throw new NotFoundException($"User with ID {id} not found.");
 
         user.PasswordHash = hasher.Hash(dto.Password);
+        user.MustChangePassword = true;
         user.AccessFailedCount = 0;
         user.LockoutEnd = null;
 
@@ -61,4 +69,17 @@ public class UserService(
 
         await userRepository.UpdateUserAsync(user);
     }
+
+    private async Task CreateDefaultEntities(int userId)
+    {   
+        // Default Category     
+        await categoryRepository.CreateCategoryAsync(new Category
+        {
+           UserId = userId,
+           Name = "Privat",
+           Color = "#3b82f6",
+           ApplicableModules = Enum.GetValues<AppModule>().ToList()
+        });
+    }
 }
+

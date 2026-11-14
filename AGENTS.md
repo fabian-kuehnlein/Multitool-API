@@ -25,6 +25,7 @@ Non-obvious quirks:
 - DTOs and service interfaces live in `Application`, but repository contracts live in `Domain`. Don't "fix" or relocate this.
 - EF mapping config lives entirely in `AppDbContext.OnModelCreating`: snake_case names, schemas `public` (default), `custom`, `worktime`; all `DateTime` columns are `timestamp without time zone` (wall-clock `ValueConverter`).
 - Enums are serialized to **camelCase strings** over the wire (`JsonStringEnumConverter(JsonNamingPolicy.CamelCase)` in `Program.cs`).
+- Authorization boundaries: `AdminController`/`UserService` are admin-only user management; `AccountController`/`AccountService` handle self-service of the authenticated user (forced credential setup while `must_change_password` is set, later own password change with the current password); `AuthenticationController` is login only; `SettingsController` stays preferences only. Keep new self-service account endpoints in `AccountController`, not in `Settings` or `Admin`.
 
 ## Commands
 

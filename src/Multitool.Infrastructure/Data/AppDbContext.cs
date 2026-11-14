@@ -54,6 +54,7 @@ public class AppDbContext : DbContext
             e.Property(u => u.AccessFailedCount).IsRequired();
             e.Property(u => u.Role).HasConversion<string>().IsRequired();
             e.Property(u => u.IsActive).IsRequired();
+            e.Property(u => u.MustChangePassword).IsRequired();
             e.Property(u => u.CreatedAt).IsRequired();
 
             e.HasIndex(u => u.Username).IsUnique().HasDatabaseName("ux_users_username");

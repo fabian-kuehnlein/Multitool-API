@@ -29,6 +29,14 @@ namespace Multitool.Infrastructure.Data.Migrations
                 nullable: false,
                 defaultValue: true);
 
+            migrationBuilder.AddColumn<bool>(
+                name: "must_change_password",
+                schema: "public",
+                table: "users",
+                type: "boolean",
+                nullable: false,
+                defaultValue: false);
+
             migrationBuilder.AddColumn<string>(
                 name: "role",
                 schema: "public",
@@ -203,6 +211,11 @@ namespace Multitool.Infrastructure.Data.Migrations
 
             migrationBuilder.DropColumn(
                 name: "is_active",
+                schema: "public",
+                table: "users");
+
+            migrationBuilder.DropColumn(
+                name: "must_change_password",
                 schema: "public",
                 table: "users");
 

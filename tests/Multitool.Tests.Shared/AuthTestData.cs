@@ -1,4 +1,5 @@
 using Multitool.Api.Extensions;
+using Multitool.Application.Models.Account;
 using Multitool.Application.Models.User;
 using Multitool.Domain.Entities.Config;
 using Multitool.Domain.Enums;
@@ -22,11 +23,15 @@ public static class AuthTestData
         DefaultUser.Username,
         DefaultUser.Role,
         DefaultUser.IsActive,
+        DefaultUser.MustChangePassword,
         DefaultUser.CreatedAt);
 
     public static CreateUserDto DefaultCreateUserDto => new("newuser", "password123", UserRole.User);
 
     public static ResetPasswordDto DefaultResetPasswordDto => new("new-password123");
+
+    public static UpdateAccountCredentialsDto DefaultUpdateAccountCredentialsDto =>
+        new("updateduser", "new-password123");
 
     public static SetUserActiveDto DefaultSetUserActiveDto => new(false);
 

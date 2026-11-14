@@ -11,5 +11,6 @@ public class User
     public DateTime? LockoutEnd { get; set; }
     public UserRole Role { get; set; }
     public bool IsActive { get; set; }
+    public bool MustChangePassword { get; set; }
     public DateTime CreatedAt { get; set; }
 }

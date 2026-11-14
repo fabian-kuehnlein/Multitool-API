@@ -120,6 +120,7 @@ public class UserServiceTests
             PasswordHash = HASHED_PASSWORD,
             Role = dto.Role,
             IsActive = true,
+            MustChangePassword = true,
             CreatedAt = _createdUser!.CreatedAt
         });
         AssertEx.CloseTo(_createdUser!.CreatedAt, DateTime.Now, TimeSpan.FromSeconds(5));
@@ -130,7 +131,8 @@ public class UserServiceTests
             u.Username == dto.Username &&
             u.PasswordHash == HASHED_PASSWORD &&
             u.Role == dto.Role &&
-            u.IsActive
+            u.IsActive &&
+            u.MustChangePassword
         )), Times.Once);
         _userRepositoryMock.VerifyNoOtherCalls();
 
@@ -180,6 +182,7 @@ public class UserServiceTests
 
         // Assert
         AssertEx.AreEqual(HASHED_PASSWORD, _updatedUser!.PasswordHash);
+        Assert.True(_updatedUser.MustChangePassword);
         AssertEx.AreEqual(0, _updatedUser.AccessFailedCount);
         Assert.Null(_updatedUser.LockoutEnd);
 
@@ -187,6 +190,7 @@ public class UserServiceTests
         _userRepositoryMock.Verify(r => r.UpdateUserAsync(It.Is<User>(u =>
             u.Id == USER_ID &&
             u.PasswordHash == HASHED_PASSWORD &&
+            u.MustChangePassword &&
             u.AccessFailedCount == 0 &&
             u.LockoutEnd == null
         )), Times.Once);

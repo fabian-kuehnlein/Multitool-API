@@ -142,6 +142,10 @@ namespace Multitool.Infrastructure.Migrations
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("lockout_end");
 
+                    b.Property<bool>("MustChangePassword")
+                        .HasColumnType("boolean")
+                        .HasColumnName("must_change_password");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("text")

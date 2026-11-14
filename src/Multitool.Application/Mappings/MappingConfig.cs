@@ -46,6 +46,7 @@ public class MappingConfig : IRegister
 
         config.NewConfig<CreateUserDto, User>()
             .Map(dest => dest.IsActive, src => true)
+            .Map(dest => dest.MustChangePassword, src => true)
             .Map(dest => dest.CreatedAt, src => DateTime.Now);
     }
 
