@@ -11,6 +11,7 @@ public static class CategoryTestData
     public static Category DefaultCategory => new()
     {
         Id = 1,
+        UserId = AuthTestData.DefaultUser.Id,
         Name = "Arbeit",
         Color = "#FF0000",
         ApplicableModules = DefaultApplicableModules,
@@ -20,6 +21,7 @@ public static class CategoryTestData
     public static Category DeletedCategory => new()
     {
         Id = 3,
+        UserId = AuthTestData.DefaultUser.Id,
         Name = "Gelöscht",
         Color = "#0000FF",
         ApplicableModules = DefaultApplicableModules,

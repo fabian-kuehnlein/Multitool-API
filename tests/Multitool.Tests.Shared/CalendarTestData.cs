@@ -8,6 +8,7 @@ public static class CalendarTestData
     public static CalendarEvent DefaultEvent => new()
     {
         Id = 1,
+        UserId = AuthTestData.DefaultUser.Id,
         Title = "Team Meeting",
         Note = "Besprechung Projekt Updates",
         StartDateTime = new DateTime(2026, 6, 1, 9, 0, 0),

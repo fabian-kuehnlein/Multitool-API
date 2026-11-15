@@ -261,6 +261,7 @@ public class TodoServiceTests
         AssertEx.AreEqual(_updatedTodo, new Todo
         {
             Id = todo.Id,
+            UserId = todo.UserId,
             Title = dto.Title,
             Description = dto.Description,
             CategoryId = dto.CategoryId,
@@ -388,6 +389,7 @@ public class TodoServiceTests
         AssertEx.AreEqual(_updatedTodo, new Todo
         {
             Id = todo.Id,
+            UserId = todo.UserId,
             Title = todo.Title,
             Description = todo.Description,
             CategoryId = todo.CategoryId,
@@ -424,6 +426,7 @@ public class TodoServiceTests
         AssertEx.AreEqual(_updatedTodo, new Todo
         {
             Id = todo.Id,
+            UserId = todo.UserId,
             Title = todo.Title,
             Description = todo.Description,
             CategoryId = todo.CategoryId,

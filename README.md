@@ -56,10 +56,12 @@ The application follows a **Clean Architecture** pattern and currently provides 
 
 ### Authentication & Security
 - **JWT-based authorization** protecting core API endpoints
-- Secure user registration validated by an administrative key (`X-Admin-Key` header)
+- **Role-based access control** (`User`, `Admin`); administrative endpoints require the `Admin` role
+- **Per-user data isolation** enforced centrally via EF Core global query filters
 - **Rate limiting** configured on the login endpoint to prevent brute force attempts
 - Secure password hashing using **BCrypt**
 - Account **lockout** after repeated failed login attempts
+- Deactivated accounts are rejected on login
 
 ### Background Jobs
 - Scheduled database cleanup of past calendar events using a customizable cron expression
@@ -155,8 +157,18 @@ All endpoints are also available via Swagger UI at `/swagger` when running in de
 
 | Method | Endpoint | Description |
 |---|---|---|
-| `POST` | `/register` | Registers a new user. Requires the `X-Admin-Key` header. |
 | `POST` | `/login` | Authenticates a user and returns a JWT session token. Rate-limited by IP. |
+
+### Administration – `/api/admin`
+
+All endpoints require the `Admin` role.
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/users` | Get all users. |
+| `POST` | `/users` | Create a new user with a temporary password and role. |
+| `PUT` | `/users/{id}/password` | Set a new temporary password and clear an existing lockout. |
+| `PUT` | `/users/{id}/active` | Activate or deactivate a user. |
 
 ### Calendar – `/api/calendar`
 
@@ -231,7 +243,6 @@ Configure the following environment variables or configuration keys in your `app
 
 | Variable | Description |
 |---|---|
-| `AdminKey` | Key checked on user registration via `X-Admin-Key` header |
 | `ASPNETCORE_ENVIRONMENT` | Runtime environment, e.g. `Development` or `Production` |
 | `ConnectionStrings__DefaultConnection` | Connection string to the PostgreSQL database |
 | `CronJobs__CleanUpPastEvents` | Cron expression for background cleanup of calendar events |

@@ -84,7 +84,7 @@ public class CalendarServiceTests
             .Callback<CalendarEvent>(e => _updatedEvent = e)
             .Returns(Task.CompletedTask);
 
-        _calendarRepositoryMock.Setup(r => r.DeleteEventAsync(It.IsAny<int>()))
+        _calendarRepositoryMock.Setup(r => r.DeleteEventAsync(It.IsAny<CalendarEvent>()))
             .Returns(Task.CompletedTask);
 
         _calendarRepositoryMock.Setup(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()))
@@ -335,6 +335,7 @@ public class CalendarServiceTests
         AssertEx.AreEqual(_updatedEvent, new CalendarEvent
         {
             Id = existing.Id,
+            UserId = existing.UserId,
             Title = dto.Title,
             Note = dto.Note,
             StartDateTime = dto.StartDateTime,
@@ -411,7 +412,7 @@ public class CalendarServiceTests
 
         // Assert
         _calendarRepositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
-        _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(ID), Times.Once);
+        _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(_getByIdResponse!), Times.Once);
         _calendarRepositoryMock.VerifyNoOtherCalls();
     }
 
@@ -429,7 +430,7 @@ public class CalendarServiceTests
         await AssertEx.Throws<NotFoundException>(act);
 
         _calendarRepositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
-        _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(It.IsAny<int>()), Times.Never);
+        _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(It.IsAny<CalendarEvent>()), Times.Never);
         _calendarRepositoryMock.VerifyNoOtherCalls();
     }
 
@@ -732,7 +733,7 @@ public class CalendarServiceTests
 
         // Assert
         _calendarRepositoryMock.Verify(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()), Times.Once);
-        _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(oldEvent.Id), Times.Once);
+        _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(oldEvent), Times.Once);
         _calendarRepositoryMock.VerifyNoOtherCalls();
     }
 
@@ -754,7 +755,7 @@ public class CalendarServiceTests
 
         // Assert
         _calendarRepositoryMock.Verify(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()), Times.Once);
-        _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(It.IsAny<int>()), Times.Never);
+        _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(It.IsAny<CalendarEvent>()), Times.Never);
         _calendarRepositoryMock.VerifyNoOtherCalls();
     }
 
@@ -776,7 +777,7 @@ public class CalendarServiceTests
 
         // Assert
         _calendarRepositoryMock.Verify(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()), Times.Once);
-        _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(eventWithoutEnd.Id), Times.Once);
+        _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(eventWithoutEnd), Times.Once);
         _calendarRepositoryMock.VerifyNoOtherCalls();
     }
 
@@ -797,7 +798,7 @@ public class CalendarServiceTests
 
         // Assert
         _calendarRepositoryMock.Verify(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()), Times.Once);
-        _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(It.IsAny<int>()), Times.Never);
+        _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(It.IsAny<CalendarEvent>()), Times.Never);
         _calendarRepositoryMock.VerifyNoOtherCalls();
     }
 
@@ -819,7 +820,7 @@ public class CalendarServiceTests
 
         // Assert
         _calendarRepositoryMock.Verify(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()), Times.Once);
-        _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(oldRecurring.Id), Times.Once);
+        _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(oldRecurring), Times.Once);
         _calendarRepositoryMock.VerifyNoOtherCalls();
     }
 
@@ -841,7 +842,7 @@ public class CalendarServiceTests
 
         // Assert
         _calendarRepositoryMock.Verify(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()), Times.Once);
-        _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(It.IsAny<int>()), Times.Never);
+        _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(It.IsAny<CalendarEvent>()), Times.Never);
         _calendarRepositoryMock.VerifyNoOtherCalls();
     }
 
@@ -857,7 +858,7 @@ public class CalendarServiceTests
 
         // Assert
         _calendarRepositoryMock.Verify(r => r.GetEventsOlderThanAsync(It.IsAny<DateTime>()), Times.Once);
-        _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(It.IsAny<int>()), Times.Never);
+        _calendarRepositoryMock.Verify(r => r.DeleteEventAsync(It.IsAny<CalendarEvent>()), Times.Never);
         _calendarRepositoryMock.VerifyNoOtherCalls();
     }
 }

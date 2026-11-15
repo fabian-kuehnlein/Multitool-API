@@ -140,6 +140,7 @@ public class CategoryServiceTests
         AssertEx.AreEqual(_updatedCategory, new Category
         {
             Id = category.Id,
+            UserId = category.UserId,
             Name = dto.Name,
             Color = dto.Color,
             ApplicableModules = dto.ApplicableModules
@@ -192,6 +193,7 @@ public class CategoryServiceTests
         AssertEx.AreEqual(_updatedCategory, new Category
         {
             Id = ID,
+            UserId = CategoryTestData.DefaultCategory.UserId,
             Name = CategoryTestData.DefaultCategory.Name,
             Color = CategoryTestData.DefaultCategory.Color,
             ApplicableModules = CategoryTestData.DefaultApplicableModules,
