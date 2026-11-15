@@ -4,4 +4,4 @@ namespace Multitool.Application.Models.Account;
 /// Request body for setting the authenticated user's own username and password
 /// after logging in with a temporary password.
 /// </summary>
-public record UpdateAccountCredentialsDto(string Username, string Password);
+public record SetupAccountCredentialsDto(string Username, string Password);

@@ -3,6 +3,7 @@ using Moq;
 using Multitool.Application.Mappings;
 using Multitool.Application.Models.User;
 using Multitool.Application.Services;
+using Multitool.Domain.Entities.Category;
 using Multitool.Domain.Entities.Config;
 using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
@@ -14,6 +15,7 @@ namespace Multitool.Application.Tests;
 public class UserServiceTests
 {
     private readonly Mock<IUserRepository> _userRepositoryMock;
+    private readonly Mock<ICategoryRepository> _categoryRepositoryMock;
     private readonly Mock<IPasswordHasher> _hasherMock;
     private readonly Mock<IUserContext> _userContextMock;
 
@@ -29,12 +31,14 @@ public class UserServiceTests
 
     private User? _createdUser;
     private User? _updatedUser;
+    private Category? _createdCategory;
 
     public UserServiceTests()
     {
         TypeAdapterConfig.GlobalSettings.Apply(new MappingConfig());
 
         _userRepositoryMock = new Mock<IUserRepository>();
+        _categoryRepositoryMock = new Mock<ICategoryRepository>();
         _hasherMock = new Mock<IPasswordHasher>();
         _userContextMock = new Mock<IUserContext>();
         _userContextMock.SetupGet(c => c.UserId).Returns(USER_ID);
@@ -50,8 +54,10 @@ public class UserServiceTests
     {
         _createdUser = null;
         _updatedUser = null;
+        _createdCategory = null;
 
         _userRepositoryMock.Reset();
+        _categoryRepositoryMock.Reset();
         _hasherMock.Reset();
 
         _userRepositoryMock.Setup(r => r.GetUsersAsync())
@@ -74,7 +80,11 @@ public class UserServiceTests
         _hasherMock.Setup(h => h.Hash(It.IsAny<string>()))
             .Returns(_hashedPasswordResponse);
 
-        return new UserService(_userRepositoryMock.Object, _hasherMock.Object, _userContextMock.Object);
+        _categoryRepositoryMock.Setup(r => r.CreateCategoryAsync(It.IsAny<Category>()))
+            .Callback<Category>(c => _createdCategory = c)
+            .ReturnsAsync(1);
+
+        return new UserService(_userRepositoryMock.Object, _categoryRepositoryMock.Object, _hasherMock.Object, _userContextMock.Object);
     }
 
     // GetUsersAsync
@@ -124,6 +134,9 @@ public class UserServiceTests
             CreatedAt = _createdUser!.CreatedAt
         });
         AssertEx.CloseTo(_createdUser!.CreatedAt, DateTime.Now, TimeSpan.FromSeconds(5));
+        Assert.NotNull(_createdCategory);
+        AssertEx.AreEqual(_createdCategory!.Name, "Privat");
+        AssertEx.AreEqual(_createdCategory.UserId, _createUserResponse);
 
         _userRepositoryMock.Verify(r => r.GetUserByUsernameAsync(dto.Username), Times.Once);
         _userRepositoryMock.Verify(r => r.CreateUserAsync(It.Is<User>(u =>

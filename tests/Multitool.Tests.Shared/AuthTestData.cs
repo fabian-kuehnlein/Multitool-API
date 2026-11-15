@@ -30,8 +30,14 @@ public static class AuthTestData
 
     public static ResetPasswordDto DefaultResetPasswordDto => new("new-password123");
 
-    public static UpdateAccountCredentialsDto DefaultUpdateAccountCredentialsDto =>
+    public static SetupAccountCredentialsDto DefaultSetupAccountCredentialsDto =>
         new("updateduser", "new-password123");
+
+    public static VerifyAccountCredentialsDto DefaultVerifyAccountCredentialsDto =>
+        new("testuser", "current-password");
+
+    public static ChangeAccountCredentialsDto DefaultChangeAccountCredentialsDto =>
+        new("current-password", "updateduser", "new-password123");
 
     public static SetUserActiveDto DefaultSetUserActiveDto => new(false);
 

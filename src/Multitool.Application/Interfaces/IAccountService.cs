@@ -4,5 +4,7 @@ namespace Multitool.Application.Interfaces;
 
 public interface IAccountService
 {
-    Task<string> UpdateAccountCredentialsAsync(UpdateAccountCredentialsDto dto);
+    Task VerifyAccountCredentialsAsync(VerifyAccountCredentialsDto dto);
+    Task<string> SetupAccountCredentialsAsync(SetupAccountCredentialsDto dto);
+    Task<string> ChangeAccountCredentialsAsync(ChangeAccountCredentialsDto dto);
 }
