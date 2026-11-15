@@ -25,6 +25,7 @@ Non-obvious quirks:
 - DTOs and service interfaces live in `Application`, but repository contracts live in `Domain`. Don't "fix" or relocate this.
 - EF mapping config lives entirely in `AppDbContext.OnModelCreating`: snake_case names, schemas `public` (default), `custom`, `worktime`; all `DateTime` columns are `timestamp without time zone` (wall-clock `ValueConverter`).
 - Enums are serialized to **camelCase strings** over the wire (`JsonStringEnumConverter(JsonNamingPolicy.CamelCase)` in `Program.cs`).
+- Authorization boundaries: `AdminController`/`UserService` are admin-only user management; `AccountController`/`AccountService` handle self-service of the authenticated user (forced credential setup via `PUT api/Account/credentials/setup` while `must_change_password` is set → `SetupAccountCredentialsAsync`, later regular change via `PUT api/Account/credentials` with the current password → `ChangeAccountCredentialsAsync`, plus `POST api/Account/credentials/verify` to confirm the current username/password before a change → `VerifyAccountCredentialsAsync`, which returns `204` and throws `InvalidOperationException` → `400` on mismatch); `AuthenticationController` is login only; `SettingsController` stays preferences only. Keep new self-service account endpoints in `AccountController`, not in `Settings` or `Admin`.
 
 ## Commands
 
@@ -52,6 +53,7 @@ dotnet test tests/Multitool.Infrastructure.Tests/Multitool.Infrastructure.Tests.
 
 ## Secrets & config
 
-- `src/Multitool.Api/appsettings.Development.json` and `AppDbContextFactory.cs` contain **real committed dev credentials** (Supabase DB, JWT key, AdminKey). Never copy them into docs, logs, tests, or commit new secrets.
-- `AdminKey` is checked against the `X-Admin-Key` header on registration. Login is rate-limited (5/min per IP, `login-limit` policy).
+- `src/Multitool.Api/appsettings.Development.json` and `AppDbContextFactory.cs` contain **real committed dev credentials** (Supabase DB, JWT key). Never copy them into docs, logs, tests, or commit new secrets.
+- Login is rate-limited (5/min per IP, `login-limit` policy). Registration is admin-only via `AdminController`; there is no public registration endpoint and no `AdminKey` anymore. Administrative routes use `[Authorize(Roles = "Admin")]`.
+- Per-user data isolation is enforced through EF Core global query filters in `AppDbContext` (see `IUserEntity`/`IUserContext`). `FindAsync` bypasses query filters — use `FirstOrDefaultAsync` instead.
 - Swagger is enabled only in Development (`/swagger`). Background cron jobs (`CleanUpPastEventsCronJob`, `CleanUpPastTodosCronJob`) run every minute in dev config and purge old data.

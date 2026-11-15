@@ -16,7 +16,6 @@ public class WorkTimePlannerControllerTests
     private int _homeOfficeDaysResponse;
 
     private static readonly int ID = WorkTimePlannerTestData.DefaultWorkDayDto.Id;
-    private static readonly int USER_ID = AuthTestData.DefaultUser.Id;
 
     public WorkTimePlannerControllerTests()
     {
@@ -35,7 +34,7 @@ public class WorkTimePlannerControllerTests
         _workTimePlannerServiceMock.Setup(s => s.GetWorkDaysAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
             .ReturnsAsync(_getWorkDaysResponse);
 
-        _workTimePlannerServiceMock.Setup(s => s.UpsertWorkDayAsync(It.IsAny<int>(), It.IsAny<UpsertWorkDayDto>()))
+        _workTimePlannerServiceMock.Setup(s => s.UpsertWorkDayAsync(It.IsAny<UpsertWorkDayDto>()))
             .ReturnsAsync(ID);
 
         _workTimePlannerServiceMock.Setup(s => s.SetWorkDayLockedAsync(It.IsAny<int>(), It.IsAny<bool>()))
@@ -50,10 +49,7 @@ public class WorkTimePlannerControllerTests
         _workTimePlannerServiceMock.Setup(s => s.GetHomeOfficeDaysCountAsync(It.IsAny<int>(), It.IsAny<int>()))
             .ReturnsAsync(_homeOfficeDaysResponse);
 
-        return new WorkTimePlannerController(_workTimePlannerServiceMock.Object)
-        {
-            ControllerContext = ControllerContextFactory.Create(USER_ID)
-        };
+        return new WorkTimePlannerController(_workTimePlannerServiceMock.Object);
     }
 
     // GET api/WorkTimePlanner/workdays
@@ -91,7 +87,7 @@ public class WorkTimePlannerControllerTests
         // Assert
         AssertEx.NoContent(result);
 
-        _workTimePlannerServiceMock.Verify(s => s.UpsertWorkDayAsync(USER_ID, upsertWorkDay), Times.Once);
+        _workTimePlannerServiceMock.Verify(s => s.UpsertWorkDayAsync(upsertWorkDay), Times.Once);
         _workTimePlannerServiceMock.VerifyNoOtherCalls();
     }
 

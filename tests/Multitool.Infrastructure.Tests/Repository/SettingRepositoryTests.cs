@@ -30,10 +30,10 @@ public class SettingRepositoryTests : RepositoryTestBase
         UpdatedAt = DateTime.Now
     };
 
-    // GetSettingsByUserAsync
+    // GetSettingsAsync
 
     [Fact]
-    public async Task GetSettingsByUserAsync_WhenUserHasSettings_ReturnsOnlyUsersSettings()
+    public async Task GetSettingsAsync_WhenUserHasSettings_ReturnsOnlyUsersSettings()
     {
         // Arrange
         var otherUser = new User { Username = "otheruser", PasswordHash = "other-hash" };
@@ -47,7 +47,7 @@ public class SettingRepositoryTests : RepositoryTestBase
         await Context.SaveChangesAsync();
 
         // Act
-        var result = await _settingRepository.GetSettingsByUserAsync(_userId);
+        var result = await _settingRepository.GetSettingsAsync();
 
         // Assert
         AssertEx.AreEqual(2, result.Count);
@@ -56,7 +56,7 @@ public class SettingRepositoryTests : RepositoryTestBase
     }
 
     [Fact]
-    public async Task GetSettingsByUserAsync_WhenUserHasNoSettings_ReturnsEmptyList()
+    public async Task GetSettingsAsync_WhenUserHasNoSettings_ReturnsEmptyList()
     {
         // Arrange
         var otherUser = new User { Username = "otheruser", PasswordHash = "other-hash" };
@@ -67,7 +67,7 @@ public class SettingRepositoryTests : RepositoryTestBase
         await Context.SaveChangesAsync();
 
         // Act
-        var result = await _settingRepository.GetSettingsByUserAsync(_userId);
+        var result = await _settingRepository.GetSettingsAsync();
 
         // Assert
         Assert.Empty(result);
@@ -84,7 +84,7 @@ public class SettingRepositoryTests : RepositoryTestBase
         await Context.SaveChangesAsync();
 
         // Act
-        var result = await _settingRepository.GetSettingByKeyAsync(_userId, SettingTestData.DailyTargetMinutesFullKey);
+        var result = await _settingRepository.GetSettingByKeyAsync(SettingTestData.DailyTargetMinutesFullKey);
 
         // Assert
         Assert.NotNull(result);
@@ -101,7 +101,7 @@ public class SettingRepositoryTests : RepositoryTestBase
         await Context.SaveChangesAsync();
 
         // Act
-        var result = await _settingRepository.GetSettingByKeyAsync(_userId, "does_not_exist");
+        var result = await _settingRepository.GetSettingByKeyAsync("does_not_exist");
 
         // Assert
         Assert.Null(result);

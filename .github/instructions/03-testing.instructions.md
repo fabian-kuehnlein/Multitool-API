@@ -254,9 +254,9 @@ All tests that test the same method are placed directly below one another under 
 Format: `// [HTTP Verb] api/[Controller]/[Route]` – exactly as the route is called.
 
 ```csharp
-// POST api/Auth/register
+// POST api/Auth/login
 [Fact]
-public async Task Register_WhenEmailIsValid_ReturnsOk()
+public async Task Login_WhenCredentialsAreValid_ReturnsOk()
 {
     // Arrange
     ...
@@ -524,7 +524,7 @@ public class TodoServiceTests
 #### Negative paths (if present)
 - `WhenXDoesNotExist_ThrowsNotFoundException` – when `Get<Module>ByIdAsync` returns null
 - `WhenXIsLocked_ThrowsInvalidOperationException` – for status checks
-- `WhenAdminKeyIsInvalid_ThrowsInvalidCredentialException` – for validations
+- `WhenUsernameAlreadyExists_ThrowsUserAlreadyExistsException` – for validations
 
 #### Logic branches (test all branches)
 - `bool` flags: both directions (`typeChanged: true` and `typeChanged: false`)

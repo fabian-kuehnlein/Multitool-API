@@ -7,19 +7,18 @@ namespace Multitool.Infrastructure.Repositories;
 
 public class SettingRepository(AppDbContext db) : ISettingRepository
 {
-    public async Task<List<Setting>> GetSettingsByUserAsync(int userId)
+    public async Task<List<Setting>> GetSettingsAsync()
     {
         return await db.Settings
             .AsNoTracking()
-            .Where(s => s.UserId == userId)
             .ToListAsync();
     }
 
-    public async Task<Setting?> GetSettingByKeyAsync(int userId, string key)
+    public async Task<Setting?> GetSettingByKeyAsync(string key)
     {
         return await db.Settings
             .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.UserId == userId && s.Key == key);
+            .FirstOrDefaultAsync(s => s.Key == key);
     }
 
     public async Task CreateSettingAsync(Setting setting)

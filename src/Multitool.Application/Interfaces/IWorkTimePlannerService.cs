@@ -5,7 +5,7 @@ namespace Multitool.Application.Interfaces;
 public interface IWorkTimePlannerService
 {
     Task<List<WorkDayDto>> GetWorkDaysAsync(DateTime startDate, DateTime endDate);
-    Task<int> UpsertWorkDayAsync(int userId, UpsertWorkDayDto dto);
+    Task<int> UpsertWorkDayAsync(UpsertWorkDayDto dto);
     Task SetWorkDayLockedAsync(int id, bool isLocked);
     Task DeleteWorkDayAsync(int id);
 

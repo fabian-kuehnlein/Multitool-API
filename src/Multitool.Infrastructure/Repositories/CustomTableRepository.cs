@@ -183,7 +183,8 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
 
     public async Task UpsertCellAsync(long rowId, long columnId, CustomDataType dataType, object? value)
     {
-        var cell = await db.CustomCells.FindAsync(new object?[] { rowId, columnId });
+        var cell = await db.CustomCells
+            .FirstOrDefaultAsync(c => c.RowId == rowId && c.ColumnId == columnId);
 
         if (cell is null)
         {
@@ -224,13 +225,13 @@ public class CustomTableRepository(AppDbContext db) : ICustomTableRepository
     }
 
     public async Task<Table?> GetTableRawAsync(long tableId)
-        => await db.CustomTables.FindAsync(tableId);
+        => await db.CustomTables.FirstOrDefaultAsync(t => t.TableId == tableId);
 
     public async Task<Column?> GetColumnAsync(long columnId)
-        => await db.CustomColumns.FindAsync(columnId);
+        => await db.CustomColumns.FirstOrDefaultAsync(c => c.ColumnId == columnId);
 
     public async Task<Row?> GetRowAsync(long rowId)
-        => await db.CustomRows.FindAsync(rowId);
+        => await db.CustomRows.FirstOrDefaultAsync(r => r.RowId == rowId);
 
     public async Task<bool> TableExistsAsync(long tableId)
         => await db.CustomTables.AnyAsync(t => t.TableId == tableId);

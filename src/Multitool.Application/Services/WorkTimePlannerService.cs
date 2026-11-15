@@ -17,7 +17,7 @@ public class WorkTimePlannerService(
         return workDays.Adapt<List<WorkDayDto>>();
     }
 
-    public async Task<int> UpsertWorkDayAsync(int userId, UpsertWorkDayDto dto)
+    public async Task<int> UpsertWorkDayAsync(UpsertWorkDayDto dto)
     {
         var existing = await workDayRepository.GetWorkDayByDateAsync(dto.Date);
 
@@ -27,7 +27,7 @@ public class WorkTimePlannerService(
         if (existing is null)
         {
             var workDay = dto.Adapt<WorkDay>();
-            await CalculateWorkDayAsync(workDay, userId);
+            await CalculateWorkDayAsync(workDay);
 
             return await workDayRepository.CreateWorkDayAsync(workDay);
         }
@@ -38,7 +38,7 @@ public class WorkTimePlannerService(
         existing.IsHomeOffice = dto.IsHomeOffice;
         existing.Status = dto.Status;
 
-        await CalculateWorkDayAsync(existing, userId);
+        await CalculateWorkDayAsync(existing);
         await workDayRepository.UpdateWorkDayAsync(existing);
 
         return existing.Id;
@@ -80,7 +80,7 @@ public class WorkTimePlannerService(
         return workDays.Count(w => w.IsHomeOffice);
     }
 
-    private async Task CalculateWorkDayAsync(WorkDay workDay, int userId)
+    private async Task CalculateWorkDayAsync(WorkDay workDay)
     {
         if (workDay.Status == DayStatus.Holiday || workDay.Status == DayStatus.Vacation || workDay.Status == DayStatus.Sick)
         {
@@ -96,7 +96,7 @@ public class WorkTimePlannerService(
             return;
         }
 
-        var dailyTargetMinutes = (await settingsService.GetSettingsAsync(userId)).Worktime.DailyTargetMinutes;
+        var dailyTargetMinutes = (await settingsService.GetSettingsAsync()).Worktime.DailyTargetMinutes;
 
         var totalMinutes = (int)(workDay.EndTime.Value.ToTimeSpan() - workDay.StartTime.Value.ToTimeSpan()).TotalMinutes;
         workDay.WorkMinutes = Math.Max(0, totalMinutes - workDay.BreakMinutes);

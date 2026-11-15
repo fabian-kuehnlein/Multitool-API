@@ -65,6 +65,10 @@ namespace Multitool.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("event_title");
 
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
+
                     b.HasKey("Id")
                         .HasName("pk_calendar_events");
 
@@ -103,6 +107,10 @@ namespace Multitool.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("category_name");
 
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
+
                     b.HasKey("Id")
                         .HasName("pk_categories");
 
@@ -122,14 +130,31 @@ namespace Multitool.Infrastructure.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("access_failed_count");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
                     b.Property<DateTime?>("LockoutEnd")
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("lockout_end");
+
+                    b.Property<bool>("MustChangePassword")
+                        .HasColumnType("boolean")
+                        .HasColumnName("must_change_password");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("password_hash");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("role");
 
                     b.Property<string>("Username")
                         .IsRequired()
@@ -138,6 +163,10 @@ namespace Multitool.Infrastructure.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_users");
+
+                    b.HasIndex("Username")
+                        .IsUnique()
+                        .HasDatabaseName("ux_users_username");
 
                     b.ToTable("users", "public");
                 });
@@ -273,6 +302,10 @@ namespace Multitool.Infrastructure.Migrations
                         .HasColumnType("character varying(120)")
                         .HasColumnName("table_name");
 
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
+
                     b.HasKey("TableId")
                         .HasName("pk_tables");
 
@@ -360,6 +393,10 @@ namespace Multitool.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("todo_title");
 
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
+
                     b.HasKey("Id")
                         .HasName("pk_todos");
 
@@ -411,6 +448,10 @@ namespace Multitool.Infrastructure.Migrations
                         .HasColumnType("text")
                         .HasColumnName("status");
 
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
+
                     b.Property<int>("WorkMinutes")
                         .HasColumnType("integer")
                         .HasColumnName("work_minutes");
@@ -418,9 +459,9 @@ namespace Multitool.Infrastructure.Migrations
                     b.HasKey("Id")
                         .HasName("pk_work_days");
 
-                    b.HasIndex("Date")
+                    b.HasIndex("UserId", "Date")
                         .IsUnique()
-                        .HasDatabaseName("ux_work_days_date");
+                        .HasDatabaseName("ux_work_days_user_date");
 
                     b.ToTable("work_days", "worktime");
                 });

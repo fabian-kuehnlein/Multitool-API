@@ -1,8 +1,11 @@
+using Multitool.Domain.Interfaces;
+
 namespace Multitool.Domain.Entities.Todo;
 
-public class Todo
+public class Todo : IUserEntity
 {
     public int Id { get; set; }
+    public int UserId { get; set; }
     public required string Title { get; set; }
     public string? Description { get; set; }
     public required int CategoryId { get; set; }
