@@ -37,9 +37,9 @@ public class AdminController(IUserService userService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> CreateUser([FromBody] CreateUserDto dto)
+    public async Task<IActionResult> CreateUser([FromBody] CreateUserRequest request)
     {
-        var id = await userService.CreateUserAsync(dto);
+        var id = await userService.CreateUserAsync(request);
         return StatusCode(StatusCodes.Status201Created, id);
     }
 
@@ -54,9 +54,9 @@ public class AdminController(IUserService userService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> ResetPassword([FromRoute] int id, [FromBody] ResetPasswordDto dto)
+    public async Task<IActionResult> ResetPassword([FromRoute] int id, [FromBody] ResetPasswordRequest request)
     {
-        await userService.ResetPasswordAsync(id, dto);
+        await userService.ResetPasswordAsync(id, request);
         return NoContent();
     }
 
@@ -72,9 +72,9 @@ public class AdminController(IUserService userService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> SetUserActive([FromRoute] int id, [FromBody] SetUserActiveDto dto)
+    public async Task<IActionResult> SetUserActive([FromRoute] int id, [FromBody] SetUserActiveRequest request)
     {
-        await userService.SetUserActiveAsync(id, dto);
+        await userService.SetUserActiveAsync(id, request);
         return NoContent();
     }
 }

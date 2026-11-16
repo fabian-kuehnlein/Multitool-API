@@ -11,7 +11,7 @@ public class AdminControllerTests
 {
     private readonly Mock<IUserService> _userServiceMock;
 
-    private List<UserDto> _getUsersResponse;
+    private List<UserModel> _getUsersResponse;
     private int _createUserResponse;
 
     private static readonly int USER_ID = AuthTestData.DefaultUser.Id;
@@ -21,7 +21,7 @@ public class AdminControllerTests
         _userServiceMock = new Mock<IUserService>();
 
         // Default responses
-        _getUsersResponse = [AuthTestData.DefaultUserDto];
+        _getUsersResponse = [AuthTestData.DefaultUserModel];
         _createUserResponse = USER_ID;
     }
 
@@ -32,13 +32,13 @@ public class AdminControllerTests
         _userServiceMock.Setup(s => s.GetUsersAsync())
             .ReturnsAsync(_getUsersResponse);
 
-        _userServiceMock.Setup(s => s.CreateUserAsync(It.IsAny<CreateUserDto>()))
+        _userServiceMock.Setup(s => s.CreateUserAsync(It.IsAny<CreateUserRequest>()))
             .ReturnsAsync(_createUserResponse);
 
-        _userServiceMock.Setup(s => s.ResetPasswordAsync(It.IsAny<int>(), It.IsAny<ResetPasswordDto>()))
+        _userServiceMock.Setup(s => s.ResetPasswordAsync(It.IsAny<int>(), It.IsAny<ResetPasswordRequest>()))
             .Returns(Task.CompletedTask);
 
-        _userServiceMock.Setup(s => s.SetUserActiveAsync(It.IsAny<int>(), It.IsAny<SetUserActiveDto>()))
+        _userServiceMock.Setup(s => s.SetUserActiveAsync(It.IsAny<int>(), It.IsAny<SetUserActiveRequest>()))
             .Returns(Task.CompletedTask);
 
         return new AdminController(_userServiceMock.Object);
@@ -65,10 +65,10 @@ public class AdminControllerTests
     // POST api/Admin/users
 
     [Fact]
-    public async Task CreateUser_WhenDtoIsValid_ReturnsCreatedWithId()
+    public async Task CreateUser_WhenRequestIsValid_ReturnsCreatedWithId()
     {
         // Arrange
-        var newUser = AuthTestData.DefaultCreateUserDto;
+        var newUser = AuthTestData.DefaultCreateUserRequest;
         var controller = GetController();
 
         // Act
@@ -87,7 +87,7 @@ public class AdminControllerTests
     public async Task ResetPassword_WhenUserExists_ReturnsNoContent()
     {
         // Arrange
-        var resetPassword = AuthTestData.DefaultResetPasswordDto;
+        var resetPassword = AuthTestData.DefaultResetPasswordRequest;
         var controller = GetController();
 
         // Act
@@ -106,7 +106,7 @@ public class AdminControllerTests
     public async Task SetUserActive_WhenUserExists_ReturnsNoContent()
     {
         // Arrange
-        var setUserActive = AuthTestData.DefaultSetUserActiveDto;
+        var setUserActive = AuthTestData.DefaultSetUserActiveRequest;
         var controller = GetController();
 
         // Act

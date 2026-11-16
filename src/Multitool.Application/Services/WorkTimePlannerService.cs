@@ -11,32 +11,32 @@ public class WorkTimePlannerService(
     IWorkDayRepository workDayRepository,
     ISettingsService settingsService) : IWorkTimePlannerService
 {
-    public async Task<List<WorkDayDto>> GetWorkDaysAsync(DateTime startDate, DateTime endDate)
+    public async Task<List<WorkDayModel>> GetWorkDaysAsync(DateTime startDate, DateTime endDate)
     {
         var workDays = await workDayRepository.GetByDateRangeAsync(startDate, endDate);
-        return workDays.Adapt<List<WorkDayDto>>();
+        return workDays.Adapt<List<WorkDayModel>>();
     }
 
-    public async Task<int> UpsertWorkDayAsync(UpsertWorkDayDto dto)
+    public async Task<int> UpsertWorkDayAsync(UpsertWorkDayRequest request)
     {
-        var existing = await workDayRepository.GetWorkDayByDateAsync(dto.Date);
+        var existing = await workDayRepository.GetWorkDayByDateAsync(request.Date);
 
         if (existing is not null && existing.IsLocked)
-            throw new InvalidOperationException($"WorkDay for {dto.Date:yyyy-MM-dd} is locked. Unlock it before making changes.");
+            throw new InvalidOperationException($"WorkDay for {request.Date:yyyy-MM-dd} is locked. Unlock it before making changes.");
 
         if (existing is null)
         {
-            var workDay = dto.Adapt<WorkDay>();
+            var workDay = request.Adapt<WorkDay>();
             await CalculateWorkDayAsync(workDay);
 
             return await workDayRepository.CreateWorkDayAsync(workDay);
         }
 
-        existing.StartTime = dto.StartTime;
-        existing.EndTime = dto.EndTime;
-        existing.BreakMinutes = dto.BreakMinutes;
-        existing.IsHomeOffice = dto.IsHomeOffice;
-        existing.Status = dto.Status;
+        existing.StartTime = request.StartTime;
+        existing.EndTime = request.EndTime;
+        existing.BreakMinutes = request.BreakMinutes;
+        existing.IsHomeOffice = request.IsHomeOffice;
+        existing.Status = request.Status;
 
         await CalculateWorkDayAsync(existing);
         await workDayRepository.UpdateWorkDayAsync(existing);

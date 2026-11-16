@@ -87,7 +87,7 @@ public class SettingsServiceTests
         var result = await service.GetSettingsAsync();
 
         // Assert
-        AssertEx.AreEqual(result, new SettingsDto(new WorktimeSettingsDto(500, 10, 2)));
+        AssertEx.AreEqual(result, new SettingsModel(new WorktimeSettingsModel(500, 10, 2)));
 
         _settingRepositoryMock.Verify(r => r.GetSettingsAsync(), Times.Once);
         _settingRepositoryMock.Verify(r => r.CreateSettingAsync(It.IsAny<Setting>()), Times.Never);
@@ -104,7 +104,7 @@ public class SettingsServiceTests
         var result = await service.GetSettingsAsync();
 
         // Assert
-        AssertEx.AreEqual(result, SettingTestData.DefaultSettingsDto);
+        AssertEx.AreEqual(result, SettingTestData.DefaultSettingsModel);
 
         _settingRepositoryMock.Verify(r => r.GetSettingsAsync(), Times.Once);
         _settingRepositoryMock.Verify(r => r.CreateSettingAsync(It.Is<Setting>(s =>
@@ -136,7 +136,7 @@ public class SettingsServiceTests
         var result = await service.GetSettingsAsync();
 
         // Assert
-        AssertEx.AreEqual(result, new SettingsDto(new WorktimeSettingsDto(500, 0, 0)));
+        AssertEx.AreEqual(result, new SettingsModel(new WorktimeSettingsModel(500, 0, 0)));
 
         _settingRepositoryMock.Verify(r => r.GetSettingsAsync(), Times.Once);
         _settingRepositoryMock.Verify(r => r.CreateSettingAsync(It.Is<Setting>(s =>
@@ -162,7 +162,7 @@ public class SettingsServiceTests
         // Arrange
         var existing = SettingTestData.DefaultSetting;
         _getSettingByKeyResponse = existing;
-        var dto = SettingTestData.DefaultUpdateSettingDto;
+        var dto = SettingTestData.DefaultUpdateSettingRequest;
         var service = GetService();
 
         // Act
@@ -186,7 +186,7 @@ public class SettingsServiceTests
     public async Task UpdateSettingAsync_WhenSettingDoesNotExist_CreatesSetting()
     {
         // Arrange
-        var dto = SettingTestData.DefaultUpdateSettingDto;
+        var dto = SettingTestData.DefaultUpdateSettingRequest;
         var service = GetService();
 
         // Act
@@ -218,7 +218,7 @@ public class SettingsServiceTests
     public async Task UpdateSettingAsync_WhenKeyIsNotDefined_ThrowsNotFoundException(string module, string key)
     {
         // Arrange
-        var dto = SettingTestData.DefaultUpdateSettingDto;
+        var dto = SettingTestData.DefaultUpdateSettingRequest;
         var service = GetService();
 
         // Act
@@ -238,7 +238,7 @@ public class SettingsServiceTests
     public async Task UpdateSettingAsync_WhenValueIsInvalid_ThrowsArgumentException(string value)
     {
         // Arrange
-        var dto = new UpdateSettingDto(value);
+        var dto = new UpdateSettingRequest(value);
         var service = GetService();
 
         // Act

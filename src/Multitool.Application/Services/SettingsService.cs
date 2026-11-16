@@ -14,7 +14,7 @@ public class SettingsService(ISettingRepository settingRepository, IUserContext 
     /// Returns the complete settings object for the user. Every defined key that is not
     /// stored yet is created lazily with its default value (per key).
     /// </summary>
-    public async Task<SettingsDto> GetSettingsAsync()
+    public async Task<SettingsModel> GetSettingsAsync()
     {
         var userId = userContext.UserId;
 
@@ -32,8 +32,8 @@ public class SettingsService(ISettingRepository settingRepository, IUserContext 
             valuesByFullKey[defaultSetting.Key] = defaultSetting.Value;
         }
 
-        return new SettingsDto(
-            Worktime: new WorktimeSettingsDto(
+        return new SettingsModel(
+            Worktime: new WorktimeSettingsModel(
                 DailyTargetMinutes: GetIntegerValue(valuesByFullKey, SettingDefinitions.WorktimeDailyTargetMinutes),
                 HomeOfficeLimitMonthly: GetIntegerValue(valuesByFullKey, SettingDefinitions.WorktimeHomeOfficeLimitMonthly),
                 HomeOfficeLimitWeekly: GetIntegerValue(valuesByFullKey, SettingDefinitions.WorktimeHomeOfficeLimitWeekly)));
@@ -42,14 +42,14 @@ public class SettingsService(ISettingRepository settingRepository, IUserContext 
     /// <summary>
     /// Validates and stores a single setting value for the user.
     /// </summary>
-    public async Task UpdateSettingAsync(string module, string key, UpdateSettingDto dto)
+    public async Task UpdateSettingAsync(string module, string key, UpdateSettingRequest request)
     {
         var userId = userContext.UserId;
 
         var definition = SettingDefinitions.TryGet(module, key)
             ?? throw new NotFoundException($"Setting '{module}_{key}' does not exist.");
 
-        var value = ValidateValue(definition, dto.Value);
+        var value = ValidateValue(definition, request.Value);
 
         var existingSetting = await settingRepository.GetSettingByKeyAsync(definition.FullKey);
 

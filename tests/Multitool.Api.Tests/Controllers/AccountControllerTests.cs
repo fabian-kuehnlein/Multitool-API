@@ -28,15 +28,15 @@ public class AccountControllerTests
         _accountServiceMock.Reset();
 
         _accountServiceMock
-            .Setup(s => s.VerifyAccountCredentialsAsync(It.IsAny<VerifyAccountCredentialsDto>()))
+            .Setup(s => s.VerifyAccountCredentialsAsync(It.IsAny<VerifyAccountCredentialsRequest>()))
             .Returns(Task.CompletedTask);
 
         _accountServiceMock
-            .Setup(s => s.SetupAccountCredentialsAsync(It.IsAny<SetupAccountCredentialsDto>()))
+            .Setup(s => s.SetupAccountCredentialsAsync(It.IsAny<SetupAccountCredentialsRequest>()))
             .ReturnsAsync(_credentialsResponse);
 
         _accountServiceMock
-            .Setup(s => s.ChangeAccountCredentialsAsync(It.IsAny<ChangeAccountCredentialsDto>()))
+            .Setup(s => s.ChangeAccountCredentialsAsync(It.IsAny<ChangeAccountCredentialsRequest>()))
             .ReturnsAsync(_credentialsResponse);
 
         return new AccountController(_accountServiceMock.Object);
@@ -48,7 +48,7 @@ public class AccountControllerTests
     public async Task VerifyCredentials_WhenCredentialsAreValid_ReturnsNoContent()
     {
         // Arrange
-        var dto = AuthTestData.DefaultVerifyAccountCredentialsDto;
+        var dto = AuthTestData.DefaultVerifyAccountCredentialsRequest;
         var controller = GetController();
 
         // Act
@@ -67,7 +67,7 @@ public class AccountControllerTests
     public async Task SetupCredentials_WhenCredentialsAreValid_ReturnsOkWithToken()
     {
         // Arrange
-        var dto = AuthTestData.DefaultSetupAccountCredentialsDto;
+        var dto = AuthTestData.DefaultSetupAccountCredentialsRequest;
         var controller = GetController();
 
         // Act
@@ -86,7 +86,7 @@ public class AccountControllerTests
     public async Task ChangeCredentials_WhenCredentialsAreValid_ReturnsOkWithToken()
     {
         // Arrange
-        var dto = AuthTestData.DefaultChangeAccountCredentialsDto;
+        var dto = AuthTestData.DefaultChangeAccountCredentialsRequest;
         var controller = GetController();
 
         // Act

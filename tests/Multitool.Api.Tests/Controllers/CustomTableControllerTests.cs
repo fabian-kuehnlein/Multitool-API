@@ -12,7 +12,7 @@ public class CustomTableControllerTests
 {
     private readonly Mock<ICustomTableService> _customTableServiceMock;
 
-    private List<TableOverviewDto> _getTableListResponse;
+    private List<TableOverviewModel> _getTableListResponse;
     private TableDetail _getTableResponse;
     private long _createTableResponse;
 
@@ -40,10 +40,10 @@ public class CustomTableControllerTests
         _customTableServiceMock.Setup(s => s.GetTableAsync(It.IsAny<long>()))
             .ReturnsAsync(_getTableResponse);
 
-        _customTableServiceMock.Setup(s => s.CreateTableAsync(It.IsAny<CreateTableDto>()))
+        _customTableServiceMock.Setup(s => s.CreateTableAsync(It.IsAny<CreateTableRequest>()))
             .ReturnsAsync(_createTableResponse);
 
-        _customTableServiceMock.Setup(s => s.UpdateTableAsync(It.IsAny<long>(), It.IsAny<UpdateTableDto>()))
+        _customTableServiceMock.Setup(s => s.UpdateTableAsync(It.IsAny<long>(), It.IsAny<UpdateTableRequest>()))
             .Returns(Task.CompletedTask);
 
         _customTableServiceMock.Setup(s => s.DeleteTableAsync(It.IsAny<long>()))
@@ -52,10 +52,10 @@ public class CustomTableControllerTests
         _customTableServiceMock.Setup(s => s.CreateColumnAsync(It.IsAny<long>()))
             .Returns(Task.CompletedTask);
 
-        _customTableServiceMock.Setup(s => s.UpdateColumnAsync(It.IsAny<long>(), It.IsAny<UpdateColumnDto>()))
+        _customTableServiceMock.Setup(s => s.UpdateColumnAsync(It.IsAny<long>(), It.IsAny<UpdateColumnRequest>()))
             .Returns(Task.CompletedTask);
 
-        _customTableServiceMock.Setup(s => s.UpdateColumnOrderAsync(It.IsAny<List<UpdateColumnOrderDto>>()))
+        _customTableServiceMock.Setup(s => s.UpdateColumnOrderAsync(It.IsAny<List<UpdateColumnOrderRequest>>()))
             .Returns(Task.CompletedTask);
 
         _customTableServiceMock.Setup(s => s.DeleteColumnAsync(It.IsAny<long>(), It.IsAny<long>()))
@@ -64,7 +64,7 @@ public class CustomTableControllerTests
         _customTableServiceMock.Setup(s => s.CreateRowAsync(It.IsAny<long>()))
             .Returns(Task.CompletedTask);
 
-        _customTableServiceMock.Setup(s => s.UpdateRowOrderAsync(It.IsAny<List<RowOrderUpdateDto>>()))
+        _customTableServiceMock.Setup(s => s.UpdateRowOrderAsync(It.IsAny<List<RowOrderUpdateRequest>>()))
             .Returns(Task.CompletedTask);
 
         _customTableServiceMock.Setup(s => s.DeleteRowsAsync(It.IsAny<long>(), It.IsAny<List<long>>()))
@@ -115,10 +115,10 @@ public class CustomTableControllerTests
     // POST api/CustomTable/tables
 
     [Fact]
-    public async Task CreateTable_WhenDtoIsValid_ReturnsCreatedWithId()
+    public async Task CreateTable_WhenRequestIsValid_ReturnsCreatedWithId()
     {
         // Arrange
-        var newTable = CustomTableTestData.DefaultCreateTableDto;
+        var newTable = CustomTableTestData.DefaultCreateTableRequest;
         var controller = GetController();
 
         // Act
@@ -137,7 +137,7 @@ public class CustomTableControllerTests
     public async Task UpdateTable_WhenTableExists_ReturnsNoContent()
     {
         // Arrange
-        var updateTable = CustomTableTestData.DefaultUpdateTableDto;
+        var updateTable = CustomTableTestData.DefaultUpdateTableRequest;
         var controller = GetController();
 
         // Act
@@ -192,7 +192,7 @@ public class CustomTableControllerTests
     public async Task UpdateColumn_WhenColumnExists_ReturnsNoContent()
     {
         // Arrange
-        var updateColumn = CustomTableTestData.DefaultUpdateColumnDto;
+        var updateColumn = CustomTableTestData.DefaultUpdateColumnRequest;
         var controller = GetController();
 
         // Act
@@ -211,7 +211,7 @@ public class CustomTableControllerTests
     public async Task UpdateColumnOrder_WhenColumnsAreValid_ReturnsNoContent()
     {
         // Arrange
-        var columnOrders = new List<UpdateColumnOrderDto> { new(COLUMN_ID, 0) };
+        var columnOrders = new List<UpdateColumnOrderRequest> { new(COLUMN_ID, 0) };
         var controller = GetController();
 
         // Act
@@ -266,7 +266,7 @@ public class CustomTableControllerTests
     public async Task UpdateRowOrder_WhenRowsAreValid_ReturnsNoContent()
     {
         // Arrange
-        var rowOrders = new List<RowOrderUpdateDto> { new(ROW_ID, 0) };
+        var rowOrders = new List<RowOrderUpdateRequest> { new(ROW_ID, 0) };
         var controller = GetController();
 
         // Act

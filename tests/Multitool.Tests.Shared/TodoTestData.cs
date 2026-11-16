@@ -1,4 +1,5 @@
 using Multitool.Application.Models;
+using Multitool.Application.Models.Todo;
 using Multitool.Domain.Entities.Todo;
 using Multitool.Domain.Entities.Category;
 using Multitool.Domain.Enums;
@@ -20,7 +21,7 @@ public static class TodoTestData
         CreationDateTime = new DateTime(2026, 6, 11, 10, 0, 0, DateTimeKind.Utc)
     };
 
-    public static TodoDto DefaultTodoDto => new()
+    public static TodoModel DefaultTodoModel => new()
     {
         Id = DefaultTodo.Id,
         Title = DefaultTodo.Title,
@@ -33,7 +34,7 @@ public static class TodoTestData
         CompletedDateTime = DefaultTodo.CompletedDateTime
     };
 
-    public static CreateTodoDto DefaultCreateTodoDto => new(
+    public static CreateTodoRequest DefaultCreateTodoRequest => new(
         "Test Todo",
         "Test Description",
         1,
@@ -41,7 +42,7 @@ public static class TodoTestData
         new DateTime(2026, 6, 11, 12, 0, 0, DateTimeKind.Utc)
     );
 
-    public static UpdateTodoDto DefaultUpdateTodoDto => new(
+    public static UpdateTodoRequest DefaultUpdateTodoRequest => new(
         "Updated Todo",
         "Updated Description",
         2,

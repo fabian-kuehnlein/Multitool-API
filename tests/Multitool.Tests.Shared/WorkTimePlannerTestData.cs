@@ -18,7 +18,7 @@ public static class WorkTimePlannerTestData
         IsLocked = false
     };
 
-    public static WorkDayDto DefaultWorkDayDto => new()
+    public static WorkDayModel DefaultWorkDayModel => new()
     {
         Id = 1,
         Date = new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc),
@@ -32,7 +32,7 @@ public static class WorkTimePlannerTestData
         IsLocked = false
     };
 
-    public static UpsertWorkDayDto DefaultUpsertWorkDayDto => new(
+    public static UpsertWorkDayRequest DefaultUpsertWorkDayRequest => new(
         new DateTime(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc),
         new TimeOnly(8, 0),
         new TimeOnly(16, 30),
@@ -41,5 +41,5 @@ public static class WorkTimePlannerTestData
         DayStatus.Normal
     );
 
-    public static LockWorkDayDto DefaultLockWorkDayDto => new(true);
+    public static LockWorkDayRequest DefaultLockWorkDayRequest => new(true);
 }

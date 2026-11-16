@@ -90,7 +90,7 @@ public class UserServiceTests
     // GetUsersAsync
 
     [Fact]
-    public async Task GetUsersAsync_WhenUsersExist_ReturnsMappedUserDtos()
+    public async Task GetUsersAsync_WhenUsersExist_ReturnsMappedUserModels()
     {
         // Arrange
         _getUsersResponse = [AuthTestData.DefaultUser];
@@ -100,7 +100,7 @@ public class UserServiceTests
         var result = await service.GetUsersAsync();
 
         // Assert
-        AssertEx.AreEqual(result, new List<UserDto> { AuthTestData.DefaultUserDto });
+        AssertEx.AreEqual(result, new List<UserModel> { AuthTestData.DefaultUserModel });
 
         _userRepositoryMock.Verify(r => r.GetUsersAsync(), Times.Once);
         _userRepositoryMock.VerifyNoOtherCalls();
@@ -115,7 +115,7 @@ public class UserServiceTests
     public async Task CreateUserAsync_WhenUsernameIsAvailable_CreatesActiveUserWithHashedPassword()
     {
         // Arrange
-        var dto = AuthTestData.DefaultCreateUserDto;
+        var dto = AuthTestData.DefaultCreateUserRequest;
         var service = GetService();
 
         // Act
@@ -160,7 +160,7 @@ public class UserServiceTests
     {
         // Arrange
         _getUserByUsernameResponse = AuthTestData.DefaultUser;
-        var dto = AuthTestData.DefaultCreateUserDto;
+        var dto = AuthTestData.DefaultCreateUserRequest;
         var service = GetService();
 
         // Act
@@ -187,7 +187,7 @@ public class UserServiceTests
         user.AccessFailedCount = 3;
         user.LockoutEnd = DateTime.UtcNow.AddMinutes(10);
         _getUserByIdResponse = user;
-        var dto = AuthTestData.DefaultResetPasswordDto;
+        var dto = AuthTestData.DefaultResetPasswordRequest;
         var service = GetService();
 
         // Act
@@ -220,7 +220,7 @@ public class UserServiceTests
     {
         // Arrange
         _getUserByIdResponse = null;
-        var dto = AuthTestData.DefaultResetPasswordDto;
+        var dto = AuthTestData.DefaultResetPasswordRequest;
         var service = GetService();
 
         // Act
@@ -248,7 +248,7 @@ public class UserServiceTests
         user.AccessFailedCount = 3;
         user.LockoutEnd = DateTime.UtcNow.AddMinutes(10);
         _getUserByIdResponse = user;
-        var dto = AuthTestData.DefaultSetUserActiveDto;
+        var dto = AuthTestData.DefaultSetUserActiveRequest;
         var service = GetService();
 
         // Act
@@ -285,7 +285,7 @@ public class UserServiceTests
         var lockout = DateTime.UtcNow.AddMinutes(10);
         user.LockoutEnd = lockout;
         _getUserByIdResponse = user;
-        var dto = AuthTestData.DefaultSetUserActiveDto with { IsActive = true };
+        var dto = AuthTestData.DefaultSetUserActiveRequest with { IsActive = true };
         var service = GetService();
 
         // Act
@@ -317,7 +317,7 @@ public class UserServiceTests
         var user = AuthTestData.DefaultUser;
         user.IsActive = true;
         _getUserByIdResponse = user;
-        var dto = AuthTestData.DefaultSetUserActiveDto;
+        var dto = AuthTestData.DefaultSetUserActiveRequest;
         var service = GetService();
 
         // Act
@@ -341,7 +341,7 @@ public class UserServiceTests
     {
         // Arrange
         _getUserByIdResponse = null;
-        var dto = AuthTestData.DefaultSetUserActiveDto;
+        var dto = AuthTestData.DefaultSetUserActiveRequest;
         var service = GetService();
 
         // Act

@@ -21,9 +21,9 @@ public class AccountController(IAccountService accountService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> VerifyCredentials([FromBody] VerifyAccountCredentialsDto dto)
+    public async Task<IActionResult> VerifyCredentials([FromBody] VerifyAccountCredentialsRequest request)
     {
-        await accountService.VerifyAccountCredentialsAsync(dto);
+        await accountService.VerifyAccountCredentialsAsync(request);
         return NoContent();
     }
 
@@ -40,9 +40,9 @@ public class AccountController(IAccountService accountService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> SetupCredentials([FromBody] SetupAccountCredentialsDto dto)
+    public async Task<IActionResult> SetupCredentials([FromBody] SetupAccountCredentialsRequest request)
     {
-        var token = await accountService.SetupAccountCredentialsAsync(dto);
+        var token = await accountService.SetupAccountCredentialsAsync(request);
         return Ok(new { token });
     }
 
@@ -59,9 +59,9 @@ public class AccountController(IAccountService accountService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> ChangeCredentials([FromBody] ChangeAccountCredentialsDto dto)
+    public async Task<IActionResult> ChangeCredentials([FromBody] ChangeAccountCredentialsRequest request)
     {
-        var token = await accountService.ChangeAccountCredentialsAsync(dto);
+        var token = await accountService.ChangeAccountCredentialsAsync(request);
         return Ok(new { token });
     }
 }

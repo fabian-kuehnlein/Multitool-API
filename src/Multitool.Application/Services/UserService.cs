@@ -15,21 +15,21 @@ public class UserService(
     IPasswordHasher hasher,
     IUserContext userContext) : IUserService
 {
-    public async Task<List<UserDto>> GetUsersAsync()
+    public async Task<List<UserModel>> GetUsersAsync()
     {
         var users = await userRepository.GetUsersAsync();
-        return users.Adapt<List<UserDto>>();
+        return users.Adapt<List<UserModel>>();
     }
 
-    public async Task<int> CreateUserAsync(CreateUserDto dto)
+    public async Task<int> CreateUserAsync(CreateUserRequest request)
     {
-        var existing = await userRepository.GetUserByUsernameAsync(dto.Username);
+        var existing = await userRepository.GetUserByUsernameAsync(request.Username);
 
         if (existing != null)
             throw new UserAlreadyExistsException("User with the given username already exists.");
 
-        var user = dto.Adapt<User>();
-        user.PasswordHash = hasher.Hash(dto.Password);
+        var user = request.Adapt<User>();
+        user.PasswordHash = hasher.Hash(request.Password);
 
         var userId = await userRepository.CreateUserAsync(user);
 
@@ -38,12 +38,12 @@ public class UserService(
         return userId;
     }
 
-    public async Task ResetPasswordAsync(int id, ResetPasswordDto dto)
+    public async Task ResetPasswordAsync(int id, ResetPasswordRequest request)
     {
         var user = await userRepository.GetUserByIdAsync(id)
             ?? throw new NotFoundException($"User with ID {id} not found.");
 
-        user.PasswordHash = hasher.Hash(dto.Password);
+        user.PasswordHash = hasher.Hash(request.Password);
         user.MustChangePassword = true;
         user.AccessFailedCount = 0;
         user.LockoutEnd = null;
@@ -51,17 +51,17 @@ public class UserService(
         await userRepository.UpdateUserAsync(user);
     }
 
-    public async Task SetUserActiveAsync(int id, SetUserActiveDto dto)
+    public async Task SetUserActiveAsync(int id, SetUserActiveRequest request)
     {
         var user = await userRepository.GetUserByIdAsync(id)
             ?? throw new NotFoundException($"User with ID {id} not found.");
 
-        if (!dto.IsActive && user.Id == userContext.UserId)
+        if (!request.IsActive && user.Id == userContext.UserId)
             throw new InvalidOperationException("You cannot deactivate your own account.");
 
-        user.IsActive = dto.IsActive;
+        user.IsActive = request.IsActive;
 
-        if (!dto.IsActive)
+        if (!request.IsActive)
         {
             user.AccessFailedCount = 0;
             user.LockoutEnd = null;

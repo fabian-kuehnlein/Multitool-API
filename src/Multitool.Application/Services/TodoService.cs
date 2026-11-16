@@ -2,6 +2,7 @@ using Mapster;
 using Multitool.Application.Extensions;
 using Multitool.Application.Interfaces;
 using Multitool.Application.Models;
+using Multitool.Application.Models.Todo;
 using Multitool.Domain.Entities.Todo;
 using Multitool.Domain.Enums;
 using Multitool.Domain.Exceptions;
@@ -11,28 +12,28 @@ namespace Multitool.Application.Services;
 
 public class TodoService(ITodoRepository todoRepository, ICategoryRepository categoryRepository) : ITodoService
 {
-    public async Task<List<TodoDto>> GetTodosAsync()
+    public async Task<List<TodoModel>> GetTodosAsync()
     {
         var todos = await todoRepository.GetTodosAsync();
-        return todos.Adapt<List<TodoDto>>();
+        return todos.Adapt<List<TodoModel>>();
     }
 
-    public async Task<TodoDto?> GetTodoByIdAsync(int id)
+    public async Task<TodoModel?> GetTodoByIdAsync(int id)
     {
         var todo = await todoRepository.GetByIdAsync(id);
-        return todo?.Adapt<TodoDto>();
+        return todo?.Adapt<TodoModel>();
     }
 
-    public async Task<int> CreateTodoAsync(CreateTodoDto createTodoDto)
+    public async Task<int> CreateTodoAsync(CreateTodoRequest request)
     {
-        await categoryRepository.GetApplicableCategoryAsync(createTodoDto.CategoryId, AppModule.Todo);
+        await categoryRepository.GetApplicableCategoryAsync(request.CategoryId, AppModule.Todo);
 
-        var todo = createTodoDto.Adapt<Todo>();
+        var todo = request.Adapt<Todo>();
 
         return await todoRepository.CreateTodoAsync(todo);
     }
 
-    public async Task UpdateTodoAsync(int id, UpdateTodoDto updateTodoDto)
+    public async Task UpdateTodoAsync(int id, UpdateTodoRequest request)
     {
         var existingTodo = await todoRepository.GetByIdAsync(id);
         if (existingTodo == null)
@@ -40,13 +41,13 @@ public class TodoService(ITodoRepository todoRepository, ICategoryRepository cat
             throw new NotFoundException($"Todo with ID {id} not found.");
         }
 
-        await categoryRepository.GetApplicableCategoryAsync(updateTodoDto.CategoryId, AppModule.Todo);
+        await categoryRepository.GetApplicableCategoryAsync(request.CategoryId, AppModule.Todo);
 
-        existingTodo.Title = updateTodoDto.Title;
-        existingTodo.Description = updateTodoDto.Description;
-        existingTodo.CategoryId = updateTodoDto.CategoryId;
-        existingTodo.Priority = updateTodoDto.Priority;
-        existingTodo.DueDate = updateTodoDto.DueDate;
+        existingTodo.Title = request.Title;
+        existingTodo.Description = request.Description;
+        existingTodo.CategoryId = request.CategoryId;
+        existingTodo.Priority = request.Priority;
+        existingTodo.DueDate = request.DueDate;
 
         await todoRepository.UpdateTodoAsync(existingTodo);
     }

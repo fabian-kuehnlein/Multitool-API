@@ -32,7 +32,7 @@ public static class CustomTableTestData
         CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
     };
 
-    public static TableOverviewDto DefaultTableOverview => new(1, "Test Table");
+    public static TableOverviewModel DefaultTableOverview => new(1, "Test Table");
 
     public static TableDetail DefaultTableDetail => new()
     {
@@ -43,12 +43,12 @@ public static class CustomTableTestData
         Rows = [new RowInfo { RowId = 1, RowOrder = 0, Cells = [] }]
     };
 
-    public static CreateTableDto DefaultCreateTableDto => new(
+    public static CreateTableRequest DefaultCreateTableRequest => new(
         "New Table",
-        new CreateColumnDto("First Col", CustomDataType.String, 0)
+        new CreateColumnRequest("First Col", CustomDataType.String, 0)
     );
 
-    public static UpdateTableDto DefaultUpdateTableDto => new("Updated Table Name");
+    public static UpdateTableRequest DefaultUpdateTableRequest => new("Updated Table Name");
 
-    public static UpdateColumnDto DefaultUpdateColumnDto => new("Updated Column Name", CustomDataType.Int, 1);
+    public static UpdateColumnRequest DefaultUpdateColumnRequest => new("Updated Column Name", CustomDataType.Int, 1);
 }

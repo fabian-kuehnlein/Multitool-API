@@ -4,12 +4,12 @@ namespace Multitool.Application.Interfaces;
 
 public interface ICalendarService
 {
-    Task<List<CalendarEventDto>> GetEventsByRangeAsync(DateTime start, DateTime end, string categories);
-    Task<List<EventSearchResponseDto>> SearchCalendarEventsAsync(string searchString);
-    Task<long> CreateEventAsync(CreateCalendarEventDto newEvent);
-    Task UpdateEventAsync(int id, UpdateCalendarEventDto dto);
+    Task<List<CalendarEventModel>> GetEventsByRangeAsync(DateTime start, DateTime end, string categories);
+    Task<List<EventSearchResponseModel>> SearchCalendarEventsAsync(string searchString);
+    Task<long> CreateEventAsync(CreateCalendarEventRequest request);
+    Task UpdateEventAsync(int id, UpdateCalendarEventRequest request);
     Task DeleteEventAsync(int id);
-    Task<List<HolidayDto>> GetHolidaysAsync(string year);
+    Task<List<HolidayModel>> GetHolidaysAsync(string year);
     Task<int> DeletePastEventsAsync(int months);
-    Task<byte[]> GenerateIcsFileAsync(GetIcalDto calendarEvent);
+    Task<byte[]> GenerateIcsFileAsync(GetIcalRequest request);
 }

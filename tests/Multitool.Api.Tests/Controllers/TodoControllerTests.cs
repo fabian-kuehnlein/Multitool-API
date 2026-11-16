@@ -2,6 +2,7 @@ using Moq;
 using Multitool.Api.Controllers;
 using Multitool.Application.Interfaces;
 using Multitool.Application.Models;
+using Multitool.Application.Models.Todo;
 using Multitool.Tests.Shared;
 using Multitool.Tests.Shared.Assertions;
 
@@ -11,7 +12,7 @@ public class TodoControllerTests
 {
     private readonly Mock<ITodoService> _todoServiceMock;
 
-    private List<TodoDto> _getTodosResponse;
+    private List<TodoModel> _getTodosResponse;
     private int _createTodoResponse;
 
     private static readonly int ID = TodoTestData.DefaultTodo.Id;
@@ -21,7 +22,7 @@ public class TodoControllerTests
         _todoServiceMock = new Mock<ITodoService>();
 
         // Default responses
-        _getTodosResponse = new List<TodoDto>() { TodoTestData.DefaultTodoDto };
+        _getTodosResponse = new List<TodoModel>() { TodoTestData.DefaultTodoModel };
         _createTodoResponse = TodoTestData.DefaultTodo.Id;
     }
 
@@ -32,10 +33,10 @@ public class TodoControllerTests
         _todoServiceMock.Setup(s => s.GetTodosAsync())
             .ReturnsAsync(_getTodosResponse);
 
-        _todoServiceMock.Setup(s => s.CreateTodoAsync(It.IsAny<CreateTodoDto>()))
+        _todoServiceMock.Setup(s => s.CreateTodoAsync(It.IsAny<CreateTodoRequest>()))
             .ReturnsAsync(_createTodoResponse);
 
-        _todoServiceMock.Setup(s => s.UpdateTodoAsync(It.IsAny<int>(), It.IsAny<UpdateTodoDto>()))
+        _todoServiceMock.Setup(s => s.UpdateTodoAsync(It.IsAny<int>(), It.IsAny<UpdateTodoRequest>()))
             .Returns(Task.CompletedTask);
 
         _todoServiceMock.Setup(s => s.DeleteTodoAsync(It.IsAny<int>()))
@@ -68,10 +69,10 @@ public class TodoControllerTests
     // POST api/Todo
 
     [Fact]
-    public async Task CreateTodo_WhenDtoIsValid_ReturnsCreatedWithId()
+    public async Task CreateTodo_WhenRequestIsValid_ReturnsCreatedWithId()
     {
         // Arrange
-        var newTodo = TodoTestData.DefaultCreateTodoDto;
+        var newTodo = TodoTestData.DefaultCreateTodoRequest;
         var controller = GetController();
 
         // Act
@@ -90,7 +91,7 @@ public class TodoControllerTests
     public async Task UpdateTodo_WhenTodoExists_ReturnsNoContent()
     {
         // Arrange
-        var newTodo = TodoTestData.DefaultUpdateTodoDto;
+        var newTodo = TodoTestData.DefaultUpdateTodoRequest;
         var controller = GetController();
 
         // Act

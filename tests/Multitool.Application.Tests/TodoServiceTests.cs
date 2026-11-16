@@ -2,6 +2,7 @@ using Mapster;
 using Moq;
 using Multitool.Application.Mappings;
 using Multitool.Application.Models;
+using Multitool.Application.Models.Todo;
 using Multitool.Application.Services;
 using Multitool.Domain.Entities.Category;
 using Multitool.Domain.Entities.Todo;
@@ -92,7 +93,7 @@ public class TodoServiceTests
         var result = await service.GetTodosAsync();
 
         // Assert
-        AssertEx.AreEqual(result, _getTodosResponse.Adapt<List<TodoDto>>());
+        AssertEx.AreEqual(result, _getTodosResponse.Adapt<List<TodoModel>>());
 
         _repositoryMock.Verify(r => r.GetTodosAsync(), Times.Once);
         _repositoryMock.VerifyNoOtherCalls();
@@ -112,7 +113,7 @@ public class TodoServiceTests
         var result = await service.GetTodoByIdAsync(ID);
 
         // Assert
-        AssertEx.AreEqual(result, _getByIdResponse.Adapt<TodoDto>());
+        AssertEx.AreEqual(result, _getByIdResponse.Adapt<TodoModel>());
 
         _repositoryMock.Verify(r => r.GetByIdAsync(ID), Times.Once);
         _repositoryMock.VerifyNoOtherCalls();
@@ -141,10 +142,10 @@ public class TodoServiceTests
 
     // CreateTodoAsync
     [Fact]
-    public async Task CreateTodoAsync_WhenDtoIsValid_CallsRepositoryAdd()
+    public async Task CreateTodoAsync_WhenRequestIsValid_CallsRepositoryAdd()
     {
         // Arrange
-        var todo = TodoTestData.DefaultCreateTodoDto;
+        var todo = TodoTestData.DefaultCreateTodoRequest;
         var service = GetService();
 
         // Act
@@ -184,7 +185,7 @@ public class TodoServiceTests
     {
         // Arrange
         _getCategoryByIdResponse = TodoTestData.CalendarOnlyCategory;
-        var dto = TodoTestData.DefaultCreateTodoDto;
+        var dto = TodoTestData.DefaultCreateTodoRequest;
         var service = GetService();
 
         // Act
@@ -205,7 +206,7 @@ public class TodoServiceTests
     {
         // Arrange
         _getCategoryByIdResponse = null;
-        var dto = TodoTestData.DefaultCreateTodoDto;
+        var dto = TodoTestData.DefaultCreateTodoRequest;
         var service = GetService();
 
         // Act
@@ -226,7 +227,7 @@ public class TodoServiceTests
     {
         // Arrange
         _getCategoryByIdResponse = CategoryTestData.DeletedCategory;
-        var dto = TodoTestData.DefaultCreateTodoDto;
+        var dto = TodoTestData.DefaultCreateTodoRequest;
         var service = GetService();
 
         // Act
@@ -248,7 +249,7 @@ public class TodoServiceTests
     {
         // Arrange
         var todo = TodoTestData.DefaultTodo;
-        var dto = TodoTestData.DefaultUpdateTodoDto;
+        var dto = TodoTestData.DefaultUpdateTodoRequest;
 
         _getByIdResponse = todo;
         _getCategoryByIdResponse = TodoTestData.SecondCategory;
@@ -293,7 +294,7 @@ public class TodoServiceTests
         var service = GetService();
 
         // Act
-        Func<Task> act = async () => await service.UpdateTodoAsync(ID, TodoTestData.DefaultUpdateTodoDto);
+        Func<Task> act = async () => await service.UpdateTodoAsync(ID, TodoTestData.DefaultUpdateTodoRequest);
 
         // Assert
         await AssertEx.Throws<NotFoundException>(act);
@@ -309,7 +310,7 @@ public class TodoServiceTests
     public async Task UpdateTodoAsync_WhenCategoryIsNotAvailableForTodoModule_ThrowsCategoryNotAvailableForModuleException()
     {
         // Arrange
-        var dto = TodoTestData.DefaultUpdateTodoDto;
+        var dto = TodoTestData.DefaultUpdateTodoRequest;
         _getCategoryByIdResponse = TodoTestData.CalendarOnlyCategory;
         var service = GetService();
 
@@ -331,7 +332,7 @@ public class TodoServiceTests
     public async Task UpdateTodoAsync_WhenCategoryDoesNotExist_ThrowsNotFoundException()
     {
         // Arrange
-        var dto = TodoTestData.DefaultUpdateTodoDto;
+        var dto = TodoTestData.DefaultUpdateTodoRequest;
         _getCategoryByIdResponse = null;
         var service = GetService();
 
@@ -353,7 +354,7 @@ public class TodoServiceTests
     public async Task UpdateTodoAsync_WhenCategoryIsDeleted_ThrowsCategoryNotAvailableForModuleException()
     {
         // Arrange
-        var dto = TodoTestData.DefaultUpdateTodoDto;
+        var dto = TodoTestData.DefaultUpdateTodoRequest;
         _getCategoryByIdResponse = CategoryTestData.DeletedCategory;
         var service = GetService();
 

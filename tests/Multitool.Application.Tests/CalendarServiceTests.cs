@@ -111,8 +111,8 @@ public class CalendarServiceTests
         var events = new List<CalendarEvent> { CalendarTestData.DefaultEvent };
         var todos = new List<Todo> { TodoTestData.DefaultTodo };
 
-        var expected = events.Adapt<List<CalendarEventDto>>();
-        expected.Add(new CalendarEventDto
+        var expected = events.Adapt<List<CalendarEventModel>>();
+        expected.Add(new CalendarEventModel
         {
             Id = $"todo-{TodoTestData.DefaultTodo.Id}",
             Title = TodoTestData.DefaultTodo.Title,
@@ -155,7 +155,7 @@ public class CalendarServiceTests
         var result = await service.GetEventsByRangeAsync(DateTime.UtcNow, DateTime.UtcNow.AddDays(7), "");
 
         // Assert
-        AssertEx.AreEqual(result, events.Adapt<List<CalendarEventDto>>());
+        AssertEx.AreEqual(result, events.Adapt<List<CalendarEventModel>>());
 
         _calendarRepositoryMock.Verify(r => r.GetEventsByRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>(), ""), Times.Once);
         _calendarRepositoryMock.VerifyNoOtherCalls();
@@ -176,7 +176,7 @@ public class CalendarServiceTests
         var result = await service.GetEventsByRangeAsync(DateTime.UtcNow, DateTime.UtcNow.AddDays(7), "");
 
         // Assert
-        AssertEx.AreEqual(result, new List<CalendarEventDto>
+        AssertEx.AreEqual(result, new List<CalendarEventModel>
         {
             new()
             {
@@ -213,7 +213,7 @@ public class CalendarServiceTests
         var result = await service.SearchCalendarEventsAsync("Meeting");
 
         // Assert
-        AssertEx.AreEqual(result, events.Adapt<List<EventSearchResponseDto>>());
+        AssertEx.AreEqual(result, events.Adapt<List<EventSearchResponseModel>>());
 
         _calendarRepositoryMock.Verify(r => r.SearchCalendarEventsAsync("Meeting"), Times.Once);
         _calendarRepositoryMock.VerifyNoOtherCalls();
@@ -230,7 +230,7 @@ public class CalendarServiceTests
         var result = await service.SearchCalendarEventsAsync("nonexistent");
 
         // Assert
-        AssertEx.AreEqual(result, new List<EventSearchResponseDto>());
+        AssertEx.AreEqual(result, new List<EventSearchResponseModel>());
 
         _calendarRepositoryMock.Verify(r => r.SearchCalendarEventsAsync("nonexistent"), Times.Once);
         _calendarRepositoryMock.VerifyNoOtherCalls();
@@ -238,7 +238,7 @@ public class CalendarServiceTests
 
     // CreateEventAsync
     [Fact]
-    public async Task CreateEventAsync_WhenDtoIsValid_CallsRepositoryAdd()
+    public async Task CreateEventAsync_WhenRequestIsValid_CallsRepositoryAdd()
     {
         // Arrange
         const long expectedId = 99L;
@@ -447,7 +447,7 @@ public class CalendarServiceTests
         var result = await service.GetHolidaysAsync("2026");
 
         // Assert
-        AssertEx.AreEqual(result, holidays.Adapt<List<HolidayDto>>());
+        AssertEx.AreEqual(result, holidays.Adapt<List<HolidayModel>>());
 
         _apiClientMock.Verify(a => a.GetHolidaysAsync("2026"), Times.Once);
         _apiClientMock.VerifyNoOtherCalls();

@@ -17,7 +17,7 @@ public static class CalendarTestData
         CategoryId = 1
     };
 
-    public static CalendarEventDto DefaultEventDto => new()
+    public static CalendarEventModel DefaultEventModel => new()
     {
         Id = DefaultEvent.Id.ToString(),
         Title = DefaultEvent.Title,
@@ -28,7 +28,7 @@ public static class CalendarTestData
         IsTodo = false
     };
 
-    public static CreateCalendarEventDto DefaultCreateEvent => new(
+    public static CreateCalendarEventRequest DefaultCreateEvent => new(
         "Team Meeting",
         "Besprechung Projekt Updates",
         new DateTime(2026, 6, 1, 9, 0, 0),
@@ -39,7 +39,7 @@ public static class CalendarTestData
         null
     );
 
-    public static UpdateCalendarEventDto DefaultUpdateEvent => new(
+    public static UpdateCalendarEventRequest DefaultUpdateEvent => new(
         "Updated Meeting",
         "Aktualisierte Besprechung",
         new DateTime(2026, 6, 1, 10, 0, 0),
@@ -50,7 +50,7 @@ public static class CalendarTestData
         null
     );
 
-    public static GetIcalDto DefaultIcalEvent => new(
+    public static GetIcalRequest DefaultIcalEvent => new(
         "Team Meeting",
         "Besprechung Projekt Updates",
         new DateTimeOffset(2026, 6, 1, 9, 0, 0, TimeSpan.Zero),

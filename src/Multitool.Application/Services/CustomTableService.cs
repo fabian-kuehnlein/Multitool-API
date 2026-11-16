@@ -12,10 +12,10 @@ namespace Multitool.Application.Services;
 
 public class CustomTableService(ICustomTableRepository customtableRepository) : ICustomTableService
 {
-    public async Task<List<TableOverviewDto>> GetTableListAsync()
+    public async Task<List<TableOverviewModel>> GetTableListAsync()
     {
         var list = await customtableRepository.GetTableListAsync();
-        return list.Adapt<List<TableOverviewDto>>();
+        return list.Adapt<List<TableOverviewModel>>();
     }
 
     public async Task<TableDetail> GetTableAsync(long tableId)
@@ -28,21 +28,21 @@ public class CustomTableService(ICustomTableRepository customtableRepository) : 
         return table.Adapt<TableDetail>();
     }
 
-    public async Task<long> CreateTableAsync(CreateTableDto dto)
+    public async Task<long> CreateTableAsync(CreateTableRequest request)
     {
-        var table = dto.Adapt<Table>();
+        var table = request.Adapt<Table>();
 
         return await customtableRepository.CreateTableAsync(table);
     }
 
-    public async Task UpdateTableAsync(long tableId, UpdateTableDto dto)
+    public async Task UpdateTableAsync(long tableId, UpdateTableRequest request)
     {
         var existing = await customtableRepository.GetTableRawAsync(tableId);
 
         if (existing == null)
             throw new NotFoundException($"Table with Id {tableId} not found");
 
-        existing.Name = dto.Name;
+        existing.Name = request.Name;
 
         await customtableRepository.UpdateTableAsync(existing);
     }
@@ -67,23 +67,23 @@ public class CustomTableService(ICustomTableRepository customtableRepository) : 
         await customtableRepository.CreateColumnAsync(tableId);
     }
 
-    public async Task UpdateColumnAsync(long columnId, UpdateColumnDto dto)
+    public async Task UpdateColumnAsync(long columnId, UpdateColumnRequest request)
     {
         var existing = await customtableRepository.GetColumnAsync(columnId);
 
         if (existing == null)
             throw new NotFoundException($"Column with Id {columnId} not found");
 
-        var typeChanged = existing.DataType != dto.DataType;
+        var typeChanged = existing.DataType != request.DataType;
 
-        existing.Name = dto.Name;
-        existing.DataType = dto.DataType;
-        existing.ColOrder = dto.ColOrder;
+        existing.Name = request.Name;
+        existing.DataType = request.DataType;
+        existing.ColOrder = request.ColOrder;
 
         await customtableRepository.UpdateColumnAsync(existing, typeChanged);
     }
 
-    public async Task UpdateColumnOrderAsync(List<UpdateColumnOrderDto> columns)
+    public async Task UpdateColumnOrderAsync(List<UpdateColumnOrderRequest> columns)
         => await customtableRepository.UpdateColumnOrderAsync(columns.Adapt<List<Column>>());
 
     public async Task DeleteColumnAsync(long tableId, long columnId)
@@ -106,7 +106,7 @@ public class CustomTableService(ICustomTableRepository customtableRepository) : 
         await customtableRepository.CreateRowAsync(tableId);
     }
 
-    public async Task UpdateRowOrderAsync(List<RowOrderUpdateDto> rows)
+    public async Task UpdateRowOrderAsync(List<RowOrderUpdateRequest> rows)
     {
         var rowOrders = rows.ToDictionary(r => r.RowId, r => r.RowOrder);
         await customtableRepository.UpdateRowOrderAsync(rowOrders);

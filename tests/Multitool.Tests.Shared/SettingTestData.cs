@@ -23,13 +23,13 @@ public static class SettingTestData
         UpdatedAt = DateTime.Now
     };
 
-    public static WorktimeSettingsDto DefaultWorktimeSettingsDto => new(
+    public static WorktimeSettingsModel DefaultWorktimeSettingsModel => new(
         DailyTargetMinutes: 480,
         HomeOfficeLimitMonthly: 0,
         HomeOfficeLimitWeekly: 0);
 
-    public static SettingsDto DefaultSettingsDto => new(
-        Worktime: DefaultWorktimeSettingsDto);
+    public static SettingsModel DefaultSettingsModel => new(
+        Worktime: DefaultWorktimeSettingsModel);
 
-    public static UpdateSettingDto DefaultUpdateSettingDto => new("600");
+    public static UpdateSettingRequest DefaultUpdateSettingRequest => new("600");
 }

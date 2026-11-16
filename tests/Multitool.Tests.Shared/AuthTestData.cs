@@ -18,7 +18,7 @@ public static class AuthTestData
         CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
     };
 
-    public static UserDto DefaultUserDto => new(
+    public static UserModel DefaultUserModel => new(
         DefaultUser.Id,
         DefaultUser.Username,
         DefaultUser.Role,
@@ -26,20 +26,20 @@ public static class AuthTestData
         DefaultUser.MustChangePassword,
         DefaultUser.CreatedAt);
 
-    public static CreateUserDto DefaultCreateUserDto => new("newuser", "password123", UserRole.User);
+    public static CreateUserRequest DefaultCreateUserRequest => new("newuser", "password123", UserRole.User);
 
-    public static ResetPasswordDto DefaultResetPasswordDto => new("new-password123");
+    public static ResetPasswordRequest DefaultResetPasswordRequest => new("new-password123");
 
-    public static SetupAccountCredentialsDto DefaultSetupAccountCredentialsDto =>
+    public static SetupAccountCredentialsRequest DefaultSetupAccountCredentialsRequest =>
         new("updateduser", "new-password123");
 
-    public static VerifyAccountCredentialsDto DefaultVerifyAccountCredentialsDto =>
+    public static VerifyAccountCredentialsRequest DefaultVerifyAccountCredentialsRequest =>
         new("testuser", "current-password");
 
-    public static ChangeAccountCredentialsDto DefaultChangeAccountCredentialsDto =>
+    public static ChangeAccountCredentialsRequest DefaultChangeAccountCredentialsRequest =>
         new("current-password", "updateduser", "new-password123");
 
-    public static SetUserActiveDto DefaultSetUserActiveDto => new(false);
+    public static SetUserActiveRequest DefaultSetUserActiveRequest => new(false);
 
     public static LoginRequest DefaultLoginRequest => new("testuser", "password123");
 }

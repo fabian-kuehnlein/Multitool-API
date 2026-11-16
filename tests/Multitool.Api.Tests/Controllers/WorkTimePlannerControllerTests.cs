@@ -11,18 +11,18 @@ public class WorkTimePlannerControllerTests
 {
     private readonly Mock<IWorkTimePlannerService> _workTimePlannerServiceMock;
 
-    private List<WorkDayDto> _getWorkDaysResponse;
+    private List<WorkDayModel> _getWorkDaysResponse;
     private int _totalOvertimeResponse;
     private int _homeOfficeDaysResponse;
 
-    private static readonly int ID = WorkTimePlannerTestData.DefaultWorkDayDto.Id;
+    private static readonly int ID = WorkTimePlannerTestData.DefaultWorkDayModel.Id;
 
     public WorkTimePlannerControllerTests()
     {
         _workTimePlannerServiceMock = new Mock<IWorkTimePlannerService>();
 
         // Default responses
-        _getWorkDaysResponse = [WorkTimePlannerTestData.DefaultWorkDayDto];
+        _getWorkDaysResponse = [WorkTimePlannerTestData.DefaultWorkDayModel];
         _totalOvertimeResponse = 75;
         _homeOfficeDaysResponse = 12;
     }
@@ -34,7 +34,7 @@ public class WorkTimePlannerControllerTests
         _workTimePlannerServiceMock.Setup(s => s.GetWorkDaysAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()))
             .ReturnsAsync(_getWorkDaysResponse);
 
-        _workTimePlannerServiceMock.Setup(s => s.UpsertWorkDayAsync(It.IsAny<UpsertWorkDayDto>()))
+        _workTimePlannerServiceMock.Setup(s => s.UpsertWorkDayAsync(It.IsAny<UpsertWorkDayRequest>()))
             .ReturnsAsync(ID);
 
         _workTimePlannerServiceMock.Setup(s => s.SetWorkDayLockedAsync(It.IsAny<int>(), It.IsAny<bool>()))
@@ -58,7 +58,7 @@ public class WorkTimePlannerControllerTests
     public async Task GetWorkDays_WhenWorkDaysExist_ReturnsOkWithWorkDays()
     {
         // Arrange
-        var start = WorkTimePlannerTestData.DefaultWorkDayDto.Date;
+        var start = WorkTimePlannerTestData.DefaultWorkDayModel.Date;
         var end = start.AddDays(7);
         var controller = GetController();
 
@@ -78,7 +78,7 @@ public class WorkTimePlannerControllerTests
     public async Task UpsertWorkDay_WhenWorkDayIsValid_ReturnsNoContent()
     {
         // Arrange
-        var upsertWorkDay = WorkTimePlannerTestData.DefaultUpsertWorkDayDto;
+        var upsertWorkDay = WorkTimePlannerTestData.DefaultUpsertWorkDayRequest;
         var controller = GetController();
 
         // Act
@@ -97,7 +97,7 @@ public class WorkTimePlannerControllerTests
     public async Task SetWorkDayLock_WhenWorkDayExists_ReturnsNoContent()
     {
         // Arrange
-        var lockWorkDay = WorkTimePlannerTestData.DefaultLockWorkDayDto;
+        var lockWorkDay = WorkTimePlannerTestData.DefaultLockWorkDayRequest;
         var controller = GetController();
 
         // Act

@@ -23,7 +23,7 @@ public class WorkTimePlannerServiceTests
     private WorkDay? _getWorkDayByDateResponse;
     private int _upsertWorkDayResponse;
     private int _getTotalOvertimeResponse;
-    private SettingsDto _getSettingsResponse;
+    private SettingsModel _getSettingsResponse;
 
     private static readonly int ID = WorkTimePlannerTestData.DefaultWorkDay.Id;
     private static readonly int USER_ID = AuthTestData.DefaultUser.Id;
@@ -43,7 +43,7 @@ public class WorkTimePlannerServiceTests
         _getWorkDayByDateResponse = null;
         _upsertWorkDayResponse = ID;
         _getTotalOvertimeResponse = 0;
-        _getSettingsResponse = SettingTestData.DefaultSettingsDto;
+        _getSettingsResponse = SettingTestData.DefaultSettingsModel;
     }
 
     private WorkTimePlannerService GetService()
@@ -98,7 +98,7 @@ public class WorkTimePlannerServiceTests
         var result = await service.GetWorkDaysAsync(DateTime.UtcNow, DateTime.UtcNow.AddDays(7));
 
         // Assert
-        AssertEx.AreEqual(result, workDays.Adapt<List<WorkDayDto>>());
+        AssertEx.AreEqual(result, workDays.Adapt<List<WorkDayModel>>());
 
         _workDayRepositoryMock.Verify(r => r.GetByDateRangeAsync(It.IsAny<DateTime>(), It.IsAny<DateTime>()), Times.Once);
         _workDayRepositoryMock.VerifyNoOtherCalls();
@@ -109,7 +109,7 @@ public class WorkTimePlannerServiceTests
     public async Task UpsertWorkDayAsync_WhenWorkDayDoesNotExist_CreatesWorkDayAndCalculatesWorkAndOvertimeMinutes()
     {
         // Arrange
-        var dto = WorkTimePlannerTestData.DefaultUpsertWorkDayDto;
+        var dto = WorkTimePlannerTestData.DefaultUpsertWorkDayRequest;
         var service = GetService();
 
         // Act
@@ -144,7 +144,7 @@ public class WorkTimePlannerServiceTests
         // Arrange
         var existing = WorkTimePlannerTestData.DefaultWorkDay;
         _getWorkDayByDateResponse = existing;
-        var dto = WorkTimePlannerTestData.DefaultUpsertWorkDayDto with { StartTime = new TimeOnly(9, 0) };
+        var dto = WorkTimePlannerTestData.DefaultUpsertWorkDayRequest with { StartTime = new TimeOnly(9, 0) };
         var service = GetService();
 
         // Act
@@ -183,7 +183,7 @@ public class WorkTimePlannerServiceTests
     public async Task UpsertWorkDayAsync_WhenStatusIsHolidayVacationOrSick_SetsWorkAndOvertimeToZero(DayStatus status)
     {
         // Arrange
-        var dto = WorkTimePlannerTestData.DefaultUpsertWorkDayDto with { Status = status };
+        var dto = WorkTimePlannerTestData.DefaultUpsertWorkDayRequest with { Status = status };
         var service = GetService();
 
         // Act
@@ -209,7 +209,7 @@ public class WorkTimePlannerServiceTests
     public async Task UpsertWorkDayAsync_WhenStartOrEndTimeIsMissing_SetsWorkAndOvertimeToZero()
     {
         // Arrange
-        var dto = WorkTimePlannerTestData.DefaultUpsertWorkDayDto with { StartTime = null, EndTime = null };
+        var dto = WorkTimePlannerTestData.DefaultUpsertWorkDayRequest with { StartTime = null, EndTime = null };
         var service = GetService();
 
         // Act
@@ -235,8 +235,8 @@ public class WorkTimePlannerServiceTests
     public async Task UpsertWorkDayAsync_WhenCustomDailyTargetIsConfigured_UsesItForOvertimeCalculation()
     {
         // Arrange
-        _getSettingsResponse = new SettingsDto(new WorktimeSettingsDto(400, 0, 0));
-        var dto = WorkTimePlannerTestData.DefaultUpsertWorkDayDto;
+        _getSettingsResponse = new SettingsModel(new WorktimeSettingsModel(400, 0, 0));
+        var dto = WorkTimePlannerTestData.DefaultUpsertWorkDayRequest;
         var service = GetService();
 
         // Act
@@ -268,12 +268,12 @@ public class WorkTimePlannerServiceTests
         var service = GetService();
 
         // Act
-        Func<Task> act = async () => await service.UpsertWorkDayAsync(WorkTimePlannerTestData.DefaultUpsertWorkDayDto);
+        Func<Task> act = async () => await service.UpsertWorkDayAsync(WorkTimePlannerTestData.DefaultUpsertWorkDayRequest);
 
         // Assert
         await AssertEx.Throws<InvalidOperationException>(act);
 
-        _workDayRepositoryMock.Verify(r => r.GetWorkDayByDateAsync(WorkTimePlannerTestData.DefaultUpsertWorkDayDto.Date), Times.Once);
+        _workDayRepositoryMock.Verify(r => r.GetWorkDayByDateAsync(WorkTimePlannerTestData.DefaultUpsertWorkDayRequest.Date), Times.Once);
         _workDayRepositoryMock.Verify(r => r.CreateWorkDayAsync(It.IsAny<WorkDay>()), Times.Never);
         _workDayRepositoryMock.Verify(r => r.UpdateWorkDayAsync(It.IsAny<WorkDay>()), Times.Never);
         _workDayRepositoryMock.VerifyNoOtherCalls();

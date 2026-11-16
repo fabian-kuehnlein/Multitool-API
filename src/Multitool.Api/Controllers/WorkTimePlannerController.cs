@@ -32,9 +32,9 @@ public class WorkTimePlannerController(IWorkTimePlannerService service) : Contro
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> UpsertWorkDay([FromBody] UpsertWorkDayDto dto)
+    public async Task<IActionResult> UpsertWorkDay([FromBody] UpsertWorkDayRequest request)
     {
-        await service.UpsertWorkDayAsync(dto);
+        await service.UpsertWorkDayAsync(request);
         return NoContent();
     }
 
@@ -47,9 +47,9 @@ public class WorkTimePlannerController(IWorkTimePlannerService service) : Contro
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> SetWorkDayLock([FromRoute] int id, [FromBody] LockWorkDayDto dto)
+    public async Task<IActionResult> SetWorkDayLock([FromRoute] int id, [FromBody] LockWorkDayRequest request)
     {
-        await service.SetWorkDayLockedAsync(id, dto.IsLocked);
+        await service.SetWorkDayLockedAsync(id, request.IsLocked);
         return NoContent();
     }
 

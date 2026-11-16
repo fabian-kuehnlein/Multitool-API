@@ -28,9 +28,9 @@ public static class CategoryTestData
         IsDeleted = true
     };
 
-    public static CategoryDto DefaultCategoryDto => new(DefaultCategory.Id, DefaultCategory.Name, DefaultCategory.Color, DefaultApplicableModules, false);
+    public static CategoryModel DefaultCategoryModel => new(DefaultCategory.Id, DefaultCategory.Name, DefaultCategory.Color, DefaultApplicableModules, false);
 
-    public static CreateCategoryDto DefaultCreateCategoryDto => new(DefaultCategory.Name, DefaultCategory.Color, DefaultApplicableModules);
+    public static CreateCategoryRequest DefaultCreateCategoryRequest => new(DefaultCategory.Name, DefaultCategory.Color, DefaultApplicableModules);
 
-    public static UpdateCategoryDto DefaultUpdateCategoryDto => new("Updated Category", "#00FF00", DefaultApplicableModules);
+    public static UpdateCategoryRequest DefaultUpdateCategoryRequest => new("Updated Category", "#00FF00", DefaultApplicableModules);
 }

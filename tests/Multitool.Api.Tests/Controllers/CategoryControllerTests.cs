@@ -11,7 +11,7 @@ public class CategoryControllerTests
 {
     private readonly Mock<ICategoryService> _categoryServiceMock;
 
-    private List<CategoryDto> _getCategoriesResponse;
+    private List<CategoryModel> _getCategoriesResponse;
     private int _createCategoryResponse;
 
     private static readonly int ID = CategoryTestData.DefaultCategory.Id;
@@ -21,7 +21,7 @@ public class CategoryControllerTests
         _categoryServiceMock = new Mock<ICategoryService>();
 
         // Default responses
-        _getCategoriesResponse = [CategoryTestData.DefaultCategoryDto];
+        _getCategoriesResponse = [CategoryTestData.DefaultCategoryModel];
         _createCategoryResponse = CategoryTestData.DefaultCategory.Id;
     }
 
@@ -32,10 +32,10 @@ public class CategoryControllerTests
         _categoryServiceMock.Setup(s => s.GetCategoriesAsync())
             .ReturnsAsync(_getCategoriesResponse);
 
-        _categoryServiceMock.Setup(s => s.CreateCategoryAsync(It.IsAny<CreateCategoryDto>()))
+        _categoryServiceMock.Setup(s => s.CreateCategoryAsync(It.IsAny<CreateCategoryRequest>()))
             .ReturnsAsync(_createCategoryResponse);
 
-        _categoryServiceMock.Setup(s => s.UpdateCategoryAsync(It.IsAny<int>(), It.IsAny<UpdateCategoryDto>()))
+        _categoryServiceMock.Setup(s => s.UpdateCategoryAsync(It.IsAny<int>(), It.IsAny<UpdateCategoryRequest>()))
             .Returns(Task.CompletedTask);
 
         _categoryServiceMock.Setup(s => s.DeleteCategoryAsync(It.IsAny<int>()))
@@ -65,10 +65,10 @@ public class CategoryControllerTests
     // POST api/Category/categories
 
     [Fact]
-    public async Task CreateCategory_WhenDtoIsValid_ReturnsCreatedWithId()
+    public async Task CreateCategory_WhenRequestIsValid_ReturnsCreatedWithId()
     {
         // Arrange
-        var dto = CategoryTestData.DefaultCreateCategoryDto;
+        var dto = CategoryTestData.DefaultCreateCategoryRequest;
         var controller = GetController();
 
         // Act
@@ -87,7 +87,7 @@ public class CategoryControllerTests
     public async Task UpdateCategory_WhenCategoryExists_ReturnsNoContent()
     {
         // Arrange
-        var dto = CategoryTestData.DefaultUpdateCategoryDto;
+        var dto = CategoryTestData.DefaultUpdateCategoryRequest;
         var controller = GetController();
 
         // Act

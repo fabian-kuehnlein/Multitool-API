@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Multitool.Application.Interfaces;
 using Multitool.Application.Models;
+using Multitool.Application.Models.Todo;
 
 namespace Multitool.Api.Controllers;
 
@@ -33,9 +34,9 @@ public class TodoController(ITodoService todoService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> CreateTodo([FromBody] CreateTodoDto createTodoDto)
+    public async Task<IActionResult> CreateTodo([FromBody] CreateTodoRequest request)
     {
-        var id = await todoService.CreateTodoAsync(createTodoDto);
+        var id = await todoService.CreateTodoAsync(request);
         return StatusCode(StatusCodes.Status201Created, id);
     }
 
@@ -49,9 +50,9 @@ public class TodoController(ITodoService todoService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> UpdateTodo(int id, [FromBody] UpdateTodoDto updateTodoDto)
+    public async Task<IActionResult> UpdateTodo(int id, [FromBody] UpdateTodoRequest request)
     {
-        await todoService.UpdateTodoAsync(id, updateTodoDto);
+        await todoService.UpdateTodoAsync(id, request);
         return NoContent();
     }
 

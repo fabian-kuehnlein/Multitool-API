@@ -32,9 +32,9 @@ public class CategoryController(ICategoryService categoryService) : ControllerBa
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> CreateCategory([FromBody] CreateCategoryDto dto)
+    public async Task<IActionResult> CreateCategory([FromBody] CreateCategoryRequest request)
     {
-        var id = await categoryService.CreateCategoryAsync(dto);
+        var id = await categoryService.CreateCategoryAsync(request);
         return StatusCode(StatusCodes.Status201Created, id);
     }
 
@@ -47,9 +47,9 @@ public class CategoryController(ICategoryService categoryService) : ControllerBa
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> UpdateCategory(int id, [FromBody] UpdateCategoryDto dto)
+    public async Task<IActionResult> UpdateCategory(int id, [FromBody] UpdateCategoryRequest request)
     {
-        await categoryService.UpdateCategoryAsync(id, dto);
+        await categoryService.UpdateCategoryAsync(id, request);
         return NoContent();
     }
 

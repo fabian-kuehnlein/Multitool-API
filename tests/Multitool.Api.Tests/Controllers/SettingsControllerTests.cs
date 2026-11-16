@@ -11,7 +11,7 @@ public class SettingsControllerTests
 {
     private readonly Mock<ISettingsService> _settingsServiceMock;
 
-    private SettingsDto _getSettingsResponse;
+    private SettingsModel _getSettingsResponse;
 
     private static readonly string MODULE = SettingTestData.WorktimeModule;
     private static readonly string KEY = SettingTestData.DailyTargetMinutesKey;
@@ -21,7 +21,7 @@ public class SettingsControllerTests
         _settingsServiceMock = new Mock<ISettingsService>();
 
         // Default responses
-        _getSettingsResponse = SettingTestData.DefaultSettingsDto;
+        _getSettingsResponse = SettingTestData.DefaultSettingsModel;
     }
 
     private SettingsController GetController()
@@ -31,7 +31,7 @@ public class SettingsControllerTests
         _settingsServiceMock.Setup(s => s.GetSettingsAsync())
             .ReturnsAsync(_getSettingsResponse);
 
-        _settingsServiceMock.Setup(s => s.UpdateSettingAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<UpdateSettingDto>()))
+        _settingsServiceMock.Setup(s => s.UpdateSettingAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<UpdateSettingRequest>()))
             .Returns(Task.CompletedTask);
 
         return new SettingsController(_settingsServiceMock.Object);
@@ -61,7 +61,7 @@ public class SettingsControllerTests
     public async Task UpdateSetting_WhenSettingIsValid_ReturnsNoContent()
     {
         // Arrange
-        var updateSetting = SettingTestData.DefaultUpdateSettingDto;
+        var updateSetting = SettingTestData.DefaultUpdateSettingRequest;
         var controller = GetController();
 
         // Act

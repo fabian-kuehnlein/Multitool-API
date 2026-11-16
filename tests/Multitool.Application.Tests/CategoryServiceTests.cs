@@ -71,7 +71,7 @@ public class CategoryServiceTests
         var result = await service.GetCategoriesAsync();
 
         // Assert
-        AssertEx.AreEqual(result, _getCategoriesResponse.Adapt<List<CategoryDto>>());
+        AssertEx.AreEqual(result, _getCategoriesResponse.Adapt<List<CategoryModel>>());
 
         _repositoryMock.Verify(r => r.GetCategoriesAsync(), Times.Once);
         _repositoryMock.VerifyNoOtherCalls();
@@ -96,10 +96,10 @@ public class CategoryServiceTests
 
     // CreateCategoryAsync
     [Fact]
-    public async Task CreateCategoryAsync_WhenDtoIsValid_CallsRepositoryAdd()
+    public async Task CreateCategoryAsync_WhenRequestIsValid_CallsRepositoryAdd()
     {
         // Arrange
-        var dto = CategoryTestData.DefaultCreateCategoryDto;
+        var dto = CategoryTestData.DefaultCreateCategoryRequest;
         var service = GetService();
 
         // Act
@@ -128,7 +128,7 @@ public class CategoryServiceTests
     {
         // Arrange
         var category = CategoryTestData.DefaultCategory;
-        var dto = CategoryTestData.DefaultUpdateCategoryDto;
+        var dto = CategoryTestData.DefaultUpdateCategoryRequest;
 
         _getByIdResponse = category;
         var service = GetService();
@@ -164,7 +164,7 @@ public class CategoryServiceTests
         var service = GetService();
 
         // Act
-        Func<Task> act = async () => await service.UpdateCategoryAsync(ID, CategoryTestData.DefaultUpdateCategoryDto);
+        Func<Task> act = async () => await service.UpdateCategoryAsync(ID, CategoryTestData.DefaultUpdateCategoryRequest);
 
         // Assert
         await AssertEx.Throws<NotFoundException>(act);

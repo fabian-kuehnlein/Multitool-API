@@ -12,10 +12,10 @@ public class CalendarControllerTests
 {
     private readonly Mock<ICalendarService> _calendarServiceMock;
 
-    private List<CalendarEventDto> _getEventsByRangeResponse;
-    private List<EventSearchResponseDto> _searchEventsResponse;
+    private List<CalendarEventModel> _getEventsByRangeResponse;
+    private List<EventSearchResponseModel> _searchEventsResponse;
     private int _createEventResponse;
-    private List<HolidayDto> _getHolidaysResponse;
+    private List<HolidayModel> _getHolidaysResponse;
     private byte[] _generateIcsResponse;
 
     private static readonly DateTime Start = CalendarTestData.DefaultEvent.StartDateTime;
@@ -28,10 +28,10 @@ public class CalendarControllerTests
 
         // Default responses
         var defaultEvent = CalendarTestData.DefaultEvent;
-        _getEventsByRangeResponse = [CalendarTestData.DefaultEventDto];
-        _searchEventsResponse = [new EventSearchResponseDto(defaultEvent.Id, defaultEvent.Title, null, defaultEvent.StartDateTime, null, null)];
+        _getEventsByRangeResponse = [CalendarTestData.DefaultEventModel];
+        _searchEventsResponse = [new EventSearchResponseModel(defaultEvent.Id, defaultEvent.Title, null, defaultEvent.StartDateTime, null, null)];
         _createEventResponse = defaultEvent.Id;
-        _getHolidaysResponse = [new HolidayDto { Name = CalendarTestData.DefaultHoliday.Name, Date = CalendarTestData.DefaultHoliday.Date }];
+        _getHolidaysResponse = [new HolidayModel { Name = CalendarTestData.DefaultHoliday.Name, Date = CalendarTestData.DefaultHoliday.Date }];
         _generateIcsResponse = "BEGIN:VCALENDAR"u8.ToArray();;    }
 
     private CalendarController GetController()
@@ -44,10 +44,10 @@ public class CalendarControllerTests
         _calendarServiceMock.Setup(s => s.SearchCalendarEventsAsync(It.IsAny<string>()))
             .ReturnsAsync(_searchEventsResponse);
 
-        _calendarServiceMock.Setup(s => s.CreateEventAsync(It.IsAny<CreateCalendarEventDto>()))
+        _calendarServiceMock.Setup(s => s.CreateEventAsync(It.IsAny<CreateCalendarEventRequest>()))
             .ReturnsAsync(_createEventResponse);
 
-        _calendarServiceMock.Setup(s => s.UpdateEventAsync(It.IsAny<int>(), It.IsAny<UpdateCalendarEventDto>()))
+        _calendarServiceMock.Setup(s => s.UpdateEventAsync(It.IsAny<int>(), It.IsAny<UpdateCalendarEventRequest>()))
             .Returns(Task.CompletedTask);
 
         _calendarServiceMock.Setup(s => s.DeleteEventAsync(It.IsAny<int>()))
@@ -56,7 +56,7 @@ public class CalendarControllerTests
         _calendarServiceMock.Setup(s => s.GetHolidaysAsync(It.IsAny<string>()))
             .ReturnsAsync(_getHolidaysResponse);
 
-        _calendarServiceMock.Setup(s => s.GenerateIcsFileAsync(It.IsAny<GetIcalDto>()))
+        _calendarServiceMock.Setup(s => s.GenerateIcsFileAsync(It.IsAny<GetIcalRequest>()))
             .ReturnsAsync(_generateIcsResponse);
 
         return new CalendarController(_calendarServiceMock.Object);

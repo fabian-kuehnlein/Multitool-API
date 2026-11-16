@@ -1,4 +1,4 @@
-using System.Text;
+﻿using System.Text;
 using Ical.Net;
 using IcalEvent = Ical.Net.CalendarComponents.CalendarEvent;
 using Ical.Net.DataTypes;
@@ -20,15 +20,15 @@ public class CalendarService(
     ICategoryRepository categoryRepository,
     ICalendarApiClient calendarApiClient) : ICalendarService
 {
-    public async Task<List<CalendarEventDto>> GetEventsByRangeAsync(DateTime start, DateTime end, string categories)
+    public async Task<List<CalendarEventModel>> GetEventsByRangeAsync(DateTime start, DateTime end, string categories)
     {
         var events = await calendarRepository.GetEventsByRangeAsync(start, end, categories);
 
-        var eventDtos = events.Adapt<List<CalendarEventDto>>();
+        var eventModels = events.Adapt<List<CalendarEventModel>>();
 
         var todos = await todoRepository.GetTodosWithDueDateInRangeAsync(start, end);
 
-        var todoEvents = todos.Select(t => new CalendarEventDto
+        var todoEvents = todos.Select(t => new CalendarEventModel
         {
             Id = $"todo-{t.Id}",
             Title = t.Title,
@@ -42,41 +42,41 @@ public class CalendarService(
             IsTodo = true
         }).ToList();
 
-        eventDtos.AddRange(todoEvents);
+        eventModels.AddRange(todoEvents);
 
-        return eventDtos;
+        return eventModels;
     }
 
-    public async Task<List<EventSearchResponseDto>> SearchCalendarEventsAsync(string searchString)
+    public async Task<List<EventSearchResponseModel>> SearchCalendarEventsAsync(string searchString)
     {
         var result = await calendarRepository.SearchCalendarEventsAsync(searchString);
-        return result.Adapt<List<EventSearchResponseDto>>();
+        return result.Adapt<List<EventSearchResponseModel>>();
     }
 
-    public async Task<long> CreateEventAsync(CreateCalendarEventDto newEvent)
+    public async Task<long> CreateEventAsync(CreateCalendarEventRequest request)
     {
-        await categoryRepository.GetApplicableCategoryAsync(newEvent.CategoryId, AppModule.Calendar);
+        await categoryRepository.GetApplicableCategoryAsync(request.CategoryId, AppModule.Calendar);
 
-        return await calendarRepository.CreateEventAsync(newEvent.Adapt<CalendarEvent>());
+        return await calendarRepository.CreateEventAsync(request.Adapt<CalendarEvent>());
     }
 
-    public async Task UpdateEventAsync(int id, UpdateCalendarEventDto updateCalendarEventDto)
+    public async Task UpdateEventAsync(int id, UpdateCalendarEventRequest request)
     {
         var existing = await calendarRepository.GetByIdAsync(id);
 
         if (existing == null)
             throw new NotFoundException($"Event with Id {id} not found");
 
-        await categoryRepository.GetApplicableCategoryAsync(updateCalendarEventDto.CategoryId, AppModule.Calendar);
+        await categoryRepository.GetApplicableCategoryAsync(request.CategoryId, AppModule.Calendar);
 
-        existing.Title = updateCalendarEventDto.Title;
-        existing.Note = updateCalendarEventDto.Note;
-        existing.StartDateTime = updateCalendarEventDto.StartDateTime;
-        existing.EndDateTime = updateCalendarEventDto.EndDateTime;
-        existing.IsAllDay = updateCalendarEventDto.IsAllDay;
-        existing.CategoryId = updateCalendarEventDto.CategoryId;
-        existing.RecurrenceRule = updateCalendarEventDto.RecurrenceRule;
-        existing.RecurrenceEnd = updateCalendarEventDto.RecurrenceEnd;
+        existing.Title = request.Title;
+        existing.Note = request.Note;
+        existing.StartDateTime = request.StartDateTime;
+        existing.EndDateTime = request.EndDateTime;
+        existing.IsAllDay = request.IsAllDay;
+        existing.CategoryId = request.CategoryId;
+        existing.RecurrenceRule = request.RecurrenceRule;
+        existing.RecurrenceEnd = request.RecurrenceEnd;
 
         await calendarRepository.UpdateEventAsync(existing);
     }
@@ -91,28 +91,28 @@ public class CalendarService(
         await calendarRepository.DeleteEventAsync(exists);
     }
 
-    public async Task<List<HolidayDto>> GetHolidaysAsync(string year)
+    public async Task<List<HolidayModel>> GetHolidaysAsync(string year)
     {
         var holidays = await calendarApiClient.GetHolidaysAsync(year);
 
         if (holidays.Count == 0)
             throw new NotFoundException($"No holidays found for year {year}");
 
-        return holidays.Adapt<List<HolidayDto>>();
+        return holidays.Adapt<List<HolidayModel>>();
     }
 
-    public Task<byte[]> GenerateIcsFileAsync(GetIcalDto calendarEvent)
+    public Task<byte[]> GenerateIcsFileAsync(GetIcalRequest request)
     {
         var calendar = new Calendar { Method = "PUBLISH" };
 
         var iCalEvent = new IcalEvent
         {
-            Summary = calendarEvent.Title,
-            Description = calendarEvent.Note ?? string.Empty,
+            Summary = request.Title,
+            Description = request.Note ?? string.Empty,
             Uid = Guid.NewGuid().ToString()
         };
 
-        if (calendarEvent.IsAllDay)
+        if (request.IsAllDay)
         {
             // Ical.Net derives CalendarEvent.IsAllDay from Start.HasTime. A date-only
             // CalDateTime serializes as VALUE=DATE, which is what clients need to
@@ -121,10 +121,10 @@ public class CalendarService(
             // Use the wall-clock date from the DateTimeOffset, not its UTC date:
             // the client sends local midnight, and converting that to UTC would
             // shift the event to the previous day for positive offsets.
-            var startDate = DateOnly.FromDateTime(calendarEvent.StartDateTime.DateTime);
+            var startDate = DateOnly.FromDateTime(request.StartDateTime.DateTime);
 
             // FullCalendar sends an exclusive end; without one the event lasts one day.
-            var endExclusive = calendarEvent.EndDateTime is { } e
+            var endExclusive = request.EndDateTime is { } e
                 ? DateOnly.FromDateTime(e.DateTime)
                 : startDate.AddDays(1);
 
@@ -136,8 +136,8 @@ public class CalendarService(
         }
         else
         {
-            var start = calendarEvent.StartDateTime.UtcDateTime;
-            var end = (calendarEvent.EndDateTime ?? calendarEvent.StartDateTime).UtcDateTime;
+            var start = request.StartDateTime.UtcDateTime;
+            var end = (request.EndDateTime ?? request.StartDateTime).UtcDateTime;
             if (end <= start) end = end.AddHours(1);
 
             iCalEvent.Start = new CalDateTime(start, CalDateTime.UtcTzId);

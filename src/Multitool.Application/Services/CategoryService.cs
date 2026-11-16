@@ -9,29 +9,29 @@ namespace Multitool.Application.Services;
 
 public class CategoryService(ICategoryRepository categoryRepository) : ICategoryService
 {
-    public async Task<List<CategoryDto>> GetCategoriesAsync()
+    public async Task<List<CategoryModel>> GetCategoriesAsync()
     {
         var categories = await categoryRepository.GetCategoriesAsync();
 
         if (categories is null || categories.Count <= 0)
             throw new NotFoundException("No categories found");
 
-        return categories.Adapt<List<CategoryDto>>();
+        return categories.Adapt<List<CategoryModel>>();
     }
 
-    public async Task<int> CreateCategoryAsync(CreateCategoryDto newCategory)
-        => await categoryRepository.CreateCategoryAsync(newCategory.Adapt<Category>());
+    public async Task<int> CreateCategoryAsync(CreateCategoryRequest request)
+        => await categoryRepository.CreateCategoryAsync(request.Adapt<Category>());
 
-    public async Task UpdateCategoryAsync(int id, UpdateCategoryDto updateCategoryDto)
+    public async Task UpdateCategoryAsync(int id, UpdateCategoryRequest request)
     {
         var existing = await categoryRepository.GetByIdAsync(id);
 
         if (existing is null)
             throw new NotFoundException($"Category with id {id} not found");
 
-        existing.Name = updateCategoryDto.Name;
-        existing.Color = updateCategoryDto.Color;
-        existing.ApplicableModules = updateCategoryDto.ApplicableModules;
+        existing.Name = request.Name;
+        existing.Color = request.Color;
+        existing.ApplicableModules = request.ApplicableModules;
 
         await categoryRepository.UpdateCategoryAsync(existing);
     }

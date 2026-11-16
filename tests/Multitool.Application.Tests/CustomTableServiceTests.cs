@@ -137,7 +137,7 @@ public class CustomTableServiceTests
         var result = await service.GetTableListAsync();
 
         // Assert
-        AssertEx.AreEqual(result, tables.Adapt<List<TableOverviewDto>>());
+        AssertEx.AreEqual(result, tables.Adapt<List<TableOverviewModel>>());
 
         _repositoryMock.Verify(r => r.GetTableListAsync(), Times.Once);
         _repositoryMock.VerifyNoOtherCalls();
@@ -181,11 +181,11 @@ public class CustomTableServiceTests
 
     // CreateTableAsync
     [Fact]
-    public async Task CreateTableAsync_WhenDtoIsValid_CreatesTableWithColumnAndReturnsId()
+    public async Task CreateTableAsync_WhenRequestIsValid_CreatesTableWithColumnAndReturnsId()
     {
         // Arrange
         const long expectedId = 10L;
-        var dto = CustomTableTestData.DefaultCreateTableDto;
+        var dto = CustomTableTestData.DefaultCreateTableRequest;
         _createTableResponse = expectedId;
         var service = GetService();
 
@@ -215,7 +215,7 @@ public class CustomTableServiceTests
     {
         // Arrange
         var table = CustomTableTestData.DefaultTable;
-        var dto = CustomTableTestData.DefaultUpdateTableDto;
+        var dto = CustomTableTestData.DefaultUpdateTableRequest;
         _getTableRawResponse = table;
         var service = GetService();
 
@@ -242,7 +242,7 @@ public class CustomTableServiceTests
         var service = GetService();
 
         // Act
-        Func<Task> act = async () => await service.UpdateTableAsync(TABLE_ID, CustomTableTestData.DefaultUpdateTableDto);
+        Func<Task> act = async () => await service.UpdateTableAsync(TABLE_ID, CustomTableTestData.DefaultUpdateTableRequest);
 
         // Assert
         await AssertEx.Throws<NotFoundException>(act);
@@ -328,7 +328,7 @@ public class CustomTableServiceTests
     {
         // Arrange
         var existing = CustomTableTestData.DefaultColumn;
-        var dto = CustomTableTestData.DefaultUpdateColumnDto;
+        var dto = CustomTableTestData.DefaultUpdateColumnRequest;
         _getColumnResponse = existing;
         var service = GetService();
 
@@ -356,7 +356,7 @@ public class CustomTableServiceTests
     {
         // Arrange
         var existing = CustomTableTestData.DefaultColumn;
-        var dto = CustomTableTestData.DefaultUpdateColumnDto with { DataType = existing.DataType };
+        var dto = CustomTableTestData.DefaultUpdateColumnRequest with { DataType = existing.DataType };
         _getColumnResponse = existing;
         var service = GetService();
 
@@ -384,7 +384,7 @@ public class CustomTableServiceTests
         var service = GetService();
 
         // Act
-        Func<Task> act = async () => await service.UpdateColumnAsync(COLUMN_ID, CustomTableTestData.DefaultUpdateColumnDto);
+        Func<Task> act = async () => await service.UpdateColumnAsync(COLUMN_ID, CustomTableTestData.DefaultUpdateColumnRequest);
 
         // Assert
         await AssertEx.Throws<NotFoundException>(act);
@@ -399,7 +399,7 @@ public class CustomTableServiceTests
     public async Task UpdateColumnOrderAsync_WhenColumnsProvided_CallsRepositoryWithMappedColumns()
     {
         // Arrange
-        var list = new List<UpdateColumnOrderDto>
+        var list = new List<UpdateColumnOrderRequest>
         {
             new(CustomTableTestData.DefaultColumn.ColumnId, 0),
             new(2, 1)
@@ -549,7 +549,7 @@ public class CustomTableServiceTests
     public async Task UpdateRowOrderAsync_WhenRowsProvided_CallsRepositoryWithRowOrderDictionary()
     {
         // Arrange
-        var list = new List<RowOrderUpdateDto> { new(1, 0) };
+        var list = new List<RowOrderUpdateRequest> { new(1, 0) };
         var service = GetService();
 
         // Act

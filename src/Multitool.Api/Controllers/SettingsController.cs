@@ -34,9 +34,9 @@ public class SettingsController(ISettingsService service) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> UpdateSetting([FromRoute] string module, [FromRoute] string key, [FromBody] UpdateSettingDto dto)
+    public async Task<IActionResult> UpdateSetting([FromRoute] string module, [FromRoute] string key, [FromBody] UpdateSettingRequest request)
     {
-        await service.UpdateSettingAsync(module, key, dto);
+        await service.UpdateSettingAsync(module, key, request);
         return NoContent();
     }
 }

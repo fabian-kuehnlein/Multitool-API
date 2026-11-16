@@ -58,9 +58,9 @@ In all unit tests involving mocked dependencies (e.g., Controller tests and Serv
 - **Negative / exception paths** must explicitly verify that mutation or side-effect methods were **NEVER** called using `Times.Never()`.
 
 ### Strict Argument Matching – Usage of `It.IsAny<T>()`
-- **In `.Setup(...)`**: `It.IsAny<T>()` is completely valid and expected when configuring mock responses (e.g., in `GetController()` default setups `_serviceMock.Setup(s => s.CreateTodoAsync(It.IsAny<CreateTodoDto>())).ReturnsAsync(_createTodoResponse)`).
+- **In `.Setup(...)`**: `It.IsAny<T>()` is completely valid and expected when configuring mock responses (e.g., in `GetController()` default setups `_serviceMock.Setup(s => s.CreateTodoAsync(It.IsAny<CreateTodoRequest>())).ReturnsAsync(_createTodoResponse)`).
 - **In `.Verify(...)`**: Avoid `It.IsAny<T>()` when verifying expected invocations on positive/happy paths. Always check actual arguments passed using exact values or property predicate matchers (`It.Is<T>(x => ...)`).
-- **Negative paths in `.Verify(...)`**: Using `It.IsAny<T>()` in `.Verify(...)` is appropriate when verifying that a method was **NEVER** called on negative paths (e.g., `_serviceMock.Verify(s => s.UpdateTodoAsync(It.IsAny<int>(), It.IsAny<UpdateTodoDto>()), Times.Never)`).
+- **Negative paths in `.Verify(...)`**: Using `It.IsAny<T>()` in `.Verify(...)` is appropriate when verifying that a method was **NEVER** called on negative paths (e.g., `_serviceMock.Verify(s => s.UpdateTodoAsync(It.IsAny<int>(), It.IsAny<UpdateTodoRequest>()), Times.Never)`).
 
 #### Examples
 
@@ -70,7 +70,7 @@ public async Task UpdateTodoAsync_WhenTodoExists_UpdatesPropertiesAndCallsReposi
 {
     // Arrange
     var existingTodo = TodoTestData.DefaultTodo;
-    var updateDto = new UpdateTodoDto("New Title", "New Description", 2, 1, DateTime.Today);
+    var updateDto = new UpdateTodoRequest("New Title", "New Description", 2, 1, DateTime.Today);
 
     todoRepositoryMock
         .Setup(r => r.GetTodoByIdAsync(existingTodo.Id))
@@ -97,7 +97,7 @@ public async Task UpdateTodoAsync_WhenTodoExists_UpdatesPropertiesAndCallsReposi
 public async Task UpdateTodoAsync_WhenTodoDoesNotExist_ThrowsNotFoundExceptionAndDoesNotCallUpdate()
 {
     // Arrange
-    var updateDto = new UpdateTodoDto("New Title", "New Description", 2, 1, DateTime.Today);
+    var updateDto = new UpdateTodoRequest("New Title", "New Description", 2, 1, DateTime.Today);
 
     todoRepositoryMock
         .Setup(r => r.GetTodoByIdAsync(999))
@@ -130,7 +130,7 @@ _todoRepositoryMock.VerifyNoOtherCalls();
 
 ### Standard Assertion Rules (`AssertEx` vs xUnit `Assert`)
 The following assertion conventions apply **globally across all test projects and layers** (Controllers, Services, Repositories):
-- **`AssertEx.AreEqual(expected, actual)`**: Must be used uniformly across all tests for object, entity, DTO, property, and collection equality comparisons (provides deep comparison, preferred over standard `Assert.Equal`).
+- **`AssertEx.AreEqual(expected, actual)`**: Must be used uniformly across all tests for object, entity, request/response model, property, and collection equality comparisons (provides deep comparison, preferred over standard `Assert.Equal`).
 - **Standard xUnit `Assert` Calls**: Simple boolean and null checks (`Assert.True(...)`, `Assert.False(...)`, `Assert.Null(...)`, `Assert.NotNull(...)`) that require no extra deep-comparison logic can be called directly from standard xUnit `Assert`.
 - **Specialized `AssertEx` Helpers**: HTTP responses use `AssertEx.Ok(...)`, `AssertEx.Created(...)`, `AssertEx.NoContent(...)`, `AssertEx.FileResult(...)`, etc. Exceptions use `AssertEx.Throws<TException>(...)`. Timestamps use `AssertEx.CloseTo(...)`. All custom assertion logic belongs in `AssertEx`.
 
@@ -146,7 +146,7 @@ Unit tests must feature deep and thorough assertions in the `// Assert` block:
 All controller test classes (`*ControllerTests.cs`) **must follow a mandatory, standardized layout structure**:
 
 1. **Private Readonly Mock Fields**: Declare mock fields for injected services (e.g., `private readonly Mock<ITodoService> _todoServiceMock;`).
-2. **Private Default Response Fields**: Declare private fields for default return values (e.g., `private List<TodoDto> _getTodosResponse;`, `private int _createTodoResponse;`).
+2. **Private Default Response Fields**: Declare private fields for default return values (e.g., `private List<TodoModel> _getTodosResponse;`, `private int _createTodoResponse;`).
 3. **Static Test Data Constants**: Declare `private static readonly int ID = TestData.DefaultItem.Id;` using shared test data from `Multitool.Tests.Shared`.
 4. **Constructor**:
    - Instantiate mock objects (`_todoServiceMock = new Mock<ITodoService>();`).
@@ -170,7 +170,7 @@ public class TodoControllerTests
 {
     private readonly Mock<ITodoService> _todoServiceMock;
 
-    private List<TodoDto> _getTodosResponse;
+    private List<TodoModel> _getTodosResponse;
     private int _createTodoResponse;
 
     private static readonly int ID = TodoTestData.DefaultTodo.Id;
@@ -180,7 +180,7 @@ public class TodoControllerTests
         _todoServiceMock = new Mock<ITodoService>();
 
         // Default responses
-        _getTodosResponse = new List<TodoDto>() { TodoTestData.DefaultTodoDto };
+        _getTodosResponse = new List<TodoModel>() { TodoTestData.DefaultTodoModel };
         _createTodoResponse = TodoTestData.DefaultTodo.Id;
     }
 
@@ -191,10 +191,10 @@ public class TodoControllerTests
         _todoServiceMock.Setup(s => s.GetTodosAsync())
             .ReturnsAsync(_getTodosResponse);
 
-        _todoServiceMock.Setup(s => s.CreateTodoAsync(It.IsAny<CreateTodoDto>()))
+        _todoServiceMock.Setup(s => s.CreateTodoAsync(It.IsAny<CreateTodoRequest>()))
             .ReturnsAsync(_createTodoResponse);
 
-        _todoServiceMock.Setup(s => s.UpdateTodoAsync(It.IsAny<int>(), It.IsAny<UpdateTodoDto>()))
+        _todoServiceMock.Setup(s => s.UpdateTodoAsync(It.IsAny<int>(), It.IsAny<UpdateTodoRequest>()))
             .Returns(Task.CompletedTask);
 
         _todoServiceMock.Setup(s => s.DeleteTodoAsync(It.IsAny<int>()))
@@ -224,10 +224,10 @@ public class TodoControllerTests
     // POST api/Todo
 
     [Fact]
-    public async Task CreateTodo_WhenDtoIsValid_ReturnsCreatedWithId()
+    public async Task CreateTodo_WhenRequestIsValid_ReturnsCreatedWithId()
     {
         // Arrange
-        var newTodo = TodoTestData.DefaultCreateTodoDto;
+        var newTodo = TodoTestData.DefaultCreateTodoRequest;
         var controller = GetController();
 
         // Act
@@ -338,12 +338,12 @@ tests/Multitool.Tests.Shared
 ```
 
 #### Mandatory Rule: Synchronizing TestData with Models
-- **Whenever a test-relevant entity, DTO, or model is created or updated** in the application or domain layers (`src/Multitool.Domain` or `src/Multitool.Application`), corresponding default test data **must immediately be added or updated in `tests/Multitool.Tests.Shared`** (e.g., `TodoTestData.cs`, `CalendarTestData.cs`).
+- **Whenever a test-relevant entity, entity, request model, or response model is created or updated** in the application or domain layers (`src/Multitool.Domain` or `src/Multitool.Application`), corresponding default test data **must immediately be added or updated in `tests/Multitool.Tests.Shared`** (e.g., `TodoTestData.cs`, `CalendarTestData.cs`).
 - Each module's TestData class must provide static getter properties (`=>`) for:
   - Default Domain Entities (`DefaultTodo => new() { ... }`)
-  - Default Response DTOs (`DefaultTodoDto => ...`)
-  - Default Request DTOs (`DefaultCreateTodoDto => ...`, `DefaultUpdateTodoDto => ...`)
-- **Do NOT construct ad-hoc inline DTOs or entities** inside individual test files if a shared counterpart exists or should exist in `Multitool.Tests.Shared`.
+  - Default response models (`DefaultTodoModel => ...`)
+  - Default request models (`DefaultCreateTodoRequest => ...`, `DefaultUpdateTodoRequest => ...`)
+- **Do NOT construct ad-hoc inline request/response models or entities** inside individual test files if a shared counterpart exists or should exist in `Multitool.Tests.Shared`.
 
 #### Modifying test data in tests (Arrange)
 
@@ -374,7 +374,7 @@ Controller tests **exclusively verify the HTTP flow** (HTTP status code, respons
 |---|---|
 | `return Ok(result)` | `WhenXExists_ReturnsOkWith...` |
 | `return NoContent()` | `WhenXExists_ReturnsNoContent` |
-| `return StatusCode(StatusCodes.Status201Created, id)` | `WhenDtoIsValid_ReturnsCreatedWithId` |
+| `return StatusCode(StatusCodes.Status201Created, id)` | `WhenRequestIsValid_ReturnsCreatedWithId` |
 | `return File(bytes, contentType, fileName)` | `WhenEventIsValid_ReturnsIcsFile` (via `AssertEx.FileResult`) |
 
 **Exceptions – a second test is justified when:**
@@ -479,10 +479,10 @@ public class TodoServiceTests
 
     // CreateTodoAsync
     [Fact]
-    public async Task CreateTodoAsync_WhenDtoIsValid_CallsRepositoryAdd()
+    public async Task CreateTodoAsync_WhenRequestIsValid_CallsRepositoryAdd()
     {
         // Arrange
-        var todo = TodoTestData.DefaultCreateTodoDto;
+        var todo = TodoTestData.DefaultCreateTodoRequest;
         var service = GetService();
 
         // Act

@@ -13,16 +13,16 @@ public class AccountService(
     IJwtTokenGenerator jwt,
     IUserContext userContext) : IAccountService
 {
-    public async Task VerifyAccountCredentialsAsync(VerifyAccountCredentialsDto dto)
+    public async Task VerifyAccountCredentialsAsync(VerifyAccountCredentialsRequest request)
     {
         var user = await GetAuthenticatedUserAsync();
 
-        var usernameMatches = string.Equals(user.Username, dto.Username, StringComparison.Ordinal);
-        if (!usernameMatches || !hasher.Verify(dto.Password, user.PasswordHash))
+        var usernameMatches = string.Equals(user.Username, request.Username, StringComparison.Ordinal);
+        if (!usernameMatches || !hasher.Verify(request.Password, user.PasswordHash))
             throw new InvalidOperationException("The current credentials are incorrect.");
     }
 
-    public async Task<string> SetupAccountCredentialsAsync(SetupAccountCredentialsDto dto)
+    public async Task<string> SetupAccountCredentialsAsync(SetupAccountCredentialsRequest request)
     {
         var user = await GetAuthenticatedUserAsync();
 
@@ -31,13 +31,13 @@ public class AccountService(
         if (!user.MustChangePassword)
             throw new InvalidOperationException("Credentials can only be set up while a password change is required.");
 
-        if (hasher.Verify(dto.Password, user.PasswordHash))
+        if (hasher.Verify(request.Password, user.PasswordHash))
             throw new InvalidOperationException("The new password must differ from the temporary password.");
 
-        await EnsureUsernameIsAvailableAsync(user, dto.Username);
+        await EnsureUsernameIsAvailableAsync(user, request.Username);
 
-        user.Username = dto.Username;
-        user.PasswordHash = hasher.Hash(dto.Password);
+        user.Username = request.Username;
+        user.PasswordHash = hasher.Hash(request.Password);
         user.MustChangePassword = false;
         ResetFailedLogin(user);
 
@@ -46,21 +46,21 @@ public class AccountService(
         return jwt.GenerateToken(user);
     }
 
-    public async Task<string> ChangeAccountCredentialsAsync(ChangeAccountCredentialsDto dto)
+    public async Task<string> ChangeAccountCredentialsAsync(ChangeAccountCredentialsRequest request)
     {
         var user = await GetAuthenticatedUserAsync();
 
-        if (!hasher.Verify(dto.CurrentPassword, user.PasswordHash))
+        if (!hasher.Verify(request.CurrentPassword, user.PasswordHash))
             throw new InvalidOperationException("The current password is incorrect.");
 
-        var newUsername = dto.NewUsername?.Trim();
+        var newUsername = request.NewUsername?.Trim();
         var usernameChanged = !string.IsNullOrWhiteSpace(newUsername) && newUsername != user.Username;
-        var passwordChanged = !string.IsNullOrWhiteSpace(dto.NewPassword);
+        var passwordChanged = !string.IsNullOrWhiteSpace(request.NewPassword);
 
         if (!usernameChanged && !passwordChanged)
             throw new InvalidOperationException("At least one new credential must be provided.");
 
-        if (passwordChanged && hasher.Verify(dto.NewPassword!, user.PasswordHash))
+        if (passwordChanged && hasher.Verify(request.NewPassword!, user.PasswordHash))
             throw new InvalidOperationException("The new password must differ from the current password.");
 
         if (usernameChanged)
@@ -70,7 +70,7 @@ public class AccountService(
         }
 
         if (passwordChanged)
-            user.PasswordHash = hasher.Hash(dto.NewPassword!);
+            user.PasswordHash = hasher.Hash(request.NewPassword!);
 
         ResetFailedLogin(user);
         await userRepository.UpdateUserAsync(user);

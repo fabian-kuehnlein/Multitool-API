@@ -46,9 +46,9 @@ public class CustomTableController(ICustomTableService customtableService) : Con
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> CreateTable([FromBody] CreateTableDto dto)
+    public async Task<IActionResult> CreateTable([FromBody] CreateTableRequest request)
     {
-        var id = await customtableService.CreateTableAsync(dto);
+        var id = await customtableService.CreateTableAsync(request);
         return StatusCode(StatusCodes.Status201Created, id);
     }
 
@@ -61,9 +61,9 @@ public class CustomTableController(ICustomTableService customtableService) : Con
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> UpdateTable([FromRoute] long id, [FromBody] UpdateTableDto dto)
+    public async Task<IActionResult> UpdateTable([FromRoute] long id, [FromBody] UpdateTableRequest request)
     {
-        await customtableService.UpdateTableAsync(id, dto);
+        await customtableService.UpdateTableAsync(id, request);
         return NoContent();
     }
 
@@ -105,9 +105,9 @@ public class CustomTableController(ICustomTableService customtableService) : Con
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> UpdateColumn([FromRoute] long id, [FromBody] UpdateColumnDto dto)
+    public async Task<IActionResult> UpdateColumn([FromRoute] long id, [FromBody] UpdateColumnRequest request)
     {
-        await customtableService.UpdateColumnAsync(id, dto);
+        await customtableService.UpdateColumnAsync(id, request);
         return NoContent();
     }
 
@@ -119,7 +119,7 @@ public class CustomTableController(ICustomTableService customtableService) : Con
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> UpdateColumnOrder([FromBody] List<UpdateColumnOrderDto> columns)
+    public async Task<IActionResult> UpdateColumnOrder([FromBody] List<UpdateColumnOrderRequest> columns)
     {
         await customtableService.UpdateColumnOrderAsync(columns);
         return NoContent();
@@ -161,7 +161,7 @@ public class CustomTableController(ICustomTableService customtableService) : Con
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> UpdateRowOrder([FromBody] List<RowOrderUpdateDto> rows)
+    public async Task<IActionResult> UpdateRowOrder([FromBody] List<RowOrderUpdateRequest> rows)
     {
         await customtableService.UpdateRowOrderAsync(rows);
         return NoContent();

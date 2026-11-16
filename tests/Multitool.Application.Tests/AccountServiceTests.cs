@@ -93,7 +93,7 @@ public class AccountServiceTests
         var originalPasswordHash = user.PasswordHash;
         _getUserByIdResponse = user;
 
-        var dto = new VerifyAccountCredentialsDto(user.Username, CURRENT_PASSWORD);
+        var dto = new VerifyAccountCredentialsRequest(user.Username, CURRENT_PASSWORD);
         var service = GetService();
         _hasherMock.Setup(h => h.Verify(CURRENT_PASSWORD, originalPasswordHash)).Returns(true);
 
@@ -122,7 +122,7 @@ public class AccountServiceTests
         var user = AuthTestData.DefaultUser;
         _getUserByIdResponse = user;
 
-        var dto = new VerifyAccountCredentialsDto("wrong-username", CURRENT_PASSWORD);
+        var dto = new VerifyAccountCredentialsRequest("wrong-username", CURRENT_PASSWORD);
         var service = GetService();
 
         // Act
@@ -153,7 +153,7 @@ public class AccountServiceTests
         var originalPasswordHash = user.PasswordHash;
         _getUserByIdResponse = user;
 
-        var dto = new VerifyAccountCredentialsDto(user.Username, "wrong-password");
+        var dto = new VerifyAccountCredentialsRequest(user.Username, "wrong-password");
         var service = GetService();
 
         // Act
@@ -181,7 +181,7 @@ public class AccountServiceTests
     {
         // Arrange
         _getUserByIdResponse = null;
-        var dto = AuthTestData.DefaultVerifyAccountCredentialsDto;
+        var dto = AuthTestData.DefaultVerifyAccountCredentialsRequest;
         var service = GetService();
 
         // Act
@@ -210,7 +210,7 @@ public class AccountServiceTests
         user.IsActive = false;
         _getUserByIdResponse = user;
 
-        var dto = AuthTestData.DefaultVerifyAccountCredentialsDto;
+        var dto = AuthTestData.DefaultVerifyAccountCredentialsRequest;
         var service = GetService();
 
         // Act
@@ -244,7 +244,7 @@ public class AccountServiceTests
         var originalPasswordHash = user.PasswordHash;
         _getUserByIdResponse = user;
 
-        var dto = new SetupAccountCredentialsDto("new-username", NEW_PASSWORD);
+        var dto = new SetupAccountCredentialsRequest("new-username", NEW_PASSWORD);
         var service = GetService();
 
         // Act
@@ -290,7 +290,7 @@ public class AccountServiceTests
         var originalPasswordHash = user.PasswordHash;
         _getUserByIdResponse = user;
 
-        var dto = new SetupAccountCredentialsDto(user.Username, NEW_PASSWORD);
+        var dto = new SetupAccountCredentialsRequest(user.Username, NEW_PASSWORD);
         var service = GetService();
 
         // Act
@@ -334,7 +334,7 @@ public class AccountServiceTests
         existingUser.Username = "taken-username";
         _getUserByUsernameResponse = existingUser;
 
-        var dto = new SetupAccountCredentialsDto("taken-username", NEW_PASSWORD);
+        var dto = new SetupAccountCredentialsRequest("taken-username", NEW_PASSWORD);
         var service = GetService();
 
         // Act
@@ -368,7 +368,7 @@ public class AccountServiceTests
         var originalPasswordHash = user.PasswordHash;
         _getUserByIdResponse = user;
 
-        var dto = new SetupAccountCredentialsDto("new-username", "temporary-password");
+        var dto = new SetupAccountCredentialsRequest("new-username", "temporary-password");
         var service = GetService();
         _hasherMock.Setup(h => h.Verify(dto.Password, originalPasswordHash)).Returns(true);
 
@@ -398,7 +398,7 @@ public class AccountServiceTests
     {
         // Arrange
         _getUserByIdResponse = null;
-        var dto = new SetupAccountCredentialsDto("new-username", NEW_PASSWORD);
+        var dto = new SetupAccountCredentialsRequest("new-username", NEW_PASSWORD);
         var service = GetService();
 
         // Act
@@ -428,7 +428,7 @@ public class AccountServiceTests
         user.IsActive = false;
         _getUserByIdResponse = user;
 
-        var dto = new SetupAccountCredentialsDto("new-username", NEW_PASSWORD);
+        var dto = new SetupAccountCredentialsRequest("new-username", NEW_PASSWORD);
         var service = GetService();
 
         // Act
@@ -459,7 +459,7 @@ public class AccountServiceTests
         user.MustChangePassword = false;
         _getUserByIdResponse = user;
 
-        var dto = new SetupAccountCredentialsDto("new-username", NEW_PASSWORD);
+        var dto = new SetupAccountCredentialsRequest("new-username", NEW_PASSWORD);
         var service = GetService();
 
         // Act
@@ -494,7 +494,7 @@ public class AccountServiceTests
         var originalPasswordHash = user.PasswordHash;
         _getUserByIdResponse = user;
 
-        var dto = new ChangeAccountCredentialsDto(CURRENT_PASSWORD, "new-username", NEW_PASSWORD);
+        var dto = new ChangeAccountCredentialsRequest(CURRENT_PASSWORD, "new-username", NEW_PASSWORD);
         var service = GetService();
         _hasherMock.Setup(h => h.Verify(CURRENT_PASSWORD, originalPasswordHash)).Returns(true);
 
@@ -539,7 +539,7 @@ public class AccountServiceTests
         var originalPasswordHash = user.PasswordHash;
         _getUserByIdResponse = user;
 
-        var dto = new ChangeAccountCredentialsDto(CURRENT_PASSWORD, "new-username", null);
+        var dto = new ChangeAccountCredentialsRequest(CURRENT_PASSWORD, "new-username", null);
         var service = GetService();
         _hasherMock.Setup(h => h.Verify(CURRENT_PASSWORD, originalPasswordHash)).Returns(true);
 
@@ -579,7 +579,7 @@ public class AccountServiceTests
         var originalPasswordHash = user.PasswordHash;
         _getUserByIdResponse = user;
 
-        var dto = new ChangeAccountCredentialsDto(CURRENT_PASSWORD, null, NEW_PASSWORD);
+        var dto = new ChangeAccountCredentialsRequest(CURRENT_PASSWORD, null, NEW_PASSWORD);
         var service = GetService();
         _hasherMock.Setup(h => h.Verify(CURRENT_PASSWORD, originalPasswordHash)).Returns(true);
 
@@ -620,7 +620,7 @@ public class AccountServiceTests
         var originalPasswordHash = user.PasswordHash;
         _getUserByIdResponse = user;
 
-        var dto = new ChangeAccountCredentialsDto("wrong-password", "new-username", NEW_PASSWORD);
+        var dto = new ChangeAccountCredentialsRequest("wrong-password", "new-username", NEW_PASSWORD);
         var service = GetService();
 
         // Act
@@ -653,7 +653,7 @@ public class AccountServiceTests
         var originalPasswordHash = user.PasswordHash;
         _getUserByIdResponse = user;
 
-        var dto = new ChangeAccountCredentialsDto(CURRENT_PASSWORD, null, null);
+        var dto = new ChangeAccountCredentialsRequest(CURRENT_PASSWORD, null, null);
         var service = GetService();
         _hasherMock.Setup(h => h.Verify(CURRENT_PASSWORD, originalPasswordHash)).Returns(true);
 
@@ -692,7 +692,7 @@ public class AccountServiceTests
         existingUser.Username = "taken-username";
         _getUserByUsernameResponse = existingUser;
 
-        var dto = new ChangeAccountCredentialsDto(CURRENT_PASSWORD, "taken-username", null);
+        var dto = new ChangeAccountCredentialsRequest(CURRENT_PASSWORD, "taken-username", null);
         var service = GetService();
         _hasherMock.Setup(h => h.Verify(CURRENT_PASSWORD, originalPasswordHash)).Returns(true);
 
@@ -726,7 +726,7 @@ public class AccountServiceTests
         var originalPasswordHash = user.PasswordHash;
         _getUserByIdResponse = user;
 
-        var dto = new ChangeAccountCredentialsDto(CURRENT_PASSWORD, null, CURRENT_PASSWORD);
+        var dto = new ChangeAccountCredentialsRequest(CURRENT_PASSWORD, null, CURRENT_PASSWORD);
         var service = GetService();
         _hasherMock.Setup(h => h.Verify(CURRENT_PASSWORD, originalPasswordHash)).Returns(true);
 
@@ -757,7 +757,7 @@ public class AccountServiceTests
     {
         // Arrange
         _getUserByIdResponse = null;
-        var dto = new ChangeAccountCredentialsDto(CURRENT_PASSWORD, "new-username", NEW_PASSWORD);
+        var dto = new ChangeAccountCredentialsRequest(CURRENT_PASSWORD, "new-username", NEW_PASSWORD);
         var service = GetService();
 
         // Act
@@ -786,7 +786,7 @@ public class AccountServiceTests
         user.IsActive = false;
         _getUserByIdResponse = user;
 
-        var dto = new ChangeAccountCredentialsDto(CURRENT_PASSWORD, "new-username", NEW_PASSWORD);
+        var dto = new ChangeAccountCredentialsRequest(CURRENT_PASSWORD, "new-username", NEW_PASSWORD);
         var service = GetService();
 
         // Act

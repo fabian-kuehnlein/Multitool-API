@@ -4,6 +4,7 @@ using Multitool.Domain.Entities.Config;
 using Multitool.Domain.Entities.Todo;
 using Multitool.Domain.Entities.CustomTable;
 using Multitool.Application.Models;
+using Multitool.Application.Models.Todo;
 using Multitool.Application.Models.CustomTable;
 using Multitool.Application.Models.Calendar;
 using Multitool.Application.Models.Info;
@@ -15,18 +16,18 @@ public class MappingConfig : IRegister
 {
     public void Register(TypeAdapterConfig config)
     {
-        config.NewConfig<CalendarEvent, EventSearchResponseDto>()
+        config.NewConfig<CalendarEvent, EventSearchResponseModel>()
             .Map(dest => dest.EventId, src => src.Id)
             .Map(dest => dest.EventTitle, src => src.Title)
             .Map(dest => dest.EventNote, src => src.Note);
 
-        config.NewConfig<CalendarEvent, CalendarEventDto>()
+        config.NewConfig<CalendarEvent, CalendarEventModel>()
             .Map(dest => dest.Id, src => src.Id.ToString())
             .Map(dest => dest.IsTodo, src => false);
 
         // -----------------------------------------------------------------
 
-        config.NewConfig<CreateTodoDto, Todo>()
+        config.NewConfig<CreateTodoRequest, Todo>()
             .Map(dest => dest.IsDone, src => false)
             .Map(dest => dest.CreationDateTime, src => DateTime.Now);
 
@@ -38,13 +39,13 @@ public class MappingConfig : IRegister
                 c => CellValue(c)
             ));
 
-        config.NewConfig<CreateTableDto, Table>()
+        config.NewConfig<CreateTableRequest, Table>()
             .Map(dest => dest.CreatedAt, src => DateTime.Now)
             .Map(dest => dest.Columns, src => new List<Column> { src.Column.Adapt<Column>() });
 
         // -----------------------------------------------------------------
 
-        config.NewConfig<CreateUserDto, User>()
+        config.NewConfig<CreateUserRequest, User>()
             .Map(dest => dest.IsActive, src => true)
             .Map(dest => dest.MustChangePassword, src => true)
             .Map(dest => dest.CreatedAt, src => DateTime.Now);

@@ -46,9 +46,9 @@ public class CalendarController(ICalendarService calendarService) : ControllerBa
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> CreateEvent([FromBody] CreateCalendarEventDto calendarEvent)
+    public async Task<IActionResult> CreateEvent([FromBody] CreateCalendarEventRequest request)
     {
-        var id = await calendarService.CreateEventAsync(calendarEvent);
+        var id = await calendarService.CreateEventAsync(request);
         return StatusCode(StatusCodes.Status201Created, id);
     }
 
@@ -61,9 +61,9 @@ public class CalendarController(ICalendarService calendarService) : ControllerBa
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> UpdateEvent([FromRoute] int id, [FromBody] UpdateCalendarEventDto dto)
+    public async Task<IActionResult> UpdateEvent([FromRoute] int id, [FromBody] UpdateCalendarEventRequest request)
     {
-        await calendarService.UpdateEventAsync(id, dto);
+        await calendarService.UpdateEventAsync(id, request);
         return NoContent();
     }
 
@@ -104,10 +104,10 @@ public class CalendarController(ICalendarService calendarService) : ControllerBa
     [Produces("text/calendar")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> GenerateIcsFile([FromBody] GetIcalDto calendarEvent)
+    public async Task<IActionResult> GenerateIcsFile([FromBody] GetIcalRequest request)
     {
-        var icsContent = await calendarService.GenerateIcsFileAsync(calendarEvent);
-        return File(icsContent, "text/calendar", $"{SafeFileName(calendarEvent.Title)}.ics");
+        var icsContent = await calendarService.GenerateIcsFileAsync(request);
+        return File(icsContent, "text/calendar", $"{SafeFileName(request.Title)}.ics");
     }
 
     private static string SafeFileName(string title)
