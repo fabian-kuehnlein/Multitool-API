@@ -18,7 +18,7 @@ namespace Multitool.Infrastructure.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("public")
-                .HasAnnotation("ProductVersion", "10.0.12")
+                .HasAnnotation("ProductVersion", "10.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -78,7 +78,7 @@ namespace Multitool.Infrastructure.Migrations
                     b.ToTable("calendar_events", "public");
                 });
 
-            modelBuilder.Entity("Multitool.Domain.Entities.Category.Category", b =>
+            modelBuilder.Entity("Multitool.Domain.Entities.Categories.Category", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -312,6 +312,118 @@ namespace Multitool.Infrastructure.Migrations
                     b.ToTable("tables", "custom");
                 });
 
+            modelBuilder.Entity("Multitool.Domain.Entities.Kanban.Board", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("board_id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<int>("OwnerId")
+                        .HasColumnType("integer")
+                        .HasColumnName("owner_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_boards");
+
+                    b.HasIndex("OwnerId")
+                        .HasDatabaseName("ix_boards_owner_id");
+
+                    b.ToTable("boards", "kanban");
+                });
+
+            modelBuilder.Entity("Multitool.Domain.Entities.Kanban.BoardColumn", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("column_id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("BoardId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("board_id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("name");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer")
+                        .HasColumnName("position");
+
+                    b.HasKey("Id")
+                        .HasName("pk_board_columns");
+
+                    b.HasIndex("BoardId", "Position")
+                        .HasDatabaseName("ix_board_columns_board_id_position");
+
+                    b.ToTable("board_columns", "kanban");
+                });
+
+            modelBuilder.Entity("Multitool.Domain.Entities.Kanban.Card", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint")
+                        .HasColumnName("card_id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<long>("ColumnId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("column_id");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<int>("CreatedByUserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("created_by_user_id");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer")
+                        .HasColumnName("position");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("title");
+
+                    b.HasKey("Id")
+                        .HasName("pk_cards");
+
+                    b.HasIndex("CreatedByUserId")
+                        .HasDatabaseName("ix_cards_created_by_user_id");
+
+                    b.HasIndex("ColumnId", "Position")
+                        .HasDatabaseName("ix_cards_column_id_position");
+
+                    b.ToTable("cards", "kanban");
+                });
+
             modelBuilder.Entity("Multitool.Domain.Entities.Settings.Setting", b =>
                 {
                     b.Property<int>("Id")
@@ -466,9 +578,47 @@ namespace Multitool.Infrastructure.Migrations
                     b.ToTable("work_days", "worktime");
                 });
 
+            modelBuilder.Entity("board_members", b =>
+                {
+                    b.Property<long>("board_id")
+                        .HasColumnType("bigint")
+                        .HasColumnName("board_id");
+
+                    b.Property<int>("user_id")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("board_id", "user_id")
+                        .HasName("pk_board_members");
+
+                    b.HasIndex("user_id")
+                        .HasDatabaseName("ix_board_members_user_id");
+
+                    b.ToTable("board_members", "kanban");
+                });
+
+            modelBuilder.Entity("card_categories", b =>
+                {
+                    b.Property<long>("card_id")
+                        .HasColumnType("bigint")
+                        .HasColumnName("card_id");
+
+                    b.Property<int>("category_id")
+                        .HasColumnType("integer")
+                        .HasColumnName("category_id");
+
+                    b.HasKey("card_id", "category_id")
+                        .HasName("pk_card_categories");
+
+                    b.HasIndex("category_id")
+                        .HasDatabaseName("ix_card_categories_category_id");
+
+                    b.ToTable("card_categories", "kanban");
+                });
+
             modelBuilder.Entity("Multitool.Domain.Entities.Calendar.CalendarEvent", b =>
                 {
-                    b.HasOne("Multitool.Domain.Entities.Category.Category", null)
+                    b.HasOne("Multitool.Domain.Entities.Categories.Category", null)
                         .WithMany()
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -521,6 +671,44 @@ namespace Multitool.Infrastructure.Migrations
                     b.Navigation("Table");
                 });
 
+            modelBuilder.Entity("Multitool.Domain.Entities.Kanban.Board", b =>
+                {
+                    b.HasOne("Multitool.Domain.Entities.Config.User", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_boards_owner_id");
+                });
+
+            modelBuilder.Entity("Multitool.Domain.Entities.Kanban.BoardColumn", b =>
+                {
+                    b.HasOne("Multitool.Domain.Entities.Kanban.Board", "Board")
+                        .WithMany("Columns")
+                        .HasForeignKey("BoardId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Board");
+                });
+
+            modelBuilder.Entity("Multitool.Domain.Entities.Kanban.Card", b =>
+                {
+                    b.HasOne("Multitool.Domain.Entities.Kanban.BoardColumn", "Column")
+                        .WithMany("Cards")
+                        .HasForeignKey("ColumnId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Multitool.Domain.Entities.Config.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Column");
+                });
+
             modelBuilder.Entity("Multitool.Domain.Entities.Settings.Setting", b =>
                 {
                     b.HasOne("Multitool.Domain.Entities.Config.User", null)
@@ -533,12 +721,42 @@ namespace Multitool.Infrastructure.Migrations
 
             modelBuilder.Entity("Multitool.Domain.Entities.Todo.Todo", b =>
                 {
-                    b.HasOne("Multitool.Domain.Entities.Category.Category", null)
+                    b.HasOne("Multitool.Domain.Entities.Categories.Category", null)
                         .WithMany()
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_todos_category_id");
+                });
+
+            modelBuilder.Entity("board_members", b =>
+                {
+                    b.HasOne("Multitool.Domain.Entities.Kanban.Board", null)
+                        .WithMany()
+                        .HasForeignKey("board_id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Multitool.Domain.Entities.Config.User", null)
+                        .WithMany()
+                        .HasForeignKey("user_id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("card_categories", b =>
+                {
+                    b.HasOne("Multitool.Domain.Entities.Kanban.Card", null)
+                        .WithMany()
+                        .HasForeignKey("card_id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Multitool.Domain.Entities.Categories.Category", null)
+                        .WithMany()
+                        .HasForeignKey("category_id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Multitool.Domain.Entities.CustomTable.Row", b =>
@@ -551,6 +769,16 @@ namespace Multitool.Infrastructure.Migrations
                     b.Navigation("Columns");
 
                     b.Navigation("Rows");
+                });
+
+            modelBuilder.Entity("Multitool.Domain.Entities.Kanban.Board", b =>
+                {
+                    b.Navigation("Columns");
+                });
+
+            modelBuilder.Entity("Multitool.Domain.Entities.Kanban.BoardColumn", b =>
+                {
+                    b.Navigation("Cards");
                 });
 #pragma warning restore 612, 618
         }

@@ -4,6 +4,7 @@ using Multitool.Domain.Entities.Calendar;
 using Multitool.Domain.Entities.Categories;
 using Multitool.Domain.Entities.Config;
 using Multitool.Domain.Entities.CustomTable;
+using Multitool.Domain.Entities.Kanban;
 using Multitool.Domain.Entities.Settings;
 using Multitool.Domain.Entities.Todo;
 using Multitool.Domain.Entities.WorkTimePlanner;
@@ -32,6 +33,10 @@ public class AppDbContext : DbContext
 
     public DbSet<WorkDay> WorkDays { get; set; }
     public DbSet<Setting> Settings { get; set; }
+
+    public DbSet<Board> Boards { get; set; }
+    public DbSet<BoardColumn> BoardColumns { get; set; }
+    public DbSet<Card> Cards { get; set; }
 
     /// <summary>
     /// Id of the currently authenticated user. Used as parameter for the global query filters.
@@ -250,6 +255,73 @@ public class AppDbContext : DbContext
 
             e.HasQueryFilter(e => e.UserId == CurrentUserId);
         });
+
+        // ---------- KANBAN ----------
+        modelBuilder.Entity<Board>(e =>
+        {
+            e.ToTable("boards", "kanban");
+            e.HasKey(b => b.Id);
+            e.Property(b => b.Id).HasColumnName("board_id").ValueGeneratedOnAdd();
+            e.HasIndex(b => b.OwnerId).HasDatabaseName("ix_boards_owner_id");
+            e.HasOne<User>().WithMany().HasForeignKey(b => b.OwnerId)
+                .HasConstraintName("fk_boards_owner_id").OnDelete(DeleteBehavior.Restrict);
+            // No HasQueryFilter
+        });
+
+        // m:n Board <-> User: technical join table, no domain entity
+        modelBuilder.Entity<Board>()
+            .HasMany(b => b.Members)
+            .WithMany()
+            .UsingEntity<Dictionary<string, object>>(
+                "board_members",
+                j => j.HasOne<User>().WithMany().HasForeignKey("user_id")
+                      .OnDelete(DeleteBehavior.Restrict),
+                j => j.HasOne<Board>().WithMany().HasForeignKey("board_id")
+                      .OnDelete(DeleteBehavior.Cascade),
+                j =>
+                {
+                    j.HasKey("board_id", "user_id");
+                    j.ToTable("board_members", "kanban");
+                    j.HasIndex("user_id").HasDatabaseName("ix_board_members_user_id");
+                });
+
+        modelBuilder.Entity<BoardColumn>(e =>
+        {
+            e.ToTable("board_columns", "kanban");
+            e.HasKey(c => c.Id);
+            e.Property(c => c.Id).HasColumnName("column_id").ValueGeneratedOnAdd();
+            e.HasOne(c => c.Board).WithMany(b => b.Columns)
+                .HasForeignKey(c => c.BoardId).OnDelete(DeleteBehavior.Cascade);
+            e.HasIndex(c => new { c.BoardId, c.Position });
+        });
+
+        modelBuilder.Entity<Card>(e =>
+        {
+            e.ToTable("cards", "kanban");
+            e.HasKey(c => c.Id);
+            e.Property(c => c.Id).HasColumnName("card_id").ValueGeneratedOnAdd();
+            e.HasOne(c => c.Column).WithMany(col => col.Cards)
+                .HasForeignKey(c => c.ColumnId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<User>().WithMany().HasForeignKey(c => c.CreatedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+            e.HasIndex(c => new { c.ColumnId, c.Position });
+        });
+
+        // m:n Card <-> Category: technical join table, no domain entity
+        modelBuilder.Entity<Card>()
+            .HasMany(c => c.Categories)
+            .WithMany()
+            .UsingEntity<Dictionary<string, object>>(
+                "card_categories",
+                j => j.HasOne<Category>().WithMany().HasForeignKey("category_id")
+                      .OnDelete(DeleteBehavior.Restrict),
+                j => j.HasOne<Card>().WithMany().HasForeignKey("card_id")
+                      .OnDelete(DeleteBehavior.Cascade),
+                j =>
+                {
+                    j.HasKey("card_id", "category_id");
+                    j.ToTable("card_categories", "kanban");
+                });
 
         // ---------- GLOBAL SNAKE CASE ----------
         foreach (var entity in modelBuilder.Model.GetEntityTypes())
