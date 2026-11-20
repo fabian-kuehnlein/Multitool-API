@@ -5,5 +5,6 @@ public enum AppModule
     Calendar,
     CustomTable,
     Todo,
-    WorkTimePlanner
+    WorkTimePlanner,
+    Kanban
 }
