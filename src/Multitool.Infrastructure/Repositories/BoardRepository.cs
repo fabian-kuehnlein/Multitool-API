@@ -1,0 +1,201 @@
+using Microsoft.EntityFrameworkCore;
+using Multitool.Domain.Entities.Categories;
+using Multitool.Domain.Entities.Config;
+using Multitool.Domain.Entities.Kanban;
+using Multitool.Domain.Interfaces;
+using Multitool.Infrastructure.Data;
+
+namespace Multitool.Infrastructure.Repositories;
+
+/// <summary>
+/// Repository for kanban boards and columns.
+/// Method categories:
+/// - Overview projection: AsNoTracking + Select for list/sidebar views, read-only.
+/// - Detail projection: AsNoTracking + Select for API detail views, read-only.
+/// - Tracked entity: regular EF tracking for business operations and updates.
+/// - Access/ownership query: tracked entity with required includes for permission, membership, and ownership checks.
+/// </summary>
+public class BoardRepository(AppDbContext db) : IBoardRepository
+{
+    /// <summary>
+    /// Overview projection for the board list/sidebar.
+    /// Loads only data required by the overview (Id, Name, CreatedAt, member ids for MemberCount/shared state).
+    /// Never tracked and never persisted.
+    /// </summary>
+    public async Task<List<Board>> GetBoardOverviewAsync(int userId)
+    {
+        return await db.Boards
+            .AsNoTracking()
+            .Where(b => b.Members.Any(u => u.Id == userId))
+            .Select(b => new Board
+            {
+                Id = b.Id,
+                Name = b.Name,
+                CreatedAt = b.CreatedAt,
+                Members = b.Members.Select(u => new User { Id = u.Id }).ToList()
+            })
+            .OrderByDescending(b => b.CreatedAt)
+            .ToListAsync();
+    }
+
+    /// <summary>
+    /// Detail projection for a single board view.
+    /// Loads the full read model (members, columns, cards, non-deleted card category ids) for an accessible board.
+    /// Never tracked and never persisted. Uses IgnoreQueryFilters only because of the Category global filter;
+    /// access isolation remains enforced by the explicit membership predicate.
+    /// </summary>
+    public async Task<Board?> GetBoardWithDetailsAsync(long boardId, int userId)
+    {
+        // IgnoreQueryFilters is required only because Category has a global query filter;
+        // access isolation remains enforced by the explicit membership predicate.
+        return await db.Boards
+            .IgnoreQueryFilters()
+            .AsNoTracking()
+            .Where(b => b.Id == boardId && b.Members.Any(u => u.Id == userId))
+            .Select(b => new Board
+            {
+                Id = b.Id,
+                Name = b.Name,
+                Description = b.Description,
+                OwnerId = b.OwnerId,
+                CreatedAt = b.CreatedAt,
+                Members = b.Members
+                    .Select(u => new User { Id = u.Id, Username = u.Username })
+                    .ToList(),
+                Columns = b.Columns
+                    .OrderBy(c => c.Position)
+                    .Select(c => new BoardColumn
+                    {
+                        Id = c.Id,
+                        BoardId = c.BoardId,
+                        Name = c.Name,
+                        Position = c.Position,
+                        Cards = c.Cards
+                            .OrderBy(card => card.Position)
+                            .Select(card => new Card
+                            {
+                                Id = card.Id,
+                                ColumnId = card.ColumnId,
+                                Title = card.Title,
+                                Description = card.Description,
+                                Position = card.Position,
+                                CreatedByUserId = card.CreatedByUserId,
+                                CreatedAt = card.CreatedAt,
+                                Categories = card.Categories
+                                    .Where(cat => !cat.IsDeleted)
+                                    .Select(cat => new Category
+                                    {
+                                        Id = cat.Id,
+                                        Name = string.Empty,
+                                        Color = string.Empty
+                                    })
+                                    .ToList()
+                            })
+                            .ToList()
+                    })
+                    .ToList()
+            })
+            .SingleOrDefaultAsync();
+    }
+
+    /// <summary>
+    /// Access/ownership query used primarily by BoardAccessService.
+    /// Loads a tracked board including Members so access, ownership, and member-management decisions can be made
+    /// (e.g. can view/edit/share/remove members). Not a read projection: it returns a tracked entity because the
+    /// same loaded graph is required for follow-up operations such as skip-navigation member changes.
+    /// </summary>
+    public async Task<Board?> GetBoardForAccessCheckAsync(long boardId)
+    {
+        return await db.Boards
+            .Include(b => b.Members)
+            .FirstOrDefaultAsync(b => b.Id == boardId);
+    }
+
+    /// <summary>
+    /// Default tracked entity load for a single board.
+    /// Use for general business operations like editing or deleting a board when members are not required.
+    /// Use GetBoardForAccessCheckAsync instead when membership/ownership checks or member mutations are needed.
+    /// </summary>
+    public async Task<Board?> GetBoardByIdAsync(long boardId)
+    {
+        return await db.Boards.FirstOrDefaultAsync(b => b.Id == boardId);
+    }
+
+    public async Task<long> CreateBoardAsync(Board board)
+    {
+        db.Boards.Add(board);
+        await db.SaveChangesAsync();
+
+        return board.Id;
+    }
+
+    public async Task UpdateBoardAsync(Board board)
+    {
+        db.Boards.Update(board);
+        await db.SaveChangesAsync();
+    }
+
+    public async Task DeleteBoardAsync(Board board)
+    {
+        db.Boards.Remove(board);
+        await db.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Access/ownership query for column-scoped operations (access checks, edit, delete).
+    /// Loads Column with Board and Board.Members to evaluate board membership via the parent board.
+    /// Board.Columns is intentionally not included because current column use cases do not require sibling columns.
+    /// </summary>
+    public async Task<BoardColumn?> GetColumnByIdAsync(long columnId)
+    {
+        return await db.BoardColumns
+            .Include(c => c.Board)
+                .ThenInclude(b => b.Members)
+            .FirstOrDefaultAsync(c => c.Id == columnId);
+    }
+
+    public async Task<long> CreateColumnAsync(BoardColumn column)
+    {
+        db.BoardColumns.Add(column);
+        await db.SaveChangesAsync();
+
+        return column.Id;
+    }
+
+    public async Task UpdateColumnAsync(BoardColumn column)
+    {
+        db.BoardColumns.Update(column);
+        await db.SaveChangesAsync();
+    }
+
+    public async Task UpdateColumnOrderAsync(List<BoardColumn> columns)
+    {
+        db.BoardColumns.UpdateRange(columns);
+        await db.SaveChangesAsync();
+    }
+
+    public async Task DeleteColumnAsync(BoardColumn column)
+    {
+        db.BoardColumns.Remove(column);
+        await db.SaveChangesAsync();
+    }
+
+    public async Task AddBoardMemberAsync(Board board, User user)
+    {
+        if (board.Members.Any(u => u.Id == user.Id))
+            return;
+
+        board.Members.Add(user);
+        await db.SaveChangesAsync();
+    }
+
+    public async Task RemoveBoardMemberAsync(Board board, User user)
+    {
+        var existing = board.Members.FirstOrDefault(u => u.Id == user.Id);
+        if (existing is null)
+            return;
+
+        board.Members.Remove(existing);
+        await db.SaveChangesAsync();
+    }
+}

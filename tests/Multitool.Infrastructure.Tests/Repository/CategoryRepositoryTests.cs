@@ -154,4 +154,48 @@ public class CategoryRepositoryTests : RepositoryTestBase
         Assert.NotNull(dbCategory);
         AssertEx.AreEqual("#00FF00", dbCategory!.Color);
     }
+
+    // GetKanbanCategoriesForOwnerAsync
+
+    [Fact]
+    public async Task GetKanbanCategoriesForOwnerAsync_WhenOwnerHasKanbanCategories_ReturnsTrackedKanbanCategories()
+    {
+        // Arrange
+        var ownerId = 999;
+        var kanban = new Category
+        {
+            UserId = ownerId,
+            Name = "Kanban",
+            Color = "#FF0000",
+            ApplicableModules = [Multitool.Domain.Enums.AppModule.Kanban],
+            IsDeleted = false
+        };
+        var otherModule = new Category
+        {
+            UserId = ownerId,
+            Name = "Todo",
+            Color = "#00FF00",
+            ApplicableModules = [Multitool.Domain.Enums.AppModule.Todo],
+            IsDeleted = false
+        };
+        var deleted = new Category
+        {
+            UserId = ownerId,
+            Name = "Deleted",
+            Color = "#0000FF",
+            ApplicableModules = [Multitool.Domain.Enums.AppModule.Kanban],
+            IsDeleted = true
+        };
+        Context.Categories.AddRange(kanban, otherModule, deleted);
+        await Context.SaveChangesAsync();
+        Context.ChangeTracker.Clear();
+
+        // Act
+        var result = await _sut.GetKanbanCategoriesForOwnerAsync(ownerId);
+
+        // Assert
+        Assert.Single(result);
+        AssertEx.AreEqual(kanban.Id, result[0].Id);
+        Assert.Equal(EntityState.Unchanged, Context.Entry(result[0]).State);
+    }
 }

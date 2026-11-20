@@ -27,6 +27,9 @@ public static class Setup
         services.AddScoped<IWorkDayRepository, WorkDayRepository>();
         services.AddScoped<ISettingRepository, SettingRepository>();
 
+        services.AddScoped<IBoardRepository, BoardRepository>();
+        services.AddScoped<ICardRepository, CardRepository>();
+
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(
                 connectionString,

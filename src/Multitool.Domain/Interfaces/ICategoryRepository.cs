@@ -8,4 +8,5 @@ public interface ICategoryRepository
     Task<List<Category>> GetCategoriesAsync();
     Task<int> CreateCategoryAsync(Category category);
     Task UpdateCategoryAsync(Category category);
+    Task<List<Category>> GetKanbanCategoriesForOwnerAsync(int ownerId);
 }

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Multitool.Domain.Entities.Categories;
+using Multitool.Domain.Enums;
 using Multitool.Domain.Interfaces;
 using Multitool.Infrastructure.Data;
 
@@ -32,5 +33,19 @@ public class CategoryRepository(AppDbContext db) : ICategoryRepository
     {
         db.Categories.Update(category);
         await db.SaveChangesAsync();
+    }
+
+    public async Task<List<Category>> GetKanbanCategoriesForOwnerAsync(int ownerId)
+    {
+        // IgnoreQueryFilters is required to read another user's categories (board owner);
+        // results must remain tracked for later use in card category joins.
+        var categories = await db.Categories
+            .IgnoreQueryFilters()
+            .Where(c => c.UserId == ownerId && !c.IsDeleted)
+            .ToListAsync();
+
+        return categories
+            .Where(c => c.ApplicableModules.Contains(AppModule.Kanban))
+            .ToList();
     }
 }
