@@ -1,7 +1,7 @@
 using Multitool.Domain.Enums;
 using Multitool.Domain.Interfaces;
 
-namespace Multitool.Domain.Entities.Category;
+namespace Multitool.Domain.Entities.Categories;
 
 public class Category : IUserEntity
 {

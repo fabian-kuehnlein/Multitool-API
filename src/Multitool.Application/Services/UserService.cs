@@ -1,7 +1,7 @@
 using Mapster;
 using Multitool.Application.Interfaces;
 using Multitool.Application.Models.User;
-using Multitool.Domain.Entities.Category;
+using Multitool.Domain.Entities.Categories;
 using Multitool.Domain.Entities.Config;
 using Multitool.Domain.Enums;
 using Multitool.Domain.Exceptions;

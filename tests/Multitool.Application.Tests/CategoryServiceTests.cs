@@ -3,7 +3,7 @@ using Moq;
 using Multitool.Application.Mappings;
 using Multitool.Application.Models.Category;
 using Multitool.Application.Services;
-using Multitool.Domain.Entities.Category;
+using Multitool.Domain.Entities.Categories;
 using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
 using Multitool.Tests.Shared;

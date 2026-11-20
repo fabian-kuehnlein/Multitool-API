@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Multitool.Domain.Entities.Category;
+using Multitool.Domain.Entities.Categories;
 using Multitool.Infrastructure.Repositories;
 using Multitool.Tests.Shared;
 using Multitool.Tests.Shared.Assertions;

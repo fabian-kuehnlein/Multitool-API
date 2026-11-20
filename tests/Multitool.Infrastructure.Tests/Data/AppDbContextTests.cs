@@ -1,7 +1,7 @@
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Moq;
-using Multitool.Domain.Entities.Category;
+using Multitool.Domain.Entities.Categories;
 using Multitool.Domain.Entities.CustomTable;
 using Multitool.Domain.Entities.Todo;
 using Multitool.Domain.Entities.WorkTimePlanner;

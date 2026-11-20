@@ -1,12 +1,10 @@
 using Mapster;
 using Moq;
 using Multitool.Application.Mappings;
-using Multitool.Application.Models;
 using Multitool.Application.Models.Todo;
 using Multitool.Application.Services;
-using Multitool.Domain.Entities.Category;
+using Multitool.Domain.Entities.Categories;
 using Multitool.Domain.Entities.Todo;
-using Multitool.Domain.Enums;
 using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
 using Multitool.Tests.Shared;

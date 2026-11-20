@@ -1,5 +1,5 @@
 using Multitool.Application.Models.Category;
-using Multitool.Domain.Entities.Category;
+using Multitool.Domain.Entities.Categories;
 using Multitool.Domain.Enums;
 
 namespace Multitool.Tests.Shared;

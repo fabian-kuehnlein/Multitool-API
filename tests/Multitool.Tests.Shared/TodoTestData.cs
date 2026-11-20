@@ -1,7 +1,6 @@
-using Multitool.Application.Models;
 using Multitool.Application.Models.Todo;
 using Multitool.Domain.Entities.Todo;
-using Multitool.Domain.Entities.Category;
+using Multitool.Domain.Entities.Categories;
 using Multitool.Domain.Enums;
 
 namespace Multitool.Tests.Shared;

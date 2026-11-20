@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using Multitool.Domain.Entities.Category;
+using Multitool.Domain.Entities.Categories;
 using Multitool.Domain.Enums;
 using Multitool.Infrastructure.Data;
 

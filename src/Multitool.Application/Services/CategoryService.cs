@@ -2,7 +2,7 @@ using Mapster;
 using Multitool.Application.Interfaces;
 using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
-using Multitool.Domain.Entities.Category;
+using Multitool.Domain.Entities.Categories;
 using Multitool.Application.Models.Category;
 
 namespace Multitool.Application.Services;

@@ -1,4 +1,4 @@
-using Multitool.Domain.Entities.Category;
+using Multitool.Domain.Entities.Categories;
 
 namespace Multitool.Domain.Interfaces;
 

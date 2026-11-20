@@ -5,7 +5,7 @@ using Multitool.Application.Mappings;
 using Multitool.Application.Models.Calendar;
 using Multitool.Application.Services;
 using Multitool.Domain.Entities.Calendar;
-using Multitool.Domain.Entities.Category;
+using Multitool.Domain.Entities.Categories;
 using Multitool.Domain.Entities.Todo;
 using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;

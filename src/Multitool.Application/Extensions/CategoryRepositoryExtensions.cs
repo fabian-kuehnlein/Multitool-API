@@ -1,3 +1,4 @@
+using Multitool.Domain.Entities.Categories;
 using Multitool.Domain.Enums;
 using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
@@ -6,7 +7,7 @@ namespace Multitool.Application.Extensions;
 
 internal static class CategoryRepositoryExtensions
 {
-    public static async Task<Domain.Entities.Category.Category> GetApplicableCategoryAsync(
+    public static async Task<Category> GetApplicableCategoryAsync(
         this ICategoryRepository categoryRepository, int categoryId, AppModule module)
     {
         var category = await categoryRepository.GetByIdAsync(categoryId);
