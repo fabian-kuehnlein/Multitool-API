@@ -29,6 +29,14 @@ public sealed class GlobalExceptionHandler(IProblemDetailsService problemDetails
                 Detail = "Authentication failed."
             },
 
+            ForbiddenException => new ProblemDetails
+            {
+                Type = "https://httpstatuses.com/403",
+                Title = "Forbidden",
+                Status = StatusCodes.Status403Forbidden,
+                Detail = exception.Message
+            },
+
             NotFoundException or KeyNotFoundException => new ProblemDetails
             {
                 Type = "https://httpstatuses.com/404",

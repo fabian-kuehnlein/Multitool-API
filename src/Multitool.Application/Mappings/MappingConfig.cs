@@ -1,13 +1,14 @@
 using Mapster;
 using Multitool.Domain.Entities.Calendar;
 using Multitool.Domain.Entities.Config;
+using Multitool.Domain.Entities.Kanban;
 using Multitool.Domain.Entities.Todo;
 using Multitool.Domain.Entities.CustomTable;
-using Multitool.Application.Models;
 using Multitool.Application.Models.Todo;
 using Multitool.Application.Models.CustomTable;
 using Multitool.Application.Models.Calendar;
 using Multitool.Application.Models.Info;
+using Multitool.Application.Models.Kanban;
 using Multitool.Application.Models.User;
 
 namespace Multitool.Application.Mappings;
@@ -30,6 +31,25 @@ public class MappingConfig : IRegister
         config.NewConfig<CreateTodoRequest, Todo>()
             .Map(dest => dest.IsDone, src => false)
             .Map(dest => dest.CreationDateTime, src => DateTime.Now);
+
+        // -----------------------------------------------------------------
+
+        config.NewConfig<CreateBoardRequest, Board>()
+            .Map(dest => dest.CreatedAt, src => DateTime.Now);
+
+        config.NewConfig<Board, BoardOverviewModel>()
+            .Map(dest => dest.MemberCount, src => src.Members.Count)
+            .Map(dest => dest.IsShared, src => src.Members.Count > 1);
+
+        config.NewConfig<Board, BoardModel>();
+
+        config.NewConfig<BoardColumn, ColumnModel>();
+
+        config.NewConfig<Card, CardModel>()
+            .Map(dest => dest.CategoryIds, src => src.Categories.Select(c => c.Id).ToList());
+
+        config.NewConfig<User, BoardMemberModel>()
+            .Map(dest => dest.UserId, src => src.Id);
 
         // -----------------------------------------------------------------
 

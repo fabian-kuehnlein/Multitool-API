@@ -215,6 +215,65 @@ public class BoardRepositoryTests : RepositoryTestBase
         Assert.DoesNotContain(reloaded.Members, u => u.Id == _memberId);
     }
 
+    // UpdateColumnOrderAsync
+
+    [Fact]
+    public async Task UpdateColumnOrderAsync_WhenAllColumnsExist_UpdatesAllPositions()
+    {
+        // Arrange
+        var board = CreateBoard();
+        Context.Boards.Add(board);
+        await Context.SaveChangesAsync();
+        var first = board.Columns[0];
+        var second = board.Columns[1];
+        var positions = new Dictionary<long, int>
+        {
+            [first.Id] = 2,
+            [second.Id] = 0
+        };
+
+        // Act
+        var result = await _sut.UpdateColumnOrderAsync(board.Id, positions);
+
+        // Assert
+        Assert.True(result);
+        Context.ChangeTracker.Clear();
+        var saved = await Context.BoardColumns.AsNoTracking()
+            .Where(c => c.BoardId == board.Id)
+            .ToListAsync();
+        AssertEx.AreEqual(2, saved.Count);
+        AssertEx.AreEqual(2, saved.Single(c => c.Id == first.Id).Position);
+        AssertEx.AreEqual(0, saved.Single(c => c.Id == second.Id).Position);
+    }
+
+    [Fact]
+    public async Task UpdateColumnOrderAsync_WhenColumnBelongsToAnotherBoard_ReturnsFalseWithoutSaving()
+    {
+        // Arrange
+        var board = CreateBoard();
+        var otherBoard = CreateBoard("Other");
+        Context.Boards.AddRange(board, otherBoard);
+        await Context.SaveChangesAsync();
+        var ownColumn = board.Columns[0];
+        var foreignColumn = otherBoard.Columns[0];
+        var positions = new Dictionary<long, int>
+        {
+            [ownColumn.Id] = 9,
+            [foreignColumn.Id] = 9
+        };
+
+        // Act
+        var result = await _sut.UpdateColumnOrderAsync(board.Id, positions);
+
+        // Assert
+        Assert.False(result);
+        Context.ChangeTracker.Clear();
+        var savedOwn = await Context.BoardColumns.AsNoTracking().FirstAsync(c => c.Id == ownColumn.Id);
+        var savedForeign = await Context.BoardColumns.AsNoTracking().FirstAsync(c => c.Id == foreignColumn.Id);
+        AssertEx.AreEqual(0, savedOwn.Position);
+        AssertEx.AreEqual(0, savedForeign.Position);
+    }
+
     // CRUD basics
 
     [Fact]

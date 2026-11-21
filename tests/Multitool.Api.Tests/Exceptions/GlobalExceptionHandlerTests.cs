@@ -33,6 +33,7 @@ public class GlobalExceptionHandlerTests
     [InlineData(typeof(ArgumentException), StatusCodes.Status400BadRequest)]
     [InlineData(typeof(InvalidOperationException), StatusCodes.Status400BadRequest)]
     [InlineData(typeof(InvalidCredentialException), StatusCodes.Status401Unauthorized)]
+    [InlineData(typeof(ForbiddenException), StatusCodes.Status403Forbidden)]
     [InlineData(typeof(NotFoundException), StatusCodes.Status404NotFound)]
     [InlineData(typeof(KeyNotFoundException), StatusCodes.Status404NotFound)]
     [InlineData(typeof(CategoryNotAvailableForModuleException), StatusCodes.Status400BadRequest)]

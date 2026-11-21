@@ -15,7 +15,7 @@ public interface IBoardRepository
     Task<BoardColumn?> GetColumnByIdAsync(long columnId);
     Task<long> CreateColumnAsync(BoardColumn column);
     Task UpdateColumnAsync(BoardColumn column);
-    Task UpdateColumnOrderAsync(List<BoardColumn> columns);
+    Task<bool> UpdateColumnOrderAsync(long boardId, IReadOnlyDictionary<long, int> positions);
     Task DeleteColumnAsync(BoardColumn column);
     Task AddBoardMemberAsync(Board board, User user);
     Task RemoveBoardMemberAsync(Board board, User user);

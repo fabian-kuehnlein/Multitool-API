@@ -168,10 +168,30 @@ public class BoardRepository(AppDbContext db) : IBoardRepository
         await db.SaveChangesAsync();
     }
 
-    public async Task UpdateColumnOrderAsync(List<BoardColumn> columns)
+    /// <summary>
+    /// Bulk order update: one query loads all affected tracked columns, all positions are
+    /// assigned in memory and committed with a single SaveChangesAsync. Nothing is saved
+    /// when an id does not belong to the board, so no partial order can be persisted.
+    /// </summary>
+    public async Task<bool> UpdateColumnOrderAsync(long boardId, IReadOnlyDictionary<long, int> positions)
     {
-        db.BoardColumns.UpdateRange(columns);
+        var ids = positions.Keys.ToList();
+        var columns = await db.BoardColumns
+            .Where(c => c.BoardId == boardId && ids.Contains(c.Id))
+            .ToListAsync();
+
+        if (columns.Count != ids.Count)
+        {
+            return false;
+        }
+
+        foreach (var column in columns)
+        {
+            column.Position = positions[column.Id];
+        }
+
         await db.SaveChangesAsync();
+        return true;
     }
 
     public async Task DeleteColumnAsync(BoardColumn column)

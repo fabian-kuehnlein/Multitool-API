@@ -19,6 +19,9 @@ public static class Setup
         services.AddScoped<IAccountService, AccountService>();
         services.AddScoped<IUserService, UserService>();
 
+        services.AddScoped<IBoardAccessService, BoardAccessService>();
+        services.AddScoped<IBoardService, BoardService>();
+
         services.AddScoped<ICalendarService, CalendarService>();
         services.AddScoped<ICategoryService, CategoryService>();
         services.AddScoped<ICustomTableService, CustomTableService>();
