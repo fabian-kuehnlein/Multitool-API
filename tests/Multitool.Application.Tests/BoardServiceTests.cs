@@ -4,12 +4,12 @@ using Multitool.Application.Interfaces;
 using Multitool.Application.Mappings;
 using Multitool.Application.Models.Kanban;
 using Multitool.Application.Services;
-using Multitool.Domain.Entities.Categories;
 using Multitool.Domain.Entities.Config;
 using Multitool.Domain.Entities.Kanban;
 using Multitool.Domain.Enums;
 using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
+using Multitool.Tests.Shared;
 using Multitool.Tests.Shared.Assertions;
 
 namespace Multitool.Application.Tests;
@@ -57,76 +57,14 @@ public class BoardServiceTests
         _userContextMock = new Mock<IUserContext>();
 
         _getBoardsResponse = [];
-        _getBoardWithDetailsResponse = CreateBoard();
-        _getBoardByIdResponse = CreateBoard();
-        _getBoardForAccessCheckResponse = CreateBoard();
-        _getColumnResponse = CreateColumn();
-        _getUserByIdResponse = CreateUser();
-        _getUserByUsernameResponse = CreateUser();
+        _getBoardWithDetailsResponse = BoardTestData.DefaultBoardWithDetails;
+        _getBoardByIdResponse = BoardTestData.DefaultBoard;
+        _getBoardForAccessCheckResponse = BoardTestData.DefaultBoard;
+        _getColumnResponse = BoardTestData.DefaultColumn;
+        _getUserByIdResponse = BoardTestData.DefaultMember;
+        _getUserByUsernameResponse = BoardTestData.DefaultMember;
         _createBoardResponse = BOARD_ID;
     }
-
-    private static Board CreateBoard(int ownerId = USER_ID, int[]? memberIds = null)
-    {
-        var ids = memberIds ?? [USER_ID];
-
-        return new Board
-        {
-            Id = BOARD_ID,
-            Name = "Board",
-            Description = "Description",
-            OwnerId = ownerId,
-            CreatedAt = DateTime.Now,
-            Members = ids.Select(id => new User { Id = id, Username = $"user{id}" }).ToList()
-        };
-    }
-
-    private static Board CreateBoardWithDetails(int ownerId = USER_ID, int[]? memberIds = null)
-    {
-        var board = CreateBoard(ownerId, memberIds);
-        var column = new BoardColumn
-        {
-            Id = COLUMN_ID,
-            BoardId = board.Id,
-            Board = board,
-            Name = "Column",
-            Position = 0
-        };
-        column.Cards.Add(new Card
-        {
-            Id = 30,
-            ColumnId = COLUMN_ID,
-            Column = column,
-            Title = "Card",
-            Description = "Card description",
-            Position = 0,
-            CreatedByUserId = ownerId,
-            CreatedAt = DateTime.Now,
-            Categories = [new Category { Id = 1, Name = "Category", Color = "#ffffff" }]
-        });
-        board.Columns.Add(column);
-
-        return board;
-    }
-
-    private static BoardColumn CreateColumn(long id = COLUMN_ID, long boardId = BOARD_ID)
-        => new()
-        {
-            Id = id,
-            BoardId = boardId,
-            Name = "Column",
-            Position = 0
-        };
-
-    private static User CreateUser(int id = USER_ID, string username = "user", bool isActive = true)
-        => new()
-        {
-            Id = id,
-            Username = username,
-            PasswordHash = "hash",
-            IsActive = isActive,
-            CreatedAt = DateTime.Now
-        };
 
     private BoardService GetService()
     {
@@ -224,7 +162,7 @@ public class BoardServiceTests
     public async Task GetBoardsAsync_WhenUserHasBoards_ReturnsBoardOverviews()
     {
         // Arrange
-        _getBoardsResponse = [CreateBoard(USER_ID, [USER_ID, OTHER_USER_ID])];
+        _getBoardsResponse = [BoardTestData.BoardWithTwoMembers];
         var service = GetService();
 
         // Act
@@ -249,7 +187,7 @@ public class BoardServiceTests
     public async Task GetBoardByIdAsync_WhenUserIsOwner_ReturnsBoardModelWithIsOwnerTrue()
     {
         // Arrange
-        _getBoardWithDetailsResponse = CreateBoardWithDetails(USER_ID, [USER_ID]);
+        _getBoardWithDetailsResponse = BoardTestData.DefaultBoardWithDetails;
         var service = GetService();
 
         // Act
@@ -273,7 +211,7 @@ public class BoardServiceTests
     public async Task GetBoardByIdAsync_WhenUserIsMember_ReturnsBoardModelWithIsOwnerFalse()
     {
         // Arrange
-        _getBoardWithDetailsResponse = CreateBoardWithDetails(OTHER_USER_ID, [USER_ID, OTHER_USER_ID]);
+        _getBoardWithDetailsResponse = BoardTestData.OtherOwnerBoardWithDetails;
         var service = GetService();
 
         // Act
@@ -322,7 +260,7 @@ public class BoardServiceTests
     public async Task CreateBoardAsync_WhenColumnNamesAreMissing_CreatesBoardWithOwnerAsMemberAndDefaultColumns()
     {
         // Arrange
-        var request = new CreateBoardRequest("New board", "New description", null);
+        var request = BoardTestData.DefaultCreateBoardRequest;
         var service = GetService();
 
         // Act
@@ -338,12 +276,7 @@ public class BoardServiceTests
             OwnerId = USER_ID,
             CreatedAt = _createdBoard!.CreatedAt,
             Members = [_getUserByIdResponse!],
-            Columns =
-            [
-                new BoardColumn { Name = "Backlog", Position = 0 },
-                new BoardColumn { Name = "In Arbeit", Position = 1 },
-                new BoardColumn { Name = "Fertig", Position = 2 }
-            ]
+            Columns = BoardTestData.DefaultColumns
         }, _createdBoard);
         AssertEx.CloseTo(_createdBoard.CreatedAt, DateTime.Now, TimeSpan.FromSeconds(5));
 
@@ -363,7 +296,7 @@ public class BoardServiceTests
     public async Task CreateBoardAsync_WhenColumnNamesAreProvided_CreatesBoardWithProvidedColumns()
     {
         // Arrange
-        var request = new CreateBoardRequest("New board", null, ["Todo", "Done"]);
+        var request = BoardTestData.DefaultCreateBoardRequestWithColumns;
         var service = GetService();
 
         // Act
@@ -371,11 +304,7 @@ public class BoardServiceTests
 
         // Assert
         Assert.NotNull(_createdBoard);
-        AssertEx.AreEqual(new List<BoardColumn>
-        {
-            new() { Name = "Todo", Position = 0 },
-            new() { Name = "Done", Position = 1 }
-        }, _createdBoard!.Columns);
+        AssertEx.AreEqual(BoardTestData.TodoDoneColumns, _createdBoard!.Columns);
 
         _userRepositoryMock.Verify(r => r.GetUserByIdAsync(USER_ID), Times.Once);
         _userRepositoryMock.VerifyNoOtherCalls();
@@ -397,8 +326,7 @@ public class BoardServiceTests
         var service = GetService();
 
         // Act
-        Func<Task> act = async () => await service.CreateBoardAsync(
-            new CreateBoardRequest("New board", null, null));
+        Func<Task> act = async () => await service.CreateBoardAsync(BoardTestData.DefaultCreateBoardRequest);
 
         // Assert
         await AssertEx.Throws<NotFoundException>(act, $"User with ID {USER_ID} not found.");
@@ -421,11 +349,10 @@ public class BoardServiceTests
     public async Task UpdateBoardAsync_WhenUserIsOwner_UpdatesNameAndDescription()
     {
         // Arrange
-        var board = CreateBoard();
         _boardAccessServiceMock.Setup(s => s.EnsureAccessAsync(BoardAccess.Owner, BOARD_ID))
             .Returns(Task.CompletedTask);
         var service = GetService();
-        var request = new UpdateBoardRequest("Renamed", "New description");
+        var request = BoardTestData.DefaultUpdateBoardRequest;
 
         // Act
         await service.UpdateBoardAsync(BOARD_ID, request);
@@ -456,7 +383,7 @@ public class BoardServiceTests
 
         // Act
         Func<Task> act = async () => await service.UpdateBoardAsync(
-            BOARD_ID, new UpdateBoardRequest("Renamed", null));
+            BOARD_ID, BoardTestData.DefaultUpdateBoardRequest with { Description = null });
 
         // Assert
         await AssertEx.Throws<ForbiddenException>(act);
@@ -483,7 +410,7 @@ public class BoardServiceTests
 
         // Act
         Func<Task> act = async () => await service.UpdateBoardAsync(
-            BOARD_ID, new UpdateBoardRequest("Renamed", null));
+            BOARD_ID, BoardTestData.DefaultUpdateBoardRequest with { Description = null });
 
         // Assert
         await AssertEx.Throws<NotFoundException>(act, $"Board with ID {BOARD_ID} not found.");
@@ -557,9 +484,9 @@ public class BoardServiceTests
     public async Task CreateColumnAsync_WhenBoardHasColumns_AppendsColumnAfterLastPosition()
     {
         // Arrange
-        var board = CreateBoard();
-        board.Columns.Add(new BoardColumn { Id = COLUMN_ID, BoardId = BOARD_ID, Name = "First", Position = 1 });
-        board.Columns.Add(new BoardColumn { Id = OTHER_COLUMN_ID, BoardId = BOARD_ID, Name = "Second", Position = 4 });
+        var board = BoardTestData.DefaultBoard;
+        board.Columns.Add(BoardTestData.FirstColumn);
+        board.Columns.Add(BoardTestData.SecondColumn);
         _getBoardWithDetailsResponse = board;
         _boardAccessServiceMock.Setup(s => s.EnsureAccessAsync(BoardAccess.Member, BOARD_ID)).Returns(Task.CompletedTask);
         var service = GetService();
@@ -594,7 +521,7 @@ public class BoardServiceTests
     public async Task CreateColumnAsync_WhenBoardHasNoColumns_CreatesColumnAtPositionZero()
     {
         // Arrange
-        var board = CreateBoard();
+        var board = BoardTestData.DefaultBoard;
         _getBoardWithDetailsResponse = board;
         _boardAccessServiceMock.Setup(s => s.EnsureAccessAsync(BoardAccess.Member, BOARD_ID)).Returns(Task.CompletedTask);
         var service = GetService();
@@ -654,7 +581,7 @@ public class BoardServiceTests
     public async Task UpdateColumnAsync_WhenColumnIsAccessible_UpdatesName()
     {
         // Arrange
-        var column = CreateColumn();
+        var column = BoardTestData.DefaultColumn;
         _getColumnResponse = column;
         var service = GetService();
 
@@ -682,7 +609,7 @@ public class BoardServiceTests
     public async Task DeleteColumnAsync_WhenColumnIsAccessible_DeletesColumn()
     {
         // Arrange
-        var column = CreateColumn();
+        var column = BoardTestData.DefaultColumn;
         _getColumnResponse = column;
         var service = GetService();
 
@@ -763,7 +690,7 @@ public class BoardServiceTests
     public async Task GetBoardMembersAsync_WhenBoardIsAccessible_ReturnsMembers()
     {
         // Arrange
-        var board = CreateBoard(USER_ID, [USER_ID, OTHER_USER_ID]);
+        var board = BoardTestData.BoardWithTwoMembers;
         _getBoardForAccessCheckResponse = board;
         _boardAccessServiceMock.Setup(s => s.EnsureAccessAsync(BoardAccess.Member, BOARD_ID)).Returns(Task.CompletedTask);
         var service = GetService();
@@ -789,10 +716,13 @@ public class BoardServiceTests
     public async Task AddBoardMemberAsync_WhenCallerIsOwnerAndUserIsActive_AddsMember()
     {
         // Arrange
-        var board = CreateBoard();
+        var board = BoardTestData.DefaultBoard;
         _getBoardForAccessCheckResponse = board;
         _boardAccessServiceMock.Setup(s => s.EnsureAccessAsync(BoardAccess.Owner, BOARD_ID)).Returns(Task.CompletedTask);
-        _getUserByUsernameResponse = CreateUser(OTHER_USER_ID, "newmember");
+        var newMember = BoardTestData.DefaultMember;
+        newMember.Id = OTHER_USER_ID;
+        newMember.Username = "newmember";
+        _getUserByUsernameResponse = newMember;
         var service = GetService();
 
         // Act
@@ -875,7 +805,11 @@ public class BoardServiceTests
     {
         // Arrange
         _boardAccessServiceMock.Setup(s => s.EnsureAccessAsync(BoardAccess.Owner, BOARD_ID)).Returns(Task.CompletedTask);
-        _getUserByUsernameResponse = CreateUser(OTHER_USER_ID, "inactive", isActive: false);
+        var inactiveUser = BoardTestData.DefaultMember;
+        inactiveUser.Id = OTHER_USER_ID;
+        inactiveUser.Username = "inactive";
+        inactiveUser.IsActive = false;
+        _getUserByUsernameResponse = inactiveUser;
         var service = GetService();
 
         // Act
@@ -904,10 +838,13 @@ public class BoardServiceTests
     public async Task RemoveBoardMemberAsync_WhenCallerIsOwner_RemovesMember()
     {
         // Arrange
-        var board = CreateBoard();
+        var board = BoardTestData.DefaultBoard;
         _getBoardForAccessCheckResponse = board;
         _boardAccessServiceMock.Setup(s => s.EnsureAccessAsync(BoardAccess.Owner, BOARD_ID)).Returns(Task.CompletedTask);
-        _getUserByIdResponse = CreateUser(OTHER_USER_ID, "member");
+        var member = BoardTestData.DefaultMember;
+        member.Id = OTHER_USER_ID;
+        member.Username = "member";
+        _getUserByIdResponse = member;
         var service = GetService();
 
         // Act

@@ -1,9 +1,7 @@
 using Microsoft.EntityFrameworkCore;
-using Multitool.Domain.Entities.Categories;
-using Multitool.Domain.Entities.Config;
 using Multitool.Domain.Entities.Kanban;
-using Multitool.Domain.Enums;
 using Multitool.Infrastructure.Repositories;
+using Multitool.Tests.Shared;
 using Multitool.Tests.Shared.Assertions;
 
 namespace Multitool.Infrastructure.Tests;
@@ -22,22 +20,8 @@ public class CardRepositoryTests : RepositoryTestBase
 
     private void SetupUsers()
     {
-        var owner = new User
-        {
-            Username = "owner",
-            PasswordHash = "hash",
-            Role = Multitool.Tests.Shared.AuthTestData.DefaultUser.Role,
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow
-        };
-        var member = new User
-        {
-            Username = "member",
-            PasswordHash = "hash",
-            Role = Multitool.Tests.Shared.AuthTestData.DefaultUser.Role,
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow
-        };
+        var owner = BoardTestData.CreateUser("owner");
+        var member = BoardTestData.CreateUser("member");
 
         Context.Users.AddRange(owner, member);
         Context.SaveChanges();
@@ -51,54 +35,15 @@ public class CardRepositoryTests : RepositoryTestBase
         var owner = await Context.Users.FindAsync(_ownerId) ?? throw new InvalidOperationException();
         var member = await Context.Users.FindAsync(_memberId) ?? throw new InvalidOperationException();
 
-        var board = new Board
-        {
-            Name = "Board",
-            OwnerId = _ownerId,
-            CreatedAt = DateTime.UtcNow,
-            Columns = Enumerable.Range(0, columnCount)
-                .Select(i => new BoardColumn { Name = $"Col {i}", Position = i })
-                .ToList(),
-            Members = [owner, member]
-        };
+        var board = BoardTestData.CreateBoardWithTodoDoneColumns(_ownerId);
+        board.Columns.Clear();
+        board.Columns.AddRange(BoardTestData.CreateNumberedColumns(columnCount));
+        board.Members.Add(owner);
+        board.Members.Add(member);
 
         Context.Boards.Add(board);
         await Context.SaveChangesAsync();
         return board;
-    }
-
-    private async Task<Card> CreateCardAsync(long columnId, string title, int position, List<Category>? categories = null)
-    {
-        var card = new Card
-        {
-            ColumnId = columnId,
-            Title = title,
-            Position = position,
-            CreatedByUserId = _ownerId,
-            CreatedAt = DateTime.UtcNow
-        };
-
-        if (categories is null || categories.Count == 0)
-        {
-            Context.Cards.Add(card);
-            await Context.SaveChangesAsync();
-            return card;
-        }
-
-        await _sut.CreateCardAsync(card, categories);
-        return card;
-    }
-
-    private Category CreateCategory(string name)
-    {
-        return new Category
-        {
-            UserId = _ownerId,
-            Name = name,
-            Color = "#FF0000",
-            ApplicableModules = [AppModule.Kanban],
-            IsDeleted = false
-        };
     }
 
     // GetCardForOperationAsync
@@ -109,7 +54,9 @@ public class CardRepositoryTests : RepositoryTestBase
         // Arrange
         var board = await CreateBoardWithColumnsAsync();
         var column = board.Columns.First();
-        var card = await CreateCardAsync(column.Id, "Card", 0);
+        var card = CardTestData.PersistableCard(column.Id, "Card", 0, _ownerId);
+        Context.Cards.Add(card);
+        await Context.SaveChangesAsync();
 
         // Act
         var result = await _sut.GetCardForOperationAsync(card.Id);
@@ -130,11 +77,13 @@ public class CardRepositoryTests : RepositoryTestBase
         var colA = board.Columns.OrderBy(c => c.Position).First();
         var colB = board.Columns.OrderBy(c => c.Position).Last();
 
-        var a1 = await CreateCardAsync(colA.Id, "A1", 0);
-        var a2 = await CreateCardAsync(colA.Id, "A2", 1);
-        var a3 = await CreateCardAsync(colA.Id, "A3", 2);
-        var b1 = await CreateCardAsync(colB.Id, "B1", 0);
-        var b2 = await CreateCardAsync(colB.Id, "B2", 1);
+        var a1 = CardTestData.PersistableCard(colA.Id, "A1", 0, _ownerId);
+        var a2 = CardTestData.PersistableCard(colA.Id, "A2", 1, _ownerId);
+        var a3 = CardTestData.PersistableCard(colA.Id, "A3", 2, _ownerId);
+        var b1 = CardTestData.PersistableCard(colB.Id, "B1", 0, _ownerId);
+        var b2 = CardTestData.PersistableCard(colB.Id, "B2", 1, _ownerId);
+        Context.Cards.AddRange(a1, a2, a3, b1, b2);
+        await Context.SaveChangesAsync();
 
         var trackedA2 = await Context.Cards.FirstAsync(c => c.Id == a2.Id);
 
@@ -166,8 +115,10 @@ public class CardRepositoryTests : RepositoryTestBase
         var colA = board.Columns.OrderBy(c => c.Position).First();
         var colB = board.Columns.OrderBy(c => c.Position).Last();
 
-        var a1 = await CreateCardAsync(colA.Id, "A1", 0);
-        var b1 = await CreateCardAsync(colB.Id, "B1", 0);
+        var a1 = CardTestData.PersistableCard(colA.Id, "A1", 0, _ownerId);
+        var b1 = CardTestData.PersistableCard(colB.Id, "B1", 0, _ownerId);
+        Context.Cards.AddRange(a1, b1);
+        await Context.SaveChangesAsync();
 
         var trackedA1 = await Context.Cards.FirstAsync(c => c.Id == a1.Id);
 
@@ -192,19 +143,13 @@ public class CardRepositoryTests : RepositoryTestBase
         // Arrange
         var board = await CreateBoardWithColumnsAsync();
         var column = board.Columns.First();
-        var category = CreateCategory("Kanban");
+        var category = CategoryTestData.CreateKanbanCategory("Kanban");
+        category.UserId = _ownerId;
         Context.Categories.Add(category);
         await Context.SaveChangesAsync();
 
         var trackedCategory = await Context.Categories.FirstAsync(c => c.Id == category.Id);
-        var card = new Card
-        {
-            ColumnId = column.Id,
-            Title = "Card",
-            Position = 0,
-            CreatedByUserId = _ownerId,
-            CreatedAt = DateTime.UtcNow
-        };
+        var card = CardTestData.PersistableCard(column.Id, "Card", 0, _ownerId);
 
         // Act
         await _sut.CreateCardAsync(card, [trackedCategory]);
@@ -224,9 +169,12 @@ public class CardRepositoryTests : RepositoryTestBase
         // Arrange
         var board = await CreateBoardWithColumnsAsync();
         var column = board.Columns.First();
-        var cat1 = CreateCategory("Cat1");
-        var cat2 = CreateCategory("Cat2");
-        var cat3 = CreateCategory("Cat3");
+        var cat1 = CategoryTestData.CreateKanbanCategory("Cat1");
+        var cat2 = CategoryTestData.CreateKanbanCategory("Cat2");
+        var cat3 = CategoryTestData.CreateKanbanCategory("Cat3");
+        cat1.UserId = _ownerId;
+        cat2.UserId = _ownerId;
+        cat3.UserId = _ownerId;
         Context.Categories.AddRange(cat1, cat2, cat3);
         await Context.SaveChangesAsync();
 
@@ -234,14 +182,7 @@ public class CardRepositoryTests : RepositoryTestBase
         var trackedCat2 = await Context.Categories.FirstAsync(c => c.Id == cat2.Id);
         var trackedCat3 = await Context.Categories.FirstAsync(c => c.Id == cat3.Id);
 
-        var card = new Card
-        {
-            ColumnId = column.Id,
-            Title = "Card",
-            Position = 0,
-            CreatedByUserId = _ownerId,
-            CreatedAt = DateTime.UtcNow
-        };
+        var card = CardTestData.PersistableCard(column.Id, "Card", 0, _ownerId);
         await _sut.CreateCardAsync(card, [trackedCat1, trackedCat2]);
 
         var trackedCard = await Context.Cards.Include(c => c.Categories).FirstAsync(c => c.Id == card.Id);

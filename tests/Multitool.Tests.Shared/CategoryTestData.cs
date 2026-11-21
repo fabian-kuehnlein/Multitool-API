@@ -8,6 +8,27 @@ public static class CategoryTestData
 {
     public static List<AppModule> DefaultApplicableModules => [AppModule.Todo, AppModule.Calendar];
 
+    public static List<AppModule> KanbanApplicableModules => [AppModule.Kanban];
+
+    public static Category KanbanCategory => new()
+    {
+        Id = 2,
+        UserId = AuthTestData.DefaultUser.Id,
+        Name = "Kanban",
+        Color = "#00FF00",
+        ApplicableModules = KanbanApplicableModules,
+        IsDeleted = false
+    };
+
+    public static Category CreateKanbanCategory(string name) => new()
+    {
+        UserId = AuthTestData.DefaultUser.Id,
+        Name = name,
+        Color = "#FF0000",
+        ApplicableModules = KanbanApplicableModules,
+        IsDeleted = false
+    };
+
     public static Category DefaultCategory => new()
     {
         Id = 1,

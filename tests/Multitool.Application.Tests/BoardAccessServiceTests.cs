@@ -1,10 +1,10 @@
 using Moq;
 using Multitool.Application.Services;
-using Multitool.Domain.Entities.Config;
 using Multitool.Domain.Entities.Kanban;
 using Multitool.Domain.Enums;
 using Multitool.Domain.Exceptions;
 using Multitool.Domain.Interfaces;
+using Multitool.Tests.Shared;
 using Multitool.Tests.Shared.Assertions;
 
 namespace Multitool.Application.Tests;
@@ -26,33 +26,10 @@ public class BoardAccessServiceTests
         _boardRepositoryMock = new Mock<IBoardRepository>();
         _userContextMock = new Mock<IUserContext>();
 
-        _getBoardResponse = CreateBoard();
-        _getColumnResponse = CreateColumn(_getBoardResponse);
+        _getBoardResponse = BoardTestData.DefaultBoard;
+        _getColumnResponse = BoardTestData.DefaultColumnWithBoard;
+        _getColumnResponse.Board = _getBoardResponse;
     }
-
-    private static Board CreateBoard(int ownerId = USER_ID, int[]? memberIds = null)
-    {
-        var ids = memberIds ?? [USER_ID];
-
-        return new Board
-        {
-            Id = BOARD_ID,
-            Name = "Board",
-            OwnerId = ownerId,
-            CreatedAt = DateTime.Now,
-            Members = ids.Select(id => new User { Id = id, Username = $"user{id}" }).ToList()
-        };
-    }
-
-    private static BoardColumn CreateColumn(Board board)
-        => new()
-        {
-            Id = COLUMN_ID,
-            BoardId = board.Id,
-            Board = board,
-            Name = "Column",
-            Position = 0
-        };
 
     private BoardAccessService GetService()
     {
@@ -113,7 +90,7 @@ public class BoardAccessServiceTests
     public async Task EnsureAccessAsync_WithBoardMemberPolicyAndUserIsNotMember_ThrowsNotFoundException()
     {
         // Arrange
-        _getBoardResponse = CreateBoard(USER_ID, [2]);
+        _getBoardResponse = BoardTestData.BoardWithOtherUserOnly;
         var service = GetService();
 
         // Act
@@ -150,7 +127,7 @@ public class BoardAccessServiceTests
     public async Task EnsureAccessAsync_WithBoardOwnerPolicyAndUserIsMemberButNotOwner_ThrowsForbiddenException()
     {
         // Arrange
-        _getBoardResponse = CreateBoard(ownerId: 2, memberIds: [USER_ID, 2]);
+        _getBoardResponse = BoardTestData.OtherOwnerBoard;
         var service = GetService();
 
         // Act
@@ -171,7 +148,7 @@ public class BoardAccessServiceTests
     public async Task EnsureAccessAsync_WithBoardOwnerPolicyAndUserIsNotMember_ThrowsNotFoundException()
     {
         // Arrange
-        _getBoardResponse = CreateBoard(USER_ID, [2]);
+        _getBoardResponse = BoardTestData.BoardWithOtherUserOnly;
         var service = GetService();
 
         // Act
@@ -208,8 +185,9 @@ public class BoardAccessServiceTests
     public async Task EnsureAccessAsync_WithColumnBoardMemberPolicyAndUserIsNotBoardMember_ThrowsNotFoundException()
     {
         // Arrange
-        var board = CreateBoard(USER_ID, [2]);
-        _getColumnResponse = CreateColumn(board);
+        var board = BoardTestData.BoardWithOtherUserOnly;
+        _getColumnResponse = BoardTestData.DefaultColumnWithBoard;
+        _getColumnResponse.Board = board;
         var service = GetService();
 
         // Act
@@ -265,7 +243,7 @@ public class BoardAccessServiceTests
     public async Task EnsureAccessAsync_WithTrackedBoardAndBoardMemberPolicy_DoesNotThrow()
     {
         // Arrange
-        var board = CreateBoard();
+        var board = BoardTestData.DefaultBoard;
         var service = GetService();
 
         // Act
@@ -282,7 +260,7 @@ public class BoardAccessServiceTests
     public async Task EnsureAccessAsync_WithTrackedBoardAndBoardOwnerPolicy_DoesNotThrow()
     {
         // Arrange
-        var board = CreateBoard();
+        var board = BoardTestData.DefaultBoard;
         var service = GetService();
 
         // Act
@@ -299,7 +277,7 @@ public class BoardAccessServiceTests
     public async Task EnsureAccessAsync_WithTrackedBoardAndUserIsNotMember_ThrowsNotFoundException()
     {
         // Arrange
-        var board = CreateBoard(USER_ID, [2]);
+        var board = BoardTestData.BoardWithOtherUserOnly;
         var service = GetService();
 
         // Act
@@ -318,7 +296,7 @@ public class BoardAccessServiceTests
     public async Task EnsureAccessAsync_WithTrackedBoardAndColumnBoardMemberPolicy_ThrowsArgumentException()
     {
         // Arrange
-        var board = CreateBoard();
+        var board = BoardTestData.DefaultBoard;
         var service = GetService();
 
         // Act
@@ -335,7 +313,7 @@ public class BoardAccessServiceTests
     public async Task EnsureAccessAsync_WithTrackedColumnAndColumnBoardMemberPolicy_DoesNotThrow()
     {
         // Arrange
-        var column = CreateColumn(CreateBoard());
+        var column = BoardTestData.DefaultColumnWithBoard;
         var service = GetService();
 
         // Act
@@ -352,7 +330,7 @@ public class BoardAccessServiceTests
     public async Task EnsureAccessAsync_WithTrackedColumnAndBoardMemberPolicy_ThrowsArgumentException()
     {
         // Arrange
-        var column = CreateColumn(CreateBoard());
+        var column = BoardTestData.DefaultColumnWithBoard;
         var service = GetService();
 
         // Act

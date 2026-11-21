@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Multitool.Domain.Entities.Config;
 using Multitool.Domain.Entities.Kanban;
 using Multitool.Infrastructure.Repositories;
 using Multitool.Tests.Shared;
@@ -22,30 +21,9 @@ public class BoardRepositoryTests : RepositoryTestBase
 
     private void SetupUsers()
     {
-        var owner = new User
-        {
-            Username = "owner",
-            PasswordHash = "hash",
-            Role = AuthTestData.DefaultUser.Role,
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow
-        };
-        var member = new User
-        {
-            Username = "member",
-            PasswordHash = "hash",
-            Role = AuthTestData.DefaultUser.Role,
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow
-        };
-        var other = new User
-        {
-            Username = "other",
-            PasswordHash = "hash",
-            Role = AuthTestData.DefaultUser.Role,
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow
-        };
+        var owner = BoardTestData.CreateUser("owner");
+        var member = BoardTestData.CreateUser("member");
+        var other = BoardTestData.CreateUser("other");
 
         Context.Users.AddRange(owner, member, other);
         Context.SaveChanges();
@@ -55,40 +33,17 @@ public class BoardRepositoryTests : RepositoryTestBase
         _otherUserId = other.Id;
     }
 
-    private Board CreateBoard(string name = "Board")
-    {
-        return new Board
-        {
-            Name = name,
-            Description = "desc",
-            OwnerId = _ownerId,
-            CreatedAt = DateTime.UtcNow,
-            Columns =
-            [
-                new BoardColumn { Name = "Todo", Position = 0 },
-                new BoardColumn { Name = "Done", Position = 1 }
-            ]
-        };
-    }
-
     private async Task<(Board Board, Card Card)> CreateBoardWithCardAsync()
     {
-        var board = CreateBoard();
+        var board = BoardTestData.CreateBoardWithTodoDoneColumns(_ownerId);
         board.Members.Add(await Context.Users.FindAsync(_ownerId) ?? throw new InvalidOperationException("Owner not found"));
         board.Members.Add(await Context.Users.FindAsync(_memberId) ?? throw new InvalidOperationException("Member not found"));
         Context.Boards.Add(board);
         await Context.SaveChangesAsync();
 
         var column = board.Columns.OrderBy(c => c.Position).First();
-        var card = new Card
-        {
-            ColumnId = column.Id,
-            Title = "Card",
-            Description = "d",
-            Position = 0,
-            CreatedByUserId = _ownerId,
-            CreatedAt = DateTime.UtcNow
-        };
+        var card = CardTestData.PersistableCard(column.Id, "Card", 0, _ownerId);
+        card.Description = "d";
         Context.Cards.Add(card);
         await Context.SaveChangesAsync();
 
@@ -101,7 +56,7 @@ public class BoardRepositoryTests : RepositoryTestBase
     public async Task GetBoardOverviewAsync_WhenUserIsMember_ReturnsOverviewBoards()
     {
         // Arrange
-        var board = CreateBoard();
+        var board = BoardTestData.CreateBoardWithTodoDoneColumns(_ownerId);
         board.Members.Add(await Context.Users.FindAsync(_ownerId) ?? throw new InvalidOperationException());
         board.Members.Add(await Context.Users.FindAsync(_memberId) ?? throw new InvalidOperationException());
         Context.Boards.Add(board);
@@ -122,7 +77,7 @@ public class BoardRepositoryTests : RepositoryTestBase
     public async Task GetBoardOverviewAsync_WhenUserIsNotMember_ReturnsEmptyList()
     {
         // Arrange
-        var board = CreateBoard();
+        var board = BoardTestData.CreateBoardWithTodoDoneColumns(_ownerId);
         board.Members.Add(await Context.Users.FindAsync(_ownerId) ?? throw new InvalidOperationException());
         Context.Boards.Add(board);
         await Context.SaveChangesAsync();
@@ -172,7 +127,7 @@ public class BoardRepositoryTests : RepositoryTestBase
     public async Task AddBoardMemberAsync_WhenUserAdded_AddsJoinRow()
     {
         // Arrange
-        var board = CreateBoard();
+        var board = BoardTestData.CreateBoardWithTodoDoneColumns(_ownerId);
         board.Members.Add(await Context.Users.FindAsync(_ownerId) ?? throw new InvalidOperationException());
         Context.Boards.Add(board);
         await Context.SaveChangesAsync();
@@ -195,7 +150,7 @@ public class BoardRepositoryTests : RepositoryTestBase
     public async Task RemoveBoardMemberAsync_WhenUserRemoved_RemovesJoinRow()
     {
         // Arrange
-        var board = CreateBoard();
+        var board = BoardTestData.CreateBoardWithTodoDoneColumns(_ownerId);
         board.Members.Add(await Context.Users.FindAsync(_ownerId) ?? throw new InvalidOperationException());
         board.Members.Add(await Context.Users.FindAsync(_memberId) ?? throw new InvalidOperationException());
         Context.Boards.Add(board);
@@ -221,7 +176,7 @@ public class BoardRepositoryTests : RepositoryTestBase
     public async Task UpdateColumnOrderAsync_WhenAllColumnsExist_UpdatesAllPositions()
     {
         // Arrange
-        var board = CreateBoard();
+        var board = BoardTestData.CreateBoardWithTodoDoneColumns(_ownerId);
         Context.Boards.Add(board);
         await Context.SaveChangesAsync();
         var first = board.Columns[0];
@@ -250,8 +205,8 @@ public class BoardRepositoryTests : RepositoryTestBase
     public async Task UpdateColumnOrderAsync_WhenColumnBelongsToAnotherBoard_ReturnsFalseWithoutSaving()
     {
         // Arrange
-        var board = CreateBoard();
-        var otherBoard = CreateBoard("Other");
+        var board = BoardTestData.CreateBoardWithTodoDoneColumns(_ownerId);
+        var otherBoard = BoardTestData.CreateBoardWithTodoDoneColumns(_ownerId, "Other");
         Context.Boards.AddRange(board, otherBoard);
         await Context.SaveChangesAsync();
         var ownColumn = board.Columns[0];
@@ -280,7 +235,7 @@ public class BoardRepositoryTests : RepositoryTestBase
     public async Task CreateBoardAsync_WhenBoardIsValid_AddsBoard()
     {
         // Arrange
-        var board = CreateBoard("New board");
+        var board = BoardTestData.CreateBoardWithTodoDoneColumns(_ownerId, "New board");
 
         // Act
         var id = await _sut.CreateBoardAsync(board);
@@ -296,7 +251,7 @@ public class BoardRepositoryTests : RepositoryTestBase
     public async Task DeleteBoardAsync_WhenBoardExists_RemovesBoard()
     {
         // Arrange
-        var board = CreateBoard("Delete");
+        var board = BoardTestData.CreateBoardWithTodoDoneColumns(_ownerId, "Delete");
         Context.Boards.Add(board);
         await Context.SaveChangesAsync();
 
