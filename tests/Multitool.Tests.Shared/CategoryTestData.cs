@@ -20,6 +20,32 @@ public static class CategoryTestData
         IsDeleted = false
     };
 
+    public static Category SecondKanbanCategory => new()
+    {
+        Id = 4,
+        UserId = AuthTestData.DefaultUser.Id,
+        Name = "Second Kanban",
+        Color = "#0000FF",
+        ApplicableModules = KanbanApplicableModules,
+        IsDeleted = false
+    };
+
+    public static Category DeletedKanbanCategory => new()
+    {
+        Id = 5,
+        UserId = AuthTestData.DefaultUser.Id,
+        Name = "Deleted Kanban",
+        Color = "#FFFF00",
+        ApplicableModules = KanbanApplicableModules,
+        IsDeleted = true
+    };
+
+    public static CategoryModel KanbanCategoryModel => new(
+        KanbanCategory.Id, KanbanCategory.Name, KanbanCategory.Color, KanbanApplicableModules, false);
+
+    public static CategoryModel SecondKanbanCategoryModel => new(
+        SecondKanbanCategory.Id, SecondKanbanCategory.Name, SecondKanbanCategory.Color, KanbanApplicableModules, false);
+
     public static Category CreateKanbanCategory(string name) => new()
     {
         UserId = AuthTestData.DefaultUser.Id,

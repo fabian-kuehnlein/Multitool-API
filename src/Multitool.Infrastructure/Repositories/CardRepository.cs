@@ -20,12 +20,16 @@ public class CardRepository(AppDbContext db) : ICardRepository
     /// Use when the caller only knows the card id (e.g. /cards/{id} endpoints): Board.Members is required to
     /// authorize access via the parent board, Board.Columns is required to validate move targets within the same
     /// board, and Categories is required because card operations read/mutate card categories (e.g. replace requires
-    /// a loaded collection). Not replaceable by GetBoardWithDetailsAsync because the board id is unknown up front
-    /// and a tracked, focused card context is needed instead of an untracked full-board read projection.
+    /// a loaded collection). IgnoreQueryFilters is required only because Category has a global query filter and
+    /// shared boards contain categories owned by the board owner. Not replaceable by GetBoardWithDetailsAsync
+    /// because the board id is unknown up front and a tracked, focused card context is needed instead of an
+    /// untracked full-board read projection.
     /// </summary>
     public async Task<Card?> GetCardForOperationAsync(long cardId)
     {
+        // IgnoreQueryFilters is required only because Category has a global query filter for its owner.
         return await db.Cards
+            .IgnoreQueryFilters()
             .Include(c => c.Column)
                 .ThenInclude(col => col.Board)
                     .ThenInclude(b => b.Members)

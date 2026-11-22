@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Multitool.Domain.Entities.Categories;
 using Multitool.Domain.Entities.Config;
 using Multitool.Domain.Entities.Kanban;
+using Multitool.Domain.Enums;
 using Multitool.Domain.Interfaces;
 using Multitool.Infrastructure.Data;
 
@@ -40,7 +41,8 @@ public class BoardRepository(AppDbContext db) : IBoardRepository
 
     /// <summary>
     /// Detail projection for a single board view.
-    /// Loads the full read model (members, columns, cards, non-deleted card category ids) for an accessible board.
+    /// Loads the full read model (members, whitelisted categories, columns, cards, non-deleted card category ids)
+    /// for an accessible board.
     /// Never tracked and never persisted. Uses IgnoreQueryFilters only because of the Category global filter;
     /// access isolation remains enforced by the explicit membership predicate.
     /// </summary>
@@ -61,6 +63,18 @@ public class BoardRepository(AppDbContext db) : IBoardRepository
                 CreatedAt = b.CreatedAt,
                 Members = b.Members
                     .Select(u => new User { Id = u.Id, Username = u.Username })
+                    .ToList(),
+                Categories = b.Categories
+                    .Where(c => c.UserId == b.OwnerId && !c.IsDeleted && c.ApplicableModules.Contains(AppModule.Kanban))
+                    .Select(c => new Category
+                    {
+                        Id = c.Id,
+                        UserId = c.UserId,
+                        Name = c.Name,
+                        Color = c.Color,
+                        ApplicableModules = c.ApplicableModules,
+                        IsDeleted = c.IsDeleted
+                    })
                     .ToList(),
                 Columns = b.Columns
                     .OrderBy(c => c.Position)
@@ -101,13 +115,15 @@ public class BoardRepository(AppDbContext db) : IBoardRepository
     /// <summary>
     /// Access/ownership query used primarily by BoardAccessService.
     /// Loads a tracked board including Members so access, ownership, and member-management decisions can be made
-    /// (e.g. can view/edit/share/remove members). Not a read projection: it returns a tracked entity because the
-    /// same loaded graph is required for follow-up operations such as skip-navigation member changes.
+    /// (e.g. can view/edit/share/remove members). Categories are included as well so the tracked skip navigation
+    /// can be changed by the owner without loading the board again. Not a read projection: it returns a tracked
+    /// entity because the same loaded graph is required for follow-up skip-navigation changes.
     /// </summary>
     public async Task<Board?> GetBoardForAccessCheckAsync(long boardId)
     {
         return await db.Boards
             .Include(b => b.Members)
+            .Include(b => b.Categories)
             .FirstOrDefaultAsync(b => b.Id == boardId);
     }
 
@@ -119,6 +135,57 @@ public class BoardRepository(AppDbContext db) : IBoardRepository
     public async Task<Board?> GetBoardByIdAsync(long boardId)
     {
         return await db.Boards.FirstOrDefaultAsync(b => b.Id == boardId);
+    }
+
+    /// <summary>
+    /// Loads the tracked categories that are whitelisted for a board and still eligible for Kanban.
+    /// Used only by KanbanCategoryService.ValidateBoardCategoriesAsync; the board detail projection
+    /// exposes the same whitelist as a read model. IgnoreQueryFilters is required because the whitelist
+    /// belongs to the board owner, who may differ from the current user. Membership is checked by the
+    /// calling service before this lookup. The categories stay tracked for card category joins.
+    /// </summary>
+    public async Task<List<Category>> GetBoardCategoriesForValidationAsync(long boardId)
+    {
+        // IgnoreQueryFilters is required only because Category has a global query filter for its owner.
+        var board = await db.Boards
+            .IgnoreQueryFilters()
+            .Include(b => b.Categories)
+            .FirstOrDefaultAsync(b => b.Id == boardId);
+
+        if (board is null)
+        {
+            return [];
+        }
+
+        return board.Categories
+            .Where(c => c.UserId == board.OwnerId && !c.IsDeleted && c.ApplicableModules.Contains(AppModule.Kanban))
+            .ToList();
+    }
+
+    /// <summary>
+    /// Adds a category to the tracked board whitelist. The composite primary key of board_categories
+    /// makes repeated calls harmless.
+    /// </summary>
+    public async Task AddBoardCategoryAsync(Board board, Category category)
+    {
+        if (board.Categories.Any(c => c.Id == category.Id))
+            return;
+
+        board.Categories.Add(category);
+        await db.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Removes a category from the tracked board whitelist without touching card category joins.
+    /// </summary>
+    public async Task RemoveBoardCategoryAsync(Board board, Category category)
+    {
+        var existing = board.Categories.FirstOrDefault(c => c.Id == category.Id);
+        if (existing is null)
+            return;
+
+        board.Categories.Remove(existing);
+        await db.SaveChangesAsync();
     }
 
     public async Task<long> CreateBoardAsync(Board board)

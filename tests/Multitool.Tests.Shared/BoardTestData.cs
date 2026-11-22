@@ -1,4 +1,5 @@
 using Multitool.Application.Models.Kanban;
+using Multitool.Domain.Entities.Categories;
 using Multitool.Domain.Entities.Config;
 using Multitool.Domain.Entities.Kanban;
 
@@ -46,6 +47,17 @@ public static class BoardTestData
         OwnerId = DefaultMember.Id,
         CreatedAt = DefaultCreatedAt,
         Members = [DefaultMember, OtherMember]
+    };
+
+    public static Board BoardWithCategories => new()
+    {
+        Id = 10,
+        Name = "Board",
+        Description = "Description",
+        OwnerId = DefaultMember.Id,
+        CreatedAt = DefaultCreatedAt,
+        Members = [DefaultMember],
+        Categories = [CategoryTestData.KanbanCategory, CategoryTestData.SecondKanbanCategory]
     };
 
     public static Board BoardWithOtherUserOnly => new()
@@ -157,7 +169,8 @@ public static class BoardTestData
         DefaultBoard.Description,
         true,
         [new ColumnModel(DefaultColumn.Id, DefaultColumn.Name, DefaultColumn.Position, [CardTestData.DefaultCardModel])],
-        [DefaultBoardMemberModel]);
+        [DefaultBoardMemberModel],
+        [CategoryTestData.KanbanCategoryModel, CategoryTestData.SecondKanbanCategoryModel]);
 
     public static CreateBoardRequest DefaultCreateBoardRequest => new("New board", "New description", null);
 
@@ -174,6 +187,17 @@ public static class BoardTestData
         card.Column = column;
         column.Cards.Add(card);
         board.Columns.Add(column);
+
+        var categories = new List<Category>
+        {
+            CategoryTestData.KanbanCategory,
+            CategoryTestData.SecondKanbanCategory
+        };
+        foreach (var category in categories)
+        {
+            category.UserId = board.OwnerId;
+        }
+        board.Categories.AddRange(categories);
 
         return board;
     }

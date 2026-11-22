@@ -21,6 +21,7 @@ public static class Setup
 
         services.AddScoped<IBoardAccessService, BoardAccessService>();
         services.AddScoped<IBoardService, BoardService>();
+        services.AddScoped<IKanbanCategoryService, KanbanCategoryService>();
 
         services.AddScoped<ICalendarService, CalendarService>();
         services.AddScoped<ICategoryService, CategoryService>();

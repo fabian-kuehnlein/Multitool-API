@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Multitool.Domain.Entities.Categories;
 using Multitool.Domain.Entities.Kanban;
 using Multitool.Infrastructure.Repositories;
 using Multitool.Tests.Shared;
@@ -48,6 +49,36 @@ public class BoardRepositoryTests : RepositoryTestBase
         await Context.SaveChangesAsync();
 
         return (board, card);
+    }
+
+    private async Task<(Board Board, Category Eligible, Category Second, Category NonKanban, Category Deleted)>
+        CreateBoardWithCategoriesAsync(int ownerId, bool whitelistCategories = true)
+    {
+        var owner = await Context.Users.FindAsync(ownerId) ?? throw new InvalidOperationException("Owner not found");
+        var board = BoardTestData.CreateBoardWithTodoDoneColumns(ownerId);
+        board.Members.Add(owner);
+
+        var eligible = CategoryTestData.CreateKanbanCategory("Eligible");
+        var second = CategoryTestData.CreateKanbanCategory("Second");
+        var nonKanban = CategoryTestData.DefaultCategory;
+        nonKanban.Id = 0;
+        var deleted = CategoryTestData.DeletedKanbanCategory;
+        deleted.Id = 0;
+        eligible.UserId = ownerId;
+        second.UserId = ownerId;
+        nonKanban.UserId = ownerId;
+        deleted.UserId = ownerId;
+
+        Context.Categories.AddRange(eligible, second, nonKanban, deleted);
+        if (whitelistCategories)
+        {
+            board.Categories.AddRange([eligible, second, nonKanban, deleted]);
+        }
+
+        Context.Boards.Add(board);
+        await Context.SaveChangesAsync();
+
+        return (board, eligible, second, nonKanban, deleted);
     }
 
     // GetBoardOverviewAsync
@@ -121,6 +152,84 @@ public class BoardRepositoryTests : RepositoryTestBase
         Assert.Null(result);
     }
 
+    [Fact]
+    public async Task GetBoardWithDetailsAsync_WhenUserIsMember_ReturnsOnlyEligibleWhitelistedCategories()
+    {
+        // Arrange
+        var (board, eligible, second, nonKanban, deleted) = await CreateBoardWithCategoriesAsync(_ownerId);
+        var member = await Context.Users.FindAsync(_memberId) ?? throw new InvalidOperationException("Member not found");
+        board.Members.Add(member);
+        await Context.SaveChangesAsync();
+
+        // Act
+        var result = await _sut.GetBoardWithDetailsAsync(board.Id, _memberId);
+
+        // Assert
+        Assert.NotNull(result);
+        AssertEx.AreEqual(2, result!.Categories.Count);
+        Assert.Contains(result.Categories, c => c.Id == eligible.Id);
+        Assert.Contains(result.Categories, c => c.Id == second.Id);
+        Assert.DoesNotContain(result.Categories, c => c.Id == nonKanban.Id);
+        Assert.DoesNotContain(result.Categories, c => c.Id == deleted.Id);
+        AssertEx.AreEqual(eligible.Name, result.Categories.Single(c => c.Id == eligible.Id).Name);
+        AssertEx.AreEqual(eligible.Color, result.Categories.Single(c => c.Id == eligible.Id).Color);
+    }
+
+    // GetBoardCategoriesForValidationAsync
+
+    [Fact]
+    public async Task GetBoardCategoriesForValidationAsync_WhenOwnerIsAnotherUser_ReturnsOnlyEligibleWhitelistedCategories()
+    {
+        // Arrange
+        var (board, eligible, second, nonKanban, deleted) = await CreateBoardWithCategoriesAsync(_otherUserId);
+        Context.ChangeTracker.Clear();
+
+        // Act
+        var result = await _sut.GetBoardCategoriesForValidationAsync(board.Id);
+
+        // Assert
+        AssertEx.AreEqual(2, result.Count);
+        Assert.Contains(result, c => c.Id == eligible.Id);
+        Assert.Contains(result, c => c.Id == second.Id);
+        Assert.DoesNotContain(result, c => c.Id == nonKanban.Id);
+        Assert.DoesNotContain(result, c => c.Id == deleted.Id);
+        Assert.All(result, c => Assert.Equal(EntityState.Unchanged, Context.Entry(c).State));
+    }
+
+    [Fact]
+    public async Task GetBoardCategoriesForValidationAsync_WhenBoardDoesNotExist_ReturnsEmptyList()
+    {
+        // Arrange
+
+        // Act
+        var result = await _sut.GetBoardCategoriesForValidationAsync(999);
+
+        // Assert
+        Assert.Empty(result);
+    }
+
+    // GetBoardForAccessCheckAsync
+
+    [Fact]
+    public async Task GetBoardForAccessCheckAsync_WhenBoardHasWhitelist_LoadsTrackedCategories()
+    {
+        // Arrange
+        var (board, eligible, second, nonKanban, deleted) = await CreateBoardWithCategoriesAsync(_ownerId);
+        Context.ChangeTracker.Clear();
+
+        // Act
+        var result = await _sut.GetBoardForAccessCheckAsync(board.Id);
+
+        // Assert
+        Assert.NotNull(result);
+        AssertEx.AreEqual(4, result!.Categories.Count);
+        Assert.Contains(result.Categories, c => c.Id == eligible.Id);
+        Assert.Contains(result.Categories, c => c.Id == second.Id);
+        Assert.Contains(result.Categories, c => c.Id == nonKanban.Id);
+        Assert.Contains(result.Categories, c => c.Id == deleted.Id);
+        Assert.All(result.Categories, c => Assert.Equal(EntityState.Unchanged, Context.Entry(c).State));
+    }
+
     // AddBoardMemberAsync / RemoveBoardMemberAsync
 
     [Fact]
@@ -168,6 +277,70 @@ public class BoardRepositoryTests : RepositoryTestBase
             .AsNoTracking()
             .FirstAsync(b => b.Id == board.Id);
         Assert.DoesNotContain(reloaded.Members, u => u.Id == _memberId);
+    }
+
+    // AddBoardCategoryAsync / RemoveBoardCategoryAsync
+
+    [Fact]
+    public async Task AddBoardCategoryAsync_WhenCategoryIsNotWhitelisted_WritesJoinRow()
+    {
+        // Arrange
+        var (board, eligible, _, _, _) = await CreateBoardWithCategoriesAsync(_ownerId, whitelistCategories: false);
+        var trackedBoard = await Context.Boards
+            .Include(b => b.Categories)
+            .FirstAsync(b => b.Id == board.Id);
+        var trackedCategory = await Context.Categories.FirstAsync(c => c.Id == eligible.Id);
+
+        // Act
+        await _sut.AddBoardCategoryAsync(trackedBoard, trackedCategory);
+
+        // Assert
+        Context.ChangeTracker.Clear();
+        var reloaded = await Context.Boards
+            .Include(b => b.Categories)
+            .AsNoTracking()
+            .FirstAsync(b => b.Id == board.Id);
+        Assert.Single(reloaded.Categories);
+        AssertEx.AreEqual(eligible.Id, reloaded.Categories[0].Id);
+    }
+
+    [Fact]
+    public async Task RemoveBoardCategoryAsync_WhenCategoryIsWhitelisted_RemovesJoinRowAndKeepsCardTags()
+    {
+        // Arrange
+        var (board, eligible, second, nonKanban, deleted) = await CreateBoardWithCategoriesAsync(_ownerId);
+        var column = board.Columns.First();
+        var card = CardTestData.PersistableCard(column.Id, "Tagged card", 0, _ownerId);
+        card.Categories.Add(eligible);
+        Context.Cards.Add(card);
+        await Context.SaveChangesAsync();
+
+        var trackedBoard = await Context.Boards
+            .Include(b => b.Categories)
+            .FirstAsync(b => b.Id == board.Id);
+        var trackedCategory = await Context.Categories.FirstAsync(c => c.Id == eligible.Id);
+
+        // Act
+        await _sut.RemoveBoardCategoryAsync(trackedBoard, trackedCategory);
+
+        // Assert
+        Context.ChangeTracker.Clear();
+        var reloadedBoard = await Context.Boards
+            .Include(b => b.Categories)
+            .AsNoTracking()
+            .FirstAsync(b => b.Id == board.Id);
+        AssertEx.AreEqual(3, reloadedBoard.Categories.Count);
+        Assert.DoesNotContain(reloadedBoard.Categories, c => c.Id == eligible.Id);
+        Assert.Contains(reloadedBoard.Categories, c => c.Id == second.Id);
+        Assert.Contains(reloadedBoard.Categories, c => c.Id == nonKanban.Id);
+        Assert.Contains(reloadedBoard.Categories, c => c.Id == deleted.Id);
+
+        var reloadedCard = await Context.Cards
+            .Include(c => c.Categories)
+            .AsNoTracking()
+            .FirstAsync(c => c.Id == card.Id);
+        Assert.Single(reloadedCard.Categories);
+        AssertEx.AreEqual(eligible.Id, reloadedCard.Categories[0].Id);
     }
 
     // UpdateColumnOrderAsync

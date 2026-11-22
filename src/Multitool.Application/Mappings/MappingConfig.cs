@@ -1,4 +1,5 @@
 using Mapster;
+using Multitool.Domain.Entities.Categories;
 using Multitool.Domain.Entities.Calendar;
 using Multitool.Domain.Entities.Config;
 using Multitool.Domain.Entities.Kanban;
@@ -7,6 +8,7 @@ using Multitool.Domain.Entities.CustomTable;
 using Multitool.Application.Models.Todo;
 using Multitool.Application.Models.CustomTable;
 using Multitool.Application.Models.Calendar;
+using Multitool.Application.Models.Category;
 using Multitool.Application.Models.Info;
 using Multitool.Application.Models.Kanban;
 using Multitool.Application.Models.User;
@@ -42,6 +44,8 @@ public class MappingConfig : IRegister
             .Map(dest => dest.IsShared, src => src.Members.Count > 1);
 
         config.NewConfig<Board, BoardModel>();
+
+        config.NewConfig<Category, CategoryModel>();
 
         config.NewConfig<BoardColumn, ColumnModel>();
 

@@ -1,3 +1,4 @@
+using Multitool.Domain.Entities.Categories;
 using Multitool.Domain.Entities.Config;
 using Multitool.Domain.Entities.Kanban;
 
@@ -9,6 +10,9 @@ public interface IBoardRepository
     Task<Board?> GetBoardWithDetailsAsync(long boardId, int userId);
     Task<Board?> GetBoardForAccessCheckAsync(long boardId);
     Task<Board?> GetBoardByIdAsync(long boardId);
+    Task<List<Category>> GetBoardCategoriesForValidationAsync(long boardId);
+    Task AddBoardCategoryAsync(Board board, Category category);
+    Task RemoveBoardCategoryAsync(Board board, Category category);
     Task<long> CreateBoardAsync(Board board);
     Task UpdateBoardAsync(Board board);
     Task DeleteBoardAsync(Board board);

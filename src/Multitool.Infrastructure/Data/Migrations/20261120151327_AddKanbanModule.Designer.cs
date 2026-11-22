@@ -600,6 +600,25 @@ namespace Multitool.Infrastructure.Data.Migrations
                     b.ToTable("board_members", "kanban");
                 });
 
+            modelBuilder.Entity("board_categories", b =>
+                {
+                    b.Property<long>("board_id")
+                        .HasColumnType("bigint")
+                        .HasColumnName("board_id");
+
+                    b.Property<int>("category_id")
+                        .HasColumnType("integer")
+                        .HasColumnName("category_id");
+
+                    b.HasKey("board_id", "category_id")
+                        .HasName("pk_board_categories");
+
+                    b.HasIndex("category_id")
+                        .HasDatabaseName("ix_board_categories_category_id");
+
+                    b.ToTable("board_categories", "kanban");
+                });
+
             modelBuilder.Entity("card_categories", b =>
                 {
                     b.Property<long>("card_id")
@@ -743,6 +762,21 @@ namespace Multitool.Infrastructure.Data.Migrations
                     b.HasOne("Multitool.Domain.Entities.Config.User", null)
                         .WithMany()
                         .HasForeignKey("user_id")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("board_categories", b =>
+                {
+                    b.HasOne("Multitool.Domain.Entities.Kanban.Board", null)
+                        .WithMany()
+                        .HasForeignKey("board_id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Multitool.Domain.Entities.Categories.Category", null)
+                        .WithMany()
+                        .HasForeignKey("category_id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

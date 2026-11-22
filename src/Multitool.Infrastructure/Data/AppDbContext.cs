@@ -285,6 +285,23 @@ public class AppDbContext : DbContext
                     j.HasIndex("user_id").HasDatabaseName("ix_board_members_user_id");
                 });
 
+        // m:n Board <-> Category: per-board tag whitelist, no domain entity
+        modelBuilder.Entity<Board>()
+            .HasMany(b => b.Categories)
+            .WithMany()
+            .UsingEntity<Dictionary<string, object>>(
+                "board_categories",
+                j => j.HasOne<Category>().WithMany().HasForeignKey("category_id")
+                      .OnDelete(DeleteBehavior.Restrict),
+                j => j.HasOne<Board>().WithMany().HasForeignKey("board_id")
+                      .OnDelete(DeleteBehavior.Cascade),
+                j =>
+                {
+                    j.HasKey("board_id", "category_id");
+                    j.ToTable("board_categories", "kanban");
+                    j.HasIndex("category_id").HasDatabaseName("ix_board_categories_category_id");
+                });
+
         modelBuilder.Entity<BoardColumn>(e =>
         {
             e.ToTable("board_columns", "kanban");

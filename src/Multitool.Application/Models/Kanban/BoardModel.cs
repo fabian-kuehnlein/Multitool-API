@@ -1,3 +1,5 @@
+using Multitool.Application.Models.Category;
+
 namespace Multitool.Application.Models.Kanban;
 
 public record BoardModel(
@@ -6,4 +8,5 @@ public record BoardModel(
     string? Description,
     bool IsOwner,
     List<ColumnModel> Columns,
-    List<BoardMemberModel> Members);
+    List<BoardMemberModel> Members,
+    List<CategoryModel> Categories);

@@ -1,3 +1,4 @@
+using Multitool.Domain.Entities.Categories;
 using Multitool.Domain.Entities.Config;
 
 namespace Multitool.Domain.Entities.Kanban;
@@ -10,5 +11,6 @@ public class Board
     public int OwnerId { get; set; }
     public DateTime CreatedAt { get; set; }
     public List<User> Members { get; set; } = []; // Skip Navigation → board_members
+    public List<Category> Categories { get; set; } = []; // Skip Navigation → board_categories
     public List<BoardColumn> Columns { get; set; } = [];
 }

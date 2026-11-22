@@ -90,6 +90,33 @@ namespace Multitool.Infrastructure.Data.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "board_categories",
+                schema: "kanban",
+                columns: table => new
+                {
+                    board_id = table.Column<long>(type: "bigint", nullable: false),
+                    category_id = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_board_categories", x => new { x.board_id, x.category_id });
+                    table.ForeignKey(
+                        name: "FK_board_categories_boards_board_id",
+                        column: x => x.board_id,
+                        principalSchema: "kanban",
+                        principalTable: "boards",
+                        principalColumn: "board_id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_board_categories_categories_category_id",
+                        column: x => x.category_id,
+                        principalSchema: "public",
+                        principalTable: "categories",
+                        principalColumn: "category_id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "cards",
                 schema: "kanban",
                 columns: table => new
@@ -168,6 +195,12 @@ namespace Multitool.Infrastructure.Data.Migrations
                 column: "owner_id");
 
             migrationBuilder.CreateIndex(
+                name: "ix_board_categories_category_id",
+                schema: "kanban",
+                table: "board_categories",
+                column: "category_id");
+
+            migrationBuilder.CreateIndex(
                 name: "ix_card_categories_category_id",
                 schema: "kanban",
                 table: "card_categories",
@@ -191,6 +224,10 @@ namespace Multitool.Infrastructure.Data.Migrations
         {
             migrationBuilder.DropTable(
                 name: "board_members",
+                schema: "kanban");
+
+            migrationBuilder.DropTable(
+                name: "board_categories",
                 schema: "kanban");
 
             migrationBuilder.DropTable(

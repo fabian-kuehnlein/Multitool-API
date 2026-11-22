@@ -30,12 +30,13 @@ public class CardRepositoryTests : RepositoryTestBase
         _memberId = member.Id;
     }
 
-    private async Task<Board> CreateBoardWithColumnsAsync(int columnCount = 2)
+    private async Task<Board> CreateBoardWithColumnsAsync(int columnCount = 2, int? ownerId = null)
     {
-        var owner = await Context.Users.FindAsync(_ownerId) ?? throw new InvalidOperationException();
+        var boardOwnerId = ownerId ?? _ownerId;
+        var owner = await Context.Users.FindAsync(boardOwnerId) ?? throw new InvalidOperationException();
         var member = await Context.Users.FindAsync(_memberId) ?? throw new InvalidOperationException();
 
-        var board = BoardTestData.CreateBoardWithTodoDoneColumns(_ownerId);
+        var board = BoardTestData.CreateBoardWithTodoDoneColumns(boardOwnerId);
         board.Columns.Clear();
         board.Columns.AddRange(BoardTestData.CreateNumberedColumns(columnCount));
         board.Members.Add(owner);
@@ -65,6 +66,30 @@ public class CardRepositoryTests : RepositoryTestBase
         Assert.NotNull(result);
         Assert.NotNull(result!.Column.Board);
         Assert.Equal(2, result.Column.Board.Members.Count);
+    }
+
+    [Fact]
+    public async Task GetCardForOperationAsync_WhenCategoryBelongsToBoardOwner_ReturnsCategoriesDespiteUserFilter()
+    {
+        // Arrange
+        var board = await CreateBoardWithColumnsAsync(ownerId: _memberId);
+        var column = board.Columns.First();
+        var category = CategoryTestData.CreateKanbanCategory("Owner category");
+        category.UserId = _memberId;
+        Context.Categories.Add(category);
+
+        var card = CardTestData.PersistableCard(column.Id, "Card", 0, _memberId);
+        card.Categories.Add(category);
+        Context.Cards.Add(card);
+        await Context.SaveChangesAsync();
+
+        // Act
+        var result = await _sut.GetCardForOperationAsync(card.Id);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Single(result!.Categories);
+        AssertEx.AreEqual(category.Id, result.Categories[0].Id);
     }
 
     // MoveCardAsync
