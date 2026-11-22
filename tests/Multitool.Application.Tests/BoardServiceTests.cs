@@ -257,7 +257,7 @@ public class BoardServiceTests
     // CreateBoardAsync
 
     [Fact]
-    public async Task CreateBoardAsync_WhenColumnNamesAreMissing_CreatesBoardWithOwnerAsMemberAndDefaultColumns()
+    public async Task CreateBoardAsync_WhenRequestIsValid_CreatesBoardWithOwnerAsMemberAndDefaultColumns()
     {
         // Arrange
         var request = BoardTestData.DefaultCreateBoardRequest;
@@ -279,32 +279,6 @@ public class BoardServiceTests
             Columns = BoardTestData.DefaultColumns
         }, _createdBoard);
         AssertEx.CloseTo(_createdBoard.CreatedAt, DateTime.Now, TimeSpan.FromSeconds(5));
-
-        _userRepositoryMock.Verify(r => r.GetUserByIdAsync(USER_ID), Times.Once);
-        _userRepositoryMock.VerifyNoOtherCalls();
-
-        _boardRepositoryMock.Verify(r => r.CreateBoardAsync(_createdBoard), Times.Once);
-        _boardRepositoryMock.VerifyNoOtherCalls();
-
-        _boardAccessServiceMock.VerifyNoOtherCalls();
-
-        _userContextMock.VerifyGet(u => u.UserId, Times.Once);
-        _userContextMock.VerifyNoOtherCalls();
-    }
-
-    [Fact]
-    public async Task CreateBoardAsync_WhenColumnNamesAreProvided_CreatesBoardWithProvidedColumns()
-    {
-        // Arrange
-        var request = BoardTestData.DefaultCreateBoardRequestWithColumns;
-        var service = GetService();
-
-        // Act
-        await service.CreateBoardAsync(request);
-
-        // Assert
-        Assert.NotNull(_createdBoard);
-        AssertEx.AreEqual(BoardTestData.TodoDoneColumns, _createdBoard!.Columns);
 
         _userRepositoryMock.Verify(r => r.GetUserByIdAsync(USER_ID), Times.Once);
         _userRepositoryMock.VerifyNoOtherCalls();

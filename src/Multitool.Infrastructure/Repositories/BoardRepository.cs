@@ -19,8 +19,8 @@ namespace Multitool.Infrastructure.Repositories;
 public class BoardRepository(AppDbContext db) : IBoardRepository
 {
     /// <summary>
-    /// Overview projection for the board list/sidebar.
-    /// Loads only data required by the overview (Id, Name, CreatedAt, member ids for MemberCount/shared state).
+    /// Overview projection for the board card grid.
+    /// Loads only data required by the overview (Id, Name, Description, CreatedAt, member ids for MemberCount).
     /// Never tracked and never persisted.
     /// </summary>
     public async Task<List<Board>> GetBoardOverviewAsync(int userId)
@@ -32,6 +32,7 @@ public class BoardRepository(AppDbContext db) : IBoardRepository
             {
                 Id = b.Id,
                 Name = b.Name,
+                Description = b.Description,
                 CreatedAt = b.CreatedAt,
                 Members = b.Members.Select(u => new User { Id = u.Id }).ToList()
             })

@@ -3,6 +3,6 @@ namespace Multitool.Application.Models.Kanban;
 public record BoardOverviewModel(
     long Id,
     string Name,
+    string? Description,
     DateTime CreatedAt,
-    bool IsShared,
     int MemberCount);

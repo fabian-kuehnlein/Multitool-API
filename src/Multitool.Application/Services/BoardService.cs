@@ -46,7 +46,7 @@ public class BoardService(
 
         var board = request.Adapt<Board>();
         board.OwnerId = user.Id;
-        board.Columns = CreateColumns(request.ColumnNames);
+        board.Columns = CreateDefaultColumns();
 
         // Access is membership-only, so the owner must also be the first member.
         board.Members.Add(user);
@@ -210,11 +210,9 @@ public class BoardService(
 
     private static readonly IReadOnlyList<string> DefaultColumnNames = ["Backlog", "In Arbeit", "Fertig"];
 
-    private static List<BoardColumn> CreateColumns(IReadOnlyList<string>? columnNames)
+    private static List<BoardColumn> CreateDefaultColumns()
     {
-        var names = columnNames is { Count: > 0 } ? columnNames : DefaultColumnNames;
-
-        return names
+        return DefaultColumnNames
             .Select((name, index) => new BoardColumn { Name = name, Position = index })
             .ToList();
     }

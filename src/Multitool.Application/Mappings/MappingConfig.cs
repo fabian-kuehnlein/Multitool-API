@@ -40,8 +40,7 @@ public class MappingConfig : IRegister
             .Map(dest => dest.CreatedAt, src => DateTime.Now);
 
         config.NewConfig<Board, BoardOverviewModel>()
-            .Map(dest => dest.MemberCount, src => src.Members.Count)
-            .Map(dest => dest.IsShared, src => src.Members.Count > 1);
+            .Map(dest => dest.MemberCount, src => src.Members.Count);
 
         config.NewConfig<Board, BoardModel>();
 

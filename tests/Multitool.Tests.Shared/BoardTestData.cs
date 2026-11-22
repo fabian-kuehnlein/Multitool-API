@@ -159,8 +159,8 @@ public static class BoardTestData
     public static BoardOverviewModel DefaultBoardOverviewModel => new(
         DefaultBoard.Id,
         DefaultBoard.Name,
+        DefaultBoard.Description,
         DefaultBoard.CreatedAt,
-        false,
         1);
 
     public static BoardModel DefaultBoardModel => new(
@@ -172,9 +172,7 @@ public static class BoardTestData
         [DefaultBoardMemberModel],
         [CategoryTestData.KanbanCategoryModel, CategoryTestData.SecondKanbanCategoryModel]);
 
-    public static CreateBoardRequest DefaultCreateBoardRequest => new("New board", "New description", null);
-
-    public static CreateBoardRequest DefaultCreateBoardRequestWithColumns => new("New board", null, ["Todo", "Done"]);
+    public static CreateBoardRequest DefaultCreateBoardRequest => new("New board", "New description");
 
     public static UpdateBoardRequest DefaultUpdateBoardRequest => new("Renamed", "New description");
 

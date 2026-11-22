@@ -100,6 +100,7 @@ public class BoardRepositoryTests : RepositoryTestBase
         Assert.Single(result);
         AssertEx.AreEqual(board.Id, result[0].Id);
         AssertEx.AreEqual(board.Name, result[0].Name);
+        AssertEx.AreEqual(board.Description, result[0].Description);
         AssertEx.AreEqual(board.CreatedAt, result[0].CreatedAt);
         AssertEx.AreEqual(2, result[0].Members.Count);
     }
