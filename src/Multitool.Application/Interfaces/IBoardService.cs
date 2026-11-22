@@ -5,7 +5,7 @@ namespace Multitool.Application.Interfaces;
 public interface IBoardService
 {
     /// <summary>Returns the boards the current user is a member of.</summary>
-    Task<List<BoardOverviewModel>> GetBoardsAsync();
+    Task<List<BoardOverviewModel>> GetBoardsOverviewAsync();
 
     /// <summary>
     /// Returns the full board for a member. The repository detail query already enforces membership.

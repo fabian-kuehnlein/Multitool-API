@@ -166,7 +166,7 @@ public class BoardServiceTests
         var service = GetService();
 
         // Act
-        var result = await service.GetBoardsAsync();
+        var result = await service.GetBoardsOverviewAsync();
 
         // Assert
         AssertEx.AreEqual(_getBoardsResponse.Adapt<List<BoardOverviewModel>>(), result);

@@ -14,7 +14,7 @@ public class BoardService(
     IBoardAccessService boardAccessService,
     IUserContext userContext) : IBoardService
 {
-    public async Task<List<BoardOverviewModel>> GetBoardsAsync()
+    public async Task<List<BoardOverviewModel>> GetBoardsOverviewAsync()
     {
         var boards = await boardRepository.GetBoardOverviewAsync(userContext.UserId);
         return boards.Adapt<List<BoardOverviewModel>>();
