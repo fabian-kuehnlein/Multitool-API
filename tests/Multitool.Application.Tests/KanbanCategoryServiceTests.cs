@@ -34,7 +34,7 @@ public class KanbanCategoryServiceTests
 
     public KanbanCategoryServiceTests()
     {
-        TypeAdapterConfig.GlobalSettings.Apply(new MappingConfig());
+        MappingConfigBootstrapper.EnsureApplied();
 
         _boardRepositoryMock = new Mock<IBoardRepository>();
         _categoryRepositoryMock = new Mock<ICategoryRepository>();

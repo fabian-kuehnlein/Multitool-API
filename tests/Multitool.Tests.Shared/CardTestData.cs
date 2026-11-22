@@ -46,4 +46,28 @@ public static class CardTestData
         CreatedByUserId = createdByUserId,
         CreatedAt = BoardTestData.DefaultCreatedAt
     };
+
+    public static CreateCardRequest DefaultCreateCardRequest => new(
+        DefaultCard.ColumnId,
+        "New card",
+        "New card description",
+        [CategoryTestData.KanbanCategory.Id]);
+
+    public static UpdateCardRequest DefaultUpdateCardRequest => new("Updated card", "Updated description");
+
+    public static MoveCardRequest DefaultMoveCardRequest => new(BoardTestData.SecondColumn.Id, 1);
+
+    public static SetCardCategoriesRequest DefaultSetCardCategoriesRequest =>
+        new([CategoryTestData.KanbanCategory.Id]);
+
+    public static Card CardWithPosition(long id, int position, long? columnId = null) => new()
+    {
+        Id = id,
+        ColumnId = columnId ?? DefaultCard.ColumnId,
+        Title = DefaultCard.Title,
+        Description = DefaultCard.Description,
+        Position = position,
+        CreatedByUserId = DefaultCard.CreatedByUserId,
+        CreatedAt = DefaultCard.CreatedAt
+    };
 }

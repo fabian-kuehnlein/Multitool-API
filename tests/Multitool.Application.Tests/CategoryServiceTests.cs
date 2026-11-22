@@ -26,7 +26,7 @@ public class CategoryServiceTests
 
     public CategoryServiceTests()
     {
-        TypeAdapterConfig.GlobalSettings.Apply(new MappingConfig());
+        MappingConfigBootstrapper.EnsureApplied();
 
         _repositoryMock = new Mock<ICategoryRepository>();
 

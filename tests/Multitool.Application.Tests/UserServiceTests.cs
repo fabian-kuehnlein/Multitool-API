@@ -35,7 +35,7 @@ public class UserServiceTests
 
     public UserServiceTests()
     {
-        TypeAdapterConfig.GlobalSettings.Apply(new MappingConfig());
+        MappingConfigBootstrapper.EnsureApplied();
 
         _userRepositoryMock = new Mock<IUserRepository>();
         _categoryRepositoryMock = new Mock<ICategoryRepository>();

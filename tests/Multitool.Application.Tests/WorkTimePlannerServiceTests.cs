@@ -33,7 +33,7 @@ public class WorkTimePlannerServiceTests
 
     public WorkTimePlannerServiceTests()
     {
-        TypeAdapterConfig.GlobalSettings.Apply(new MappingConfig());
+        MappingConfigBootstrapper.EnsureApplied();
 
         _workDayRepositoryMock = new Mock<IWorkDayRepository>();
         _settingsServiceMock = new Mock<ISettingsService>();

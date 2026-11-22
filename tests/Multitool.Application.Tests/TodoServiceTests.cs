@@ -31,7 +31,7 @@ public class TodoServiceTests
 
     public TodoServiceTests()
     {
-        TypeAdapterConfig.GlobalSettings.Apply(new MappingConfig());
+        MappingConfigBootstrapper.EnsureApplied();
 
         _repositoryMock = new Mock<ITodoRepository>();
         _categoryRepositoryMock = new Mock<ICategoryRepository>();

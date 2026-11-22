@@ -37,7 +37,7 @@ public class CalendarServiceTests
 
     public CalendarServiceTests()
     {
-        TypeAdapterConfig.GlobalSettings.Apply(new MappingConfig());
+        MappingConfigBootstrapper.EnsureApplied();
 
         _calendarRepositoryMock = new Mock<ICalendarRepository>();
         _todoRepositoryMock = new Mock<ITodoRepository>();

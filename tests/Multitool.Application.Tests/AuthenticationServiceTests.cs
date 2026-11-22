@@ -26,7 +26,7 @@ public class AuthenticationServiceTests
 
     public AuthenticationServiceTests()
     {
-        TypeAdapterConfig.GlobalSettings.Apply(new MappingConfig());
+        MappingConfigBootstrapper.EnsureApplied();
 
         _userRepositoryMock = new Mock<IUserRepository>();
         _hasherMock = new Mock<IPasswordHasher>();

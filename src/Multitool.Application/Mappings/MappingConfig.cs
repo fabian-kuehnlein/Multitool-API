@@ -48,6 +48,9 @@ public class MappingConfig : IRegister
 
         config.NewConfig<BoardColumn, ColumnModel>();
 
+        config.NewConfig<CreateCardRequest, Card>()
+            .Map(dest => dest.CreatedAt, src => DateTime.Now);
+
         config.NewConfig<Card, CardModel>()
             .Map(dest => dest.CategoryIds, src => src.Categories.Select(c => c.Id).ToList());
 

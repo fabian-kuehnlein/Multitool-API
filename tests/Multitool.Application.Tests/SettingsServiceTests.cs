@@ -28,7 +28,7 @@ public class SettingsServiceTests
 
     public SettingsServiceTests()
     {
-        TypeAdapterConfig.GlobalSettings.Apply(new MappingConfig());
+        MappingConfigBootstrapper.EnsureApplied();
 
         _settingRepositoryMock = new Mock<ISettingRepository>();
         _userContextMock = new Mock<IUserContext>();

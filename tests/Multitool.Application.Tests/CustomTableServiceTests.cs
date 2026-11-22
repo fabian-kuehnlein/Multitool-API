@@ -37,7 +37,7 @@ public class CustomTableServiceTests
 
     public CustomTableServiceTests()
     {
-        TypeAdapterConfig.GlobalSettings.Apply(new MappingConfig());
+        MappingConfigBootstrapper.EnsureApplied();
 
         _repositoryMock = new Mock<ICustomTableRepository>();
 

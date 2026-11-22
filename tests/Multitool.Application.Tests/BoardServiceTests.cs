@@ -49,7 +49,7 @@ public class BoardServiceTests
 
     public BoardServiceTests()
     {
-        TypeAdapterConfig.GlobalSettings.Apply(new MappingConfig());
+        MappingConfigBootstrapper.EnsureApplied();
 
         _boardRepositoryMock = new Mock<IBoardRepository>();
         _userRepositoryMock = new Mock<IUserRepository>();
